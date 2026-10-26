@@ -21,8 +21,8 @@
 #>
 param(
     [string]$DisplayName = 'PoMode Sign-in',
-    [string]$VaultName = 'kv-poshared',
-    [string]$WebAppHost = 'app-pomode.azurewebsites.net',
+    [string]$VaultName = 'kv-poshared2',
+    [string]$WebAppHost = 'app-pomode2.azurewebsites.net',
     [switch]$RotateSecret
 )
 

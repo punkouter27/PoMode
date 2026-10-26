@@ -8,16 +8,16 @@ param assignStorageRole bool = true
 param webAppLocation string = 'westus3'
 
 @description('Name of the Storage Account')
-param storageAccountName string = 'stpomode'
+param storageAccountName string = 'stpomode2'
 
 @description('Name of the App Service (Web App)')
-param webAppName string = 'app-pomode'
+param webAppName string = 'app-pomode2'
 
 @description('Name of the App Service Plan on F1 Free Linux tier')
 param appServicePlanName string = 'asp-pomode-f1'
 
 @description('Name of the shared Key Vault in PoShared')
-param keyVaultName string = 'kv-poshared'
+param keyVaultName string = 'kv-poshared2'
 
 @description('Name of the shared Application Insights component in PoShared')
 param appInsightsName string = 'poappideinsights8f9c9a4e'
@@ -38,7 +38,7 @@ param openAiDeploymentName string = 'interpreter'
 param openAiLocation string = 'eastus2'
 
 // ─────────────────────────────────────────────
-// Storage Account (stpomode) in PoMode RG
+// Storage Account (stpomode2) in PoMode RG
 // ─────────────────────────────────────────────
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
@@ -176,7 +176,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   }
 }
 
-// Grant Storage Blob Data Contributor on stpomode to the App Service Managed Identity.
+// Grant Storage Blob Data Contributor on stpomode2 to the App Service Managed Identity.
 //
 // Gated because this is the only resource in the template that needs
 // Microsoft.Authorization/roleAssignments/write, which Contributor does not include. Granting the

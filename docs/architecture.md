@@ -627,12 +627,12 @@ picker handles. The app registration is created by `scripts/setup-microsoft-sign
 
 ## Infrastructure notes
 
-- `SecretsBootstrap` wires Key Vault via `DefaultAzureCredential` with an env-var fallback (logged as a warning). Never add connection strings or appsettings secrets. The VAPID private key is `PoMode--Push--VapidPrivateKey` in `kv-poshared`; nothing in the app writes it.
+- `SecretsBootstrap` wires Key Vault via `DefaultAzureCredential` with an env-var fallback (logged as a warning). Never add connection strings or appsettings secrets. The VAPID private key is `PoMode--Push--VapidPrivateKey` in `kv-poshared2`; nothing in the app writes it.
 - Auth lives in `Features/Auth`. `PoAuth` issues one session cookie from two doors: **guest** (every
   environment, Production included — the client mints one on first visit so the app works before
   anyone signs in) and **Microsoft** (Microsoft.Identity.Web, personal + work accounts, on only when
   `PoMode:AzureAd:ClientId` and `ClientSecret` are set; the secret is `PoMode--AzureAd--ClientSecret`
-  in `kv-poshared`). It reads that prefixed section, never `AzureAd`, because the shared vault holds
+  in `kv-poshared2`). It reads that prefixed section, never `AzureAd`, because the shared vault holds
   another app's unprefixed `AzureAd--*` secrets. Signing in with Microsoft moves the guest's jobs
   across (`JobStore.ReassignOwnerAsync`); a guest is never offered "sign out", since that session
   *is* their library. `FakeAuthHandler` (`X-Fake-User` / `X-Fake-Roles`) is registered only in

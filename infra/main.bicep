@@ -16,10 +16,10 @@ param enableCloudInterpreter bool = false
 
 var resourceGroupName = 'PoMode'
 var sharedResourceGroupName = 'PoShared'
-var storageAccountName = 'stpomode'
-var webAppName = 'app-pomode'
+var storageAccountName = 'stpomode2'
+var webAppName = 'app-pomode2'
 var appServicePlanName = 'asp-pomode-f1'
-var keyVaultName = 'kv-poshared'
+var keyVaultName = 'kv-poshared2'
 var appInsightsName = 'poappideinsights8f9c9a4e'
 
 // Target Resource Group
