@@ -10,7 +10,10 @@
    for one, keeps the ones already heard so Previous can go back, draws the boxes and strums the loop.
    Like the rest of Practice it is unscored: there is nothing to get wrong, only something to play. *@
 <RadzenCard class="jam-card" data-jam-id="@_jam?.Id" data-jam-count="@_heard.Count">
-    <RadzenText TextStyle="TextStyle.H6" TagName="TagName.H2" Text="Open guitar chord jam" />
+    @* A plain heading rather than RadzenText, so this file's styles reach it: on a phone the tab above
+       already names the jam, and the heading gives its room back to the chords while staying readable
+       to a screen reader. *@
+    <h2 class="rz-text-h6 jam-heading">Open guitar chord jam</h2>
     <p class="jam-intro">Open-position chords that leave strings ringing, so they sound richer than they are to play. Every press makes a new progression: hear it, and play along.</p>
 
     @if (_jam is null)
@@ -208,7 +211,15 @@
         StateHasChanged();
     }
 
-    private static ChordFingering Fingering(JamChordDto chord) => new(chord.Frets, chord.Fingers, 1, chord.Barres);
+    /// <summary>A shape slid past the 4th fret is drawn from its lowest fretted fret, numbered beside the
+    /// grid, so the slid C at the 3rd fret looks like the C it came from; open strings stay open.</summary>
+    private static ChordFingering Fingering(JamChordDto chord)
+    {
+        var fretted = chord.Frets.Where(fret => fret > 0).DefaultIfEmpty(1).ToList();
+        var baseFret = fretted.Max() > 4 ? fretted.Min() : 1;
+        int Shift(int fret) => fret > 0 ? fret - baseFret + 1 : fret;
+        return new([.. chord.Frets.Select(Shift)], chord.Fingers, baseFret, [.. chord.Barres.Select(Shift)]);
+    }
 
     private static string Describe(JamChordDto chord)
         => $"{chord.Symbol}: frets {string.Join(' ', chord.Frets.Select(f => f < 0 ? "x" : f.ToString()))}, lowest string first";

@@ -5,6 +5,14 @@ background they point at.
 
 One process: `PoMode.API` hosts the Blazor WASM client (`PoMode.Client`), the REST endpoints, a SignalR hub (`/hubs/analysis`), and the background analysis worker. `PoMode.Shared` holds DTOs and the source-generated `PoModeJsonContext`, plus — as the one deliberate carve-out from NET_RULES' "zero business logic" — pure, dependency-free lookup extensions over those DTOs that both API and Client need (e.g. `ModalResultExtensions.WindowIndexAt`, `TimelineSearch`, `ExecutorNames.Display` — the page-facing name for a recorded executor class name; `/diag` keeps the raw one), and the interpretation prompts with their reply reader and `GroundingCheck`, because the browser's built-in model is asked the same question as Ollama and checked the same way; anything with I/O, state, or musical judgment stays out.
 
+Inside `PoMode.API`, `Features/{Slice}` holds every slice; a slice without an `*Endpoints.cs` (BeatTracking,
+ChordRecognition, Lyrics, ModalAnalysis, Separation, Demo) is a pipeline stage or seeder the worker runs,
+not a route. Four folders sit beside `Features/` on purpose, because more than one slice needs them:
+`Audio/` (decode, FFT, mel, tempo - pure DSP), `Pipeline/` (the stage contracts every executor implements
+and the planner that picks one; inside `Features/Analysis` it would couple every slice to that one),
+`Infrastructure/` (auth, secrets, health, model catalog) and `Platform/` (generated from the shared
+`po-shared` template into every PoMode* repo - change the template, not the copy).
+
 ## Analysis pipeline (the core)
 
 Each uploaded song becomes a job that runs 4 stages in `AnalysisPipeline`: **Separating → PitchTracking → ChordDetecting → ModalAnalysis**. Every stage has multiple executors registered in `Program.cs` behind seams (`IStemSeparator`, `IPitchTracker`, `IChordRecognizer`), each tagged with an `ExecutionTier` (Local ONNX model, or ClientDelegated browser inference). `ExecutionPlanner.EffectiveRank` fixes the selection order: local model → browser → classic model-less DSP (`IsClassicFallback`: `YinPitchTracker`, `ViterbiChordRecognizer`) → Fake placeholder; within a rank, DI registration order breaks ties, so register new executors *after* the one that should stay the default. `AnalysisPipeline.RunWithFallbackAsync` falls through the same order when an executor fails and records who actually ran in `StageHistory`. If any Fake executor ran, the client shows the "USING MOCK DATA" banner.
@@ -363,6 +371,10 @@ replaces it with an offline pitch track once the take is decoded, because that p
 take at a steadier hop than a capture callback manages. Its consonance tick is silenced while a take
 is running, for the same reason the page carries no score.
 
+The page is three tabs: Sing (the backing row and the take card), Your takes (the history, counted
+on its label) and Guitar jam. The jam has its own key and needs none of the backing row, which is
+why the row lives inside the Sing tab rather than above all three.
+
 ### Open guitar chord jam
 
 The card at the foot of `/practice` is practice for the hands: progressions a beginner can finger
@@ -442,7 +454,7 @@ is the browser's own, so a browser without AAC (an editor's built-in browser, so
 builds) cannot do it, and says so. The server-side ffmpeg fallback that used to cover that case is
 gone (see removed.md).
 
-Checked by `node tests/loop-cut.check.mjs` (a synthetic take at 93 BPM with jittered hits, spliced to
+Checked by `node tests/js/loop-cut.check.mjs` (a synthetic take at 93 BPM with jittered hits, spliced to
 100), not by an E2EUI test: that suite is at its cap.
 
 ## First-run demo
@@ -558,8 +570,13 @@ sounds, spatial audio, the analysis-model pins, the written-interpretation write
 the keyboard shortcuts and the person's data. The pages people use carry only what they act on: the
 home page names a pinned model in one line ("2 analysis models pinned · change") rather than showing
 the choosers, and the analysis page's ask box has no writer dropdown. The header's ⋯ menu keeps only
-places to go (account, Settings, "Go to…", Diagnostics, Install). `ThemeState` is shared by the header's
+places to go (account, Settings, "Go to…", Install, and Diagnostics once switched on). `ThemeState` is shared by the header's
 quick toggle and Settings so each shows what the other set.
+
+**More tools** (`FeatureFlags`, localStorage `pm-advanced-tools`): the window inspector, "Rerun with
+another model", the Mode Lab's MIDI keyboard and Diagnostics (menu and Ctrl+K) are off until Settings
+switches them on, so a first visit carries the essentials. Each flag hides one control in place; none
+brings back a second arrangement of a page (docs/removed.md). `/diagnostics` itself still answers by URL.
 
 Ctrl+K (`js/shell/palette.js` → `CommandPalette.razor`) opens a combobox over a listbox of pages,
 settings and every finished song and beat in the library; each typed word must appear in the row.
@@ -690,4 +707,4 @@ picker handles. The app registration is created by `scripts/setup-microsoft-sign
   `APPLICATIONINSIGHTS_CONNECTION_STRING` is set (the Bicep sets it for the deployed app), signing in
   with the managed identity (`monitoring-role.bicep` grants Monitoring Metrics Publisher). `/diag`
   reports it as a boolean.
-- E2EUI's `AppFixture` boots the real app and uploads real WAVs generated by `TestCommon`'s `TestAudio`; E2EAPI uses `AuthedFactory` (in-process, FakeAuth headers). `TestCommon` holds shared audio/fixture helpers, not an app fixture.
+- E2EUI's `AppFixture` boots the real app and uploads real WAVs generated by `PoMode.TestCommon`'s `TestAudio`; E2EAPI uses `AuthedFactory` (in-process, FakeAuth headers). `PoMode.TestCommon` holds shared audio/fixture helpers, not an app fixture.

@@ -122,6 +122,29 @@
     font-size: 0.9rem;
 }
 
+/* The toolbar form: the title and size limit on the left, the same buttons on the right, one row on a
+   desktop and two lines on a phone. Still the drop target: the file inputs are the same ones. */
+.upload-hero--compact {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pm-space-2) var(--pm-space-3);
+    text-align: start;
+    padding: 0.6rem 0.9rem;
+    margin-top: 0;
+}
+
+.upload-hero--compact ::deep .upload-hero-sub {
+    flex: 1 1 12rem;
+    min-width: 0;
+    font-size: var(--pm-text-sm);
+}
+
+.upload-hero--compact .intake-actions {
+    justify-content: flex-end;
+}
+
 @media (max-width: 640px) {
     .upload-hero {
         padding: 0.9rem 0.75rem;

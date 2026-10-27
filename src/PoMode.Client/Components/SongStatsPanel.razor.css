@@ -48,27 +48,48 @@
     margin: var(--pm-space-2, 0.5rem) 0 0;
 }
 
-/* ---- The numbers behind it ---- */
+/* ---- The numbers behind it, and the chord shapes: drawer toggles ----
+   They keep the look the disclosures had (small caps, muted), so the card reads the same; what
+   changed is that they open beside the page rather than unfolding into it. */
+.stats-drawers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--pm-space-1) var(--pm-space-4, 1.5rem);
+}
 
-.stats-details > summary {
+.stats-drawer-toggle {
+    min-height: 1.5rem;
     padding: 0.3rem 0;
+    background: transparent;
+    border: 0;
     cursor: pointer;
+    font: inherit;
     font-size: var(--pm-text-xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--pm-fg-muted);
     font-weight: 600;
-    user-select: none;
 }
 
-.stats-details > summary:focus-visible {
+.stats-drawer-toggle::before {
+    content: "▸ ";
+}
+
+/* They replaced <summary> disclosures, which get a thumb's 44px on touch; these keep it. */
+@media (pointer: coarse) {
+    .stats-drawer-toggle {
+        min-height: 2.75rem;
+    }
+}
+
+.stats-drawer-toggle:hover {
+    color: var(--pm-fg);
+}
+
+.stats-drawer-toggle:focus-visible {
     outline: 2px solid var(--pm-accent);
     outline-offset: 2px;
     border-radius: 0.25rem;
-}
-
-.stats-details[open] > summary {
-    margin-bottom: var(--pm-space-2);
 }
 
 .song-stats-grid {
@@ -302,13 +323,12 @@
     flex-wrap: wrap;
 }
 
-.ask-input {
+/* A Radzen autocomplete, so its input carries the theme's own border and focus ring. */
+.ask-row ::deep .ask-input {
     flex: 1 1 10rem;
     min-width: 0;
-    padding: 0.4rem 0.6rem;
-    border-radius: 6px;
-    border: 1px solid var(--pm-border);
-    background: var(--pm-surface);
-    color: inherit;
-    font: inherit;
+}
+
+.ask-row ::deep .ask-input .rz-inputtext {
+    width: 100%;
 }

@@ -38,7 +38,7 @@ function noise(seed) {
 /// A generated stereo room: decaying noise with a slightly different tail per ear, so the reverb has
 /// width without a second asset. Cached per context — building 1.8 s of impulse on every play would
 /// cost a visible frame.
-export function room(ctx) {
+function room(ctx) {
     let convolver = rooms.get(ctx);
     if (convolver) {
         return convolver;

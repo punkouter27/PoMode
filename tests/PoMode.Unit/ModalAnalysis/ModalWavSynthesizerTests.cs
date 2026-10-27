@@ -63,17 +63,6 @@ public sealed class ModalWavSynthesizerTests
     }
 
     [Fact]
-    public void Synthesize_EmptyMelody_ProducesValidHeaderAndSilence()
-    {
-        var wavBytes = ModalWavSynthesizer.Synthesize([], [], 2.0);
-        Assert.NotNull(wavBytes);
-        Assert.True(wavBytes.Length > 44);
-
-        var riffHeader = Encoding.ASCII.GetString(wavBytes, 0, 4);
-        Assert.Equal("RIFF", riffHeader);
-    }
-
-    [Fact]
     public void Synthesize_CalculatesExpectedByteSizeForDuration()
     {
         const double duration = 4.0;

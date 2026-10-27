@@ -72,7 +72,7 @@ export async function separateVocals(left, right, runModel, onProgress = () => {
 }
 
 /** torch.stft / torch.istft for one MDX chunk, both channels at once. */
-export function createStft() {
+function createStft() {
     const { nFft, hop, dimF, dimT } = MDX;
     const half = nFft / 2;
     const fft = createFft(nFft);
@@ -164,7 +164,7 @@ export function createStft() {
  * An in-place complex FFT for any length whose factors are 2, 3, 4 and 5: Stockham autosort, one
  * pass per factor, twiddles precomputed. forward is unscaled; inverse divides by n.
  */
-export function createFft(n) {
+function createFft(n) {
     const factors = [];
     let rest = n;
     for (const radix of [4, 2, 3, 5]) {

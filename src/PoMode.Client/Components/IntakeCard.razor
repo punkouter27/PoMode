@@ -12,9 +12,14 @@
    (js/upload/resumable-upload.js) and ends as a job the page then follows (OnStarted), or, for a
    beat, opens in the Mode Lab. *@
 <RadzenCard class="intake-card">
-    <div class="upload-hero">
-        <RadzenIcon Icon="graphic_eq" class="upload-hero-icon" />
-        <RadzenText TextStyle="TextStyle.H6" TagName="TagName.H1" Text="Drop a track, get the theory" />
+    @* Compact once the library has songs of the person's own: one row of the same buttons over the list,
+       rather than a centred invitation that pushed the songs half a screen down. *@
+    <div class="upload-hero @(Compact ? "upload-hero--compact" : "")">
+        @if (!Compact)
+        {
+            <RadzenIcon Icon="graphic_eq" class="upload-hero-icon" />
+        }
+        <RadzenText TextStyle="TextStyle.H6" TagName="TagName.H1" Text="@(Compact ? "Add a track" : "Drop a track, get the theory")" />
         <RadzenText class="upload-hero-sub" Text=".mp3, .wav or .m4a · up to 100 MB" />
         @* A plain file input dressed as a Radzen button rather than RadzenUpload: RadzenUpload POSTs
            the file itself in one request, and the point here is that the bytes go over tus so a
@@ -121,6 +126,9 @@
 @code {
     /// <summary>The library's demo row, when it is the only row: what the empty state points at.</summary>
     [Parameter] public LibraryEntryDto? Demo { get; set; }
+
+    /// <summary>Drawn as one toolbar row rather than the centred invitation.</summary>
+    [Parameter] public bool Compact { get; set; }
 
     /// <summary>The analysis models pinned on the Settings page, by stage.</summary>
     [Parameter] public IReadOnlyDictionary<string, string> Pins { get; set; } = new Dictionary<string, string>();

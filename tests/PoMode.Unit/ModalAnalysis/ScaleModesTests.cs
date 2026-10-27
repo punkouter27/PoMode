@@ -14,6 +14,8 @@ public class ScaleModesTests
 
             Assert.Equal(["C", "D", "D#", "F", "G", "A", "A#"], result.PrimaryScaleNoteNames()!);
             Assert.Null((result with { PrimaryMode = null }).PrimaryScaleNoteNames());
+            // A flat key flattens its black keys only: E stays E, and a natural carries no stray character
+            Assert.Equal(["F", "G", "A", "Bb", "C", "D", "E"], ScaleModes.NoteNames(5, ScaleMode.Ionian));
         }
 
         // ModeDegreeOffsets AreAccurateForAllSevenChurchModes

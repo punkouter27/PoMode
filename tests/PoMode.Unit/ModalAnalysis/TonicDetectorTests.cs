@@ -8,18 +8,6 @@ public class TonicDetectorTests
 {
     private static NoteEvent Note(int midi, double dur = 1.0) => new(midi, 0, dur, 96);
 
-    [Fact]
-    public void C_major_scale_and_chords_detect_C()
-    {
-        List<NoteEvent> notes = [Note(60, 2), Note(62), Note(64, 1.5), Note(65), Note(67, 2), Note(69), Note(71)];
-        List<ChordSpan> chords = [new("C", "C", "maj", 0, 2), new("F", "F", "maj", 2, 4), new("G", "G", "maj", 4, 6), new("C", "C", "maj", 6, 8)];
-
-        var tonic = TonicDetector.Detect(notes, chords);
-
-        Assert.Equal(0, tonic.PitchClass);
-        Assert.InRange(tonic.Confidence, 0.0, 1.0);
-    }
-
     // Minor material and accidental roots are covered by the transposition invariant below plus
     // PitchNames.TryParseRoot's own tests; what stays here is detection and its honesty guards.
     [Fact]

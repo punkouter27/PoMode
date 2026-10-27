@@ -30,7 +30,7 @@ public sealed class OnnxStemSeparator(ModelRegistry registry, ILogger<OnnxStemSe
     private const int VocalsStemIndex = 3;
 
     /// <summary>How long the inference session survives after a job before its memory is released.
-    /// Long enough that batch uploads and back-to-back songs skip the model load; short enough
+    /// Long enough that back-to-back songs skip the model load; short enough
     /// that an idle machine gets its RAM back.</summary>
     private static readonly TimeSpan SessionKeepAlive = TimeSpan.FromMinutes(10);
 

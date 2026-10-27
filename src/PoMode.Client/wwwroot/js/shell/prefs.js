@@ -48,7 +48,7 @@ function motionQuery() {
 
 /// True when the OS asks for reduced motion. Treated as "unknown, assume no" if matchMedia is
 /// unavailable, because guessing "reduce" would silently strip the app for everyone on that browser.
-export function systemReducedMotion() {
+function systemReducedMotion() {
     const query = motionQuery();
     return query ? query.matches : false;
 }
@@ -139,7 +139,7 @@ export function init() {
     return snapshot();
 }
 
-export function snapshot() {
+function snapshot() {
     return { level: level(), muted: muted(), systemReduced: systemReducedMotion(), explicit: isExplicit() };
 }
 

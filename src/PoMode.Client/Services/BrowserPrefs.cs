@@ -70,6 +70,7 @@ public sealed record PracticeBacking(int TonicPitchClass, ScaleMode Mode, string
 
 [JsonSerializable(typeof(LibraryFilters))]
 [JsonSerializable(typeof(PracticeBacking))]
+[JsonSerializable(typeof(AdvancedTools))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(string))]
 internal sealed partial class PrefsJsonContext : JsonSerializerContext;

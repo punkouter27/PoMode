@@ -15,7 +15,8 @@ public class OpenChordJamsTests
         [""] = [0, 4, 7], ["m"] = [0, 3, 7], ["6"] = [0, 4, 7, 9], ["7"] = [0, 4, 7, 10], ["maj7"] = [0, 4, 7, 11],
         ["m7"] = [0, 3, 7, 10], ["m9"] = [0, 3, 7, 10, 2], ["add9"] = [0, 4, 7, 2], ["madd9"] = [0, 3, 7, 2],
         ["sus2"] = [0, 2, 7], ["sus4"] = [0, 5, 7], ["7sus4"] = [0, 5, 7, 10], ["maj7#11"] = [0, 4, 7, 11, 6],
-        ["m7add11"] = [0, 3, 7, 10, 5],
+        ["m7add11"] = [0, 3, 7, 10, 5], ["maj9"] = [0, 4, 7, 11, 2], ["9"] = [0, 4, 7, 10, 2],
+        ["add9add11"] = [0, 4, 7, 2, 5],
     };
 
     private static int PitchClass(string name)
@@ -39,7 +40,8 @@ public class OpenChordJamsTests
             Assert.True(voicing.PitchClasses.IsSubsetOf(expected), $"{voicing.Symbol} sounds a note outside the chord");
             Assert.True(expected.Except(voicing.PitchClasses).All(pc => pc == (root + 7) % 12), $"{voicing.Symbol} leaves out more than the fifth");
             Assert.Equal(bass is null ? root : PitchClass(bass), voicing.Midi.Min() % 12);
-            Assert.All(voicing.Frets, fret => Assert.InRange(fret, -1, 4));
+            // A slid shape is the point of going up the neck; it still stays inside one hand's reach.
+            Assert.All(voicing.Frets, fret => Assert.InRange(fret, -1, voicing.Slid ? 9 : 4));
         }
 
         var library = OpenChordJams.Voicings.Select(v => (v.Symbol, string.Join(',', v.Frets))).ToHashSet();
@@ -51,6 +53,11 @@ public class OpenChordJamsTests
             var (tonic, mode) = jam.Key.Split(' ') is [var t, var m] ? (PitchClass(t), m) : throw new InvalidOperationException(jam.Key);
             var named = mode switch { "major" => ScaleMode.Ionian, "minor" => ScaleMode.Aeolian, _ => Enum.Parse<ScaleMode>(mode) };
             var scale = ScaleModes.Intervals(named).Select(i => (tonic + i) % 12).ToHashSet();
+            // The Spanish slide jams are Phrygian over a major home chord: its third is the one borrowed note.
+            if (named == ScaleMode.Phrygian)
+            {
+                scale.Add((tonic + 4) % 12);
+            }
 
             // A modal jam sounds the note that sets its mode apart, somewhere.
             if (named is not (ScaleMode.Ionian or ScaleMode.Aeolian))

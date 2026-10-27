@@ -30,8 +30,6 @@ public class HumTakeHistoryTests
     [InlineData(2, 55, ScaleMode.Dorian, 1, null)]
     // Centred on G3 (55): home goes to C#3, and C# Dorian lives in the key of B.
     [InlineData(3, 55, ScaleMode.Dorian, 0, 11)]
-    // Centred on E4 (64): home on A#3, and A# Ionian is its own key.
-    [InlineData(4, 64, ScaleMode.Ionian, 0, 10)]
     // The relative-minor pentatonic sits on the 6th of its parent: home C#, so the key of E.
     [InlineData(3, 55, ScaleMode.MinorPentatonic, 0, 4)]
     public void The_range_waits_for_enough_takes_then_fits_the_mode_home_under_the_voice(

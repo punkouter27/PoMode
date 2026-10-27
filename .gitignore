@@ -16,3 +16,5 @@ publish/
 webapp.zip
 *.m4a
 SCREENSHOTS/
+.aura/
+.vscode/

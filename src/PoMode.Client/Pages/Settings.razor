@@ -3,6 +3,7 @@
 @inject AnalysisClient Analysis
 @inject BrowserPrefs Prefs
 @inject ThemeState Theme
+@inject FeatureFlags Flags
 @inject IJSRuntime JS
 @inject DialogService Dialogs
 @inject NavigationManager Navigation
@@ -123,6 +124,31 @@
         </section>
     }
 
+    <section class="settings-section" aria-labelledby="settings-tools" id="more-tools">
+        <h2 class="pm-label" id="settings-tools">More tools</h2>
+        <p class="settings-hint">Off to start with, so each page shows what most people use. Switch one on and it appears where it belongs.</p>
+        <div class="settings-row">
+            <label class="settings-name" for="tool-inspector">Window inspector</label>
+            <RadzenSwitch Value="@Flags.Tools.WindowInspector" Change="@(on => Flags.SetAsync(Flags.Tools with { WindowInspector = on }))" Name="tool-inspector" />
+            <span class="settings-hint">Under a song's timeline: the notes and mode scores of the moment you click.</span>
+        </div>
+        <div class="settings-row">
+            <label class="settings-name" for="tool-rerun">Rerun with another model</label>
+            <RadzenSwitch Value="@Flags.Tools.Rerun" Change="@(on => Flags.SetAsync(Flags.Tools with { Rerun = on }))" Name="tool-rerun" />
+            <span class="settings-hint">Beside a song's headline: read it again with a different analysis model.</span>
+        </div>
+        <div class="settings-row">
+            <label class="settings-name" for="tool-midi">MIDI keyboard</label>
+            <RadzenSwitch Value="@Flags.Tools.Midi" Change="@(on => Flags.SetAsync(Flags.Tools with { Midi = on }))" Name="tool-midi" />
+            <span class="settings-hint">In the Mode Lab: play the sounding mode from a connected keyboard.</span>
+        </div>
+        <div class="settings-row">
+            <label class="settings-name" for="tool-diagnostics">Diagnostics</label>
+            <RadzenSwitch Value="@Flags.Tools.Diagnostics" Change="@(on => Flags.SetAsync(Flags.Tools with { Diagnostics = on }))" Name="tool-diagnostics" />
+            <span class="settings-hint">In the ⋯ menu and Ctrl+K: the server's models, queue and hardware.</span>
+        </div>
+    </section>
+
     <section class="settings-section" aria-labelledby="settings-keys" id="shortcuts">
         <h2 class="pm-label" id="settings-keys">Keyboard shortcuts</h2>
         <dl class="settings-keys">
@@ -133,7 +159,10 @@
             <dt>Mouse wheel</dt><dd>Zoom the timeline</dd>
             <dt>Click and drag</dt><dd>Pan the timeline</dd>
             <dt>Click</dt><dd>Seek there and inspect that window</dd>
-            <dt>MIDI keyboard</dt><dd>Play the Mode Lab's sounding mode</dd>
+            @if (Flags.Tools.Midi)
+            {
+                <dt>MIDI keyboard</dt><dd>Play the Mode Lab's sounding mode</dd>
+            }
         </dl>
     </section>
 
@@ -169,6 +198,7 @@
     protected override async Task OnInitializedAsync()
     {
         Theme.Changed += OnThemeChanged;
+        await Flags.LoadAsync();
         try
         {
             var stages = await Analysis.GetExecutorsAsync();
@@ -355,6 +385,8 @@
             {
                 await Prefs.RemoveAsync(key);
             }
+            // Through the shared state, not just storage, so the header's menu drops Diagnostics now.
+            await Flags.SetAsync(new());
             Notifications.Notify(NotificationSeverity.Success, "Deleted", $"{deleted} {(deleted == 1 ? "item" : "items")} removed.");
             Navigation.NavigateTo("");
         }

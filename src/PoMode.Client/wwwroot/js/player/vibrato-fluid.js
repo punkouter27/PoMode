@@ -58,7 +58,7 @@ const FIRST_PUSH_MS = 2000;
 /// Answers { rate, depth, slope } — rate in Hz (0 when steady, null when the track is too sparse to
 /// resolve one), depth in cents (amplitude, not peak-to-peak), slope in cents a second at the end —
 /// or null when there is too little to measure.
-export function measureVibrato(points, resolvesRate = true) {
+function measureVibrato(points, resolvesRate = true) {
     if (!points || points.length < 6) {
         return null;
     }

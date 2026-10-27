@@ -485,7 +485,7 @@ img, svg, video, canvas {
 
 /* Effect level. 'subtle' keeps the glass but stops paying for a wide blur and a noise pass on every
    card; 'off' drops the whole treatment to a flat opaque surface, which is also the cheapest thing
-   the browser can composite. Driven by the data-fx stamp from js/fx-prefs.js. */
+   the browser can composite. Driven by the data-fx stamp from js/shell/prefs.js. */
 :root[data-fx="subtle"] {
     --pm-glass-blur: 8px;
     --pm-glass-sat: 120%;
@@ -565,7 +565,7 @@ img, svg, video, canvas {
 }
 
 /* Motion accessibility: kill decorative animation everywhere in one move.
-   Two triggers, matching js/fx-prefs.js exactly. The OS preference still switches this on by
+   Two triggers, matching js/shell/prefs.js exactly. The OS preference still switches this on by
    default, but an explicit "Full" choice in the app's own effects control overrides it — the user
    has answered the question more directly there than the OS setting did. Choosing "Off" in the app
    applies it whatever the OS says. */

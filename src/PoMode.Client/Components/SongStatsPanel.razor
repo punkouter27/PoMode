@@ -4,6 +4,7 @@
 @using PoMode.Client.Services
 @inject AnalysisClient Client
 @inject IJSRuntime JS
+@inject DialogService Dialogs
 @inject BrowserPrefs Prefs
 @implements IAsyncDisposable
 
@@ -21,146 +22,14 @@
         <div class="stats-col">
             <p class="fingerprint-text">@stats.Fingerprint</p>
 
-            @* The measured figures behind the fingerprint paragraph, which already says the same things in
-               prose — so they open on request. <details> keeps them in the document and one click away. *@
-            <details class="stats-details">
-                <summary>The numbers behind it</summary>
-                <div class="song-stats-grid">
-                    <div class="stat-box">
-                        <span class="pm-label stat-title">Melodic motion</span>
-                        <div class="stat-highlight">
-                            <span class="stat-badge">@($"{stats.Motion.StepPercent:0}% steps")</span>
-                            <span class="stat-badge">@($"{stats.Motion.LeapPercent:0}% leaps")</span>
-                        </div>
-                        <div class="stat-row"><span>Repeated pitches</span> <strong>@($"{stats.Motion.RepeatPercent:0.0}%")</strong></div>
-                        <div class="stat-row"><span>Average interval</span> <strong>@($"{stats.Motion.AverageIntervalSemitones:0.00} st")</strong></div>
-                        @if (stats.BiggestLeap is { } leap)
-                        {
-                            <div class="stat-row">
-                                <span>Widest leap</span>
-                                <strong>@($"{leap.Semitones} st {(leap.Ascending ? "up" : "down")} · {leap.FromLabel}→{leap.ToLabel} at {Clock(leap.AtSec)}")</strong>
-                            </div>
-                        }
-                        <div class="stat-row"><span>Contour</span> <strong>@($"{stats.Contour.Shape} ({stats.Contour.RisingPercent:0}% rising)")</strong></div>
-                        <div class="stat-row"><span>Start to finish</span> <strong>@($"{stats.Contour.NetSemitones:+#;-#;0} st")</strong></div>
-                    </div>
-
-                    <div class="stat-box">
-                        <span class="pm-label stat-title">Rhythm</span>
-                        @if (stats.Rhythm.BeatGridUsable)
-                        {
-                            <div class="stat-highlight">
-                                <span class="stat-badge">@($"{stats.Rhythm.OnBeatPercent:0}% on the beat")</span>
-                                <span class="stat-badge @(stats.Rhythm.SyncopationPercent >= 25 ? "badge-warning" : "")">
-                                    @($"{stats.Rhythm.SyncopationPercent:0}% syncopated")
-                                </span>
-                            </div>
-                            @foreach (var bucket in stats.Rhythm.NoteValues)
-                            {
-                                <div class="stat-row"><span>@bucket.Label</span> <strong>@($"{bucket.Count} ({bucket.Percent:0}%)")</strong></div>
-                            }
-                        }
-                        else
-                        {
-                            @* Saying "0% syncopated" here would be a fabricated number, not a measured one. *@
-                            <div class="stat-row"><span>No reliable beat grid was found, so onset placement is unknown.</span></div>
-                        }
-                    </div>
-
-                    <div class="stat-box">
-                        <span class="pm-label stat-title">Phrases</span>
-                        <div class="stat-highlight">
-                            <span class="range-span">@stats.Phrases.Count</span>
-                            <span class="stat-badge">@($"avg {stats.Phrases.AverageSec:0.0}s")</span>
-                        </div>
-                        <div class="stat-row"><span>Notes per phrase</span> <strong>@($"{stats.Phrases.AverageNotes:0.0}")</strong></div>
-                        <div class="stat-row"><span>Longest phrase</span> <strong>@($"{stats.Phrases.LongestSec:0.0}s from {Clock(stats.Phrases.LongestStartSec)}")</strong></div>
-                        <div class="stat-row stat-note"><span>Split wherever the singer rests longer than half a second.</span></div>
-                    </div>
-
-                    <div class="stat-box">
-                        <span class="pm-label stat-title">Harmony</span>
-                        <div class="stat-highlight">
-                            <span class="range-span">@($"{stats.ChordVocabulary.UniqueChords} chords")</span>
-                            @if (stats.HarmonicRhythm.BeatGridUsable && stats.HarmonicRhythm.AverageChordBeats > 0)
-                            {
-                                <span class="stat-badge">@($"every {stats.HarmonicRhythm.AverageChordBeats:0.0} beats")</span>
-                            }
-                            else if (stats.HarmonicRhythm.AverageChordSec > 0)
-                            {
-                                <span class="stat-badge">@($"every {stats.HarmonicRhythm.AverageChordSec:0.0}s")</span>
-                            }
-                        </div>
-                        @foreach (var chord in stats.ChordVocabulary.TopChords)
-                        {
-                            <div class="stat-row"><span>@chord.Symbol</span> <strong>@($"{chord.Count} ({chord.Percent:0}%)")</strong></div>
-                        }
-                        @foreach (var move in stats.ChordVocabulary.TopMoves)
-                        {
-                            <div class="stat-row"><span>@($"{move.From} → {move.To}")</span> <strong>@($"{move.Count}×")</strong></div>
-                        }
-                    </div>
-
-                    <div class="stat-box">
-                        <span class="pm-label stat-title">Melody vs chord</span>
-                        @if (stats.ChordTones.ClassifiedNotes > 0)
-                        {
-                            <div class="stat-highlight">
-                                <span class="stat-badge @(stats.ChordTones.ConsonancePercent >= 60 ? "badge-success" : "")">
-                                    @($"{stats.ChordTones.ConsonancePercent:0}% chord tones")
-                                </span>
-                            </div>
-                            <div class="stat-row"><span>Root</span> <strong>@($"{stats.ChordTones.RootPercent:0.0}%")</strong></div>
-                            <div class="stat-row"><span>Third</span> <strong>@($"{stats.ChordTones.ThirdPercent:0.0}%")</strong></div>
-                            <div class="stat-row"><span>Fifth</span> <strong>@($"{stats.ChordTones.FifthPercent:0.0}%")</strong></div>
-                            <div class="stat-row"><span>Seventh</span> <strong>@($"{stats.ChordTones.SeventhPercent:0.0}%")</strong></div>
-                            <div class="stat-row"><span>Other tension</span> <strong>@($"{stats.ChordTones.TensionPercent:0.0}%")</strong></div>
-                        }
-                        else
-                        {
-                            <div class="stat-row"><span>No chord was sounding under the transcribed notes.</span></div>
-                        }
-                    </div>
-
-                    @* Only when the tempo actually moves bar to bar: a flat line across a programmed track
-                       is noise. The canvas's tempo strip draws the same map over time; this is its figures. *@
-                    @if (stats.TempoMap is { Measures.Count: > 1 } tempo)
-                    {
-                        <div class="stat-box">
-                            <span class="pm-label stat-title">Tempo, bar by bar</span>
-                            <div class="stat-row stat-note">
-                                <span>@(tempo.IsSteady
-                                    ? $"Holds at about {tempo.MedianBpm:0} BPM the whole way through — machine-steady."
-                                    : $"Moves from {tempo.MinBpm:0} to {tempo.MaxBpm:0} BPM, around {tempo.MedianBpm:0}. Amber bars are where it changed.")</span>
-                            </div>
-                            <div class="tempo-track">
-                                @foreach (var measure in tempo.Measures)
-                                {
-                                    <div class="tempo-bar @(measure.Changed ? "tempo-changed" : "")"
-                                         title="@($"Bar {measure.Number} · {measure.Bpm:0.0} BPM at {Clock(measure.StartSec)}")">
-                                        <div class="tempo-fill" style="--pm-fill: @(Height(tempo, measure))"></div>
-                                    </div>
-                                }
-                            </div>
-                            <div class="tempo-scale">
-                                <span>@($"{tempo.MinBpm:0}")</span>
-                                <span>bar 1 → @tempo.Measures[^1].Number</span>
-                                <span>@($"{tempo.MaxBpm:0}")</span>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </details>
-
-            @* The chords as a player fingers them. Folded like the numbers, and only drawn once opened,
-               because the fingerings are a quarter-megabyte file most readers never need. *@
-            <details class="stats-details" data-shapes @ontoggle="@(() => _shapesOpened = true)">
-                <summary>Play the chords</summary>
-                @if (_shapesOpened)
-                {
-                    <ChordShapes @key="JobId" JobId="@JobId" />
-                }
-            </details>
+            @* The measured figures behind the paragraph, and the chords as a player fingers them, open
+               beside the page rather than inside it, as "Why this mode?" does: unfolded in place they
+               pushed the singer and the conversation a screen further down. The fingerings are a
+               quarter-megabyte file most readers never need, so they load only when their drawer opens. *@
+            <div class="stats-drawers">
+                <button class="stats-drawer-toggle" type="button" aria-haspopup="dialog" @onclick="OpenNumbersAsync">The numbers behind it</button>
+                <button class="stats-drawer-toggle" type="button" aria-haspopup="dialog" data-shapes @onclick="OpenShapesAsync">Play the chords</button>
+            </div>
 
         </div>
 
@@ -269,34 +138,26 @@
                     </div>
                 }
 
-                @if (_interpretation is null || _conversation.Count == 0)
+                @if (_interpretation is null)
                 {
                     <div class="ask-starters">
-                        @if (_interpretation is null)
-                        {
-                            <RadzenButton class="ask-starter ask-starter-summary" Size="ButtonSize.Small"
-                                          ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined"
-                                          Disabled="@(_busy || _asking)" Click="@InterpretAsync"
-                                          Text="@(_busy ? "Writing…" : SummaryStarter)" />
-                        }
-                        @if (_conversation.Count == 0)
-                        {
-                            @foreach (var starter in Starters)
-                            {
-                                <RadzenButton class="ask-starter" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
-                                              Disabled="@(_busy || _asking)" Click="@(() => AskAsync(starter))"
-                                              Text="@starter" />
-                            }
-                        }
+                        <RadzenButton class="ask-starter ask-starter-summary" Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined"
+                                      Disabled="@(_busy || _asking)" Click="@InterpretAsync"
+                                      Text="@(_busy ? "Writing…" : SummaryStarter)" />
                     </div>
                 }
 
                 <div class="ask-row">
-                    @* Not one of the starters: a placeholder that repeats a chip reads as a question
-                       already typed in, beside an Ask button that stays disabled. *@
-                    <input class="ask-input" type="text" placeholder="Or ask your own question…"
-                           @bind="_question" @bind:event="oninput" @onkeydown="OnAskKeyDown"
-                           disabled="@_asking" aria-label="Ask a question about this song" />
+                    @* The openers are the box's own suggestions, offered the moment it is focused, rather
+                       than a row of chips above it: one place to ask, and four lines back on a phone.
+                       Picking one asks it; typing filters them or asks anything else. The placeholder
+                       is not one of them, so it never reads as a question already typed in. *@
+                    <RadzenAutoComplete class="ask-input" Data="@OpenStarters" @bind-Value="_question"
+                                        OpenOnFocus="true" MinLength="0" FilterOperator="StringFilterOperator.Contains"
+                                        Placeholder="Ask a question, or pick one…" Disabled="@_asking"
+                                        SelectedItemChanged="@(item => item is string picked ? AskAsync(picked) : Task.CompletedTask)"
+                                        @onkeydown="OnAskKeyDown" InputAttributes="@AskInputAttributes" />
                     <RadzenButton Text="@(_asking ? "Thinking…" : "Ask")" Size="ButtonSize.Small"
                                   ButtonStyle="ButtonStyle.Primary"
                                   Disabled="@(_asking || string.IsNullOrWhiteSpace(_question))"
@@ -320,6 +181,155 @@
 }
 
 @code {
+    /// <summary>The drawers' shape: the one the analysis view's "Why this mode?" opens in.</summary>
+    private static SideDialogOptions Drawer => new()
+    {
+        Position = DialogPosition.Right,
+        ShowMask = false,
+        CloseDialogOnOverlayClick = true,
+        Width = "min(30rem, 100vw)",
+        CssClass = "pm-drawer",
+    };
+
+    private async Task OpenNumbersAsync()
+    {
+        if (Stats is { } stats)
+        {
+            await Dialogs.OpenSideAsync<DrawerContent>("The numbers behind it",
+                new Dictionary<string, object?> { [nameof(DrawerContent.Content)] = Numbers(stats) }, Drawer);
+        }
+    }
+
+    private async Task OpenShapesAsync()
+        => await Dialogs.OpenSideAsync<ChordShapes>("Play the chords",
+            new Dictionary<string, object?> { [nameof(ChordShapes.JobId)] = JobId }, Drawer);
+
+    private RenderFragment Numbers(SongStats stats) => @<div class="song-stats-grid">
+            <div class="stat-box">
+                <span class="pm-label stat-title">Melodic motion</span>
+                <div class="stat-highlight">
+                    <span class="stat-badge">@($"{stats.Motion.StepPercent:0}% steps")</span>
+                    <span class="stat-badge">@($"{stats.Motion.LeapPercent:0}% leaps")</span>
+                </div>
+                <div class="stat-row"><span>Repeated pitches</span> <strong>@($"{stats.Motion.RepeatPercent:0.0}%")</strong></div>
+                <div class="stat-row"><span>Average interval</span> <strong>@($"{stats.Motion.AverageIntervalSemitones:0.00} st")</strong></div>
+                @if (stats.BiggestLeap is { } leap)
+                {
+                    <div class="stat-row">
+                        <span>Widest leap</span>
+                        <strong>@($"{leap.Semitones} st {(leap.Ascending ? "up" : "down")} · {leap.FromLabel}→{leap.ToLabel} at {Clock(leap.AtSec)}")</strong>
+                    </div>
+                }
+                <div class="stat-row"><span>Contour</span> <strong>@($"{stats.Contour.Shape} ({stats.Contour.RisingPercent:0}% rising)")</strong></div>
+                <div class="stat-row"><span>Start to finish</span> <strong>@($"{stats.Contour.NetSemitones:+#;-#;0} st")</strong></div>
+            </div>
+
+            <div class="stat-box">
+                <span class="pm-label stat-title">Rhythm</span>
+                @if (stats.Rhythm.BeatGridUsable)
+                {
+                    <div class="stat-highlight">
+                        <span class="stat-badge">@($"{stats.Rhythm.OnBeatPercent:0}% on the beat")</span>
+                        <span class="stat-badge @(stats.Rhythm.SyncopationPercent >= 25 ? "badge-warning" : "")">
+                            @($"{stats.Rhythm.SyncopationPercent:0}% syncopated")
+                        </span>
+                    </div>
+                    @foreach (var bucket in stats.Rhythm.NoteValues)
+                    {
+                        <div class="stat-row"><span>@bucket.Label</span> <strong>@($"{bucket.Count} ({bucket.Percent:0}%)")</strong></div>
+                    }
+                }
+                else
+                {
+                    @* Saying "0% syncopated" here would be a fabricated number, not a measured one. *@
+                    <div class="stat-row"><span>No reliable beat grid was found, so onset placement is unknown.</span></div>
+                }
+            </div>
+
+            <div class="stat-box">
+                <span class="pm-label stat-title">Phrases</span>
+                <div class="stat-highlight">
+                    <span class="range-span">@stats.Phrases.Count</span>
+                    <span class="stat-badge">@($"avg {stats.Phrases.AverageSec:0.0}s")</span>
+                </div>
+                <div class="stat-row"><span>Notes per phrase</span> <strong>@($"{stats.Phrases.AverageNotes:0.0}")</strong></div>
+                <div class="stat-row"><span>Longest phrase</span> <strong>@($"{stats.Phrases.LongestSec:0.0}s from {Clock(stats.Phrases.LongestStartSec)}")</strong></div>
+                <div class="stat-row stat-note"><span>Split wherever the singer rests longer than half a second.</span></div>
+            </div>
+
+            <div class="stat-box">
+                <span class="pm-label stat-title">Harmony</span>
+                <div class="stat-highlight">
+                    <span class="range-span">@($"{stats.ChordVocabulary.UniqueChords} chords")</span>
+                    @if (stats.HarmonicRhythm.BeatGridUsable && stats.HarmonicRhythm.AverageChordBeats > 0)
+                    {
+                        <span class="stat-badge">@($"every {stats.HarmonicRhythm.AverageChordBeats:0.0} beats")</span>
+                    }
+                    else if (stats.HarmonicRhythm.AverageChordSec > 0)
+                    {
+                        <span class="stat-badge">@($"every {stats.HarmonicRhythm.AverageChordSec:0.0}s")</span>
+                    }
+                </div>
+                @foreach (var chord in stats.ChordVocabulary.TopChords)
+                {
+                    <div class="stat-row"><span>@chord.Symbol</span> <strong>@($"{chord.Count} ({chord.Percent:0}%)")</strong></div>
+                }
+                @foreach (var move in stats.ChordVocabulary.TopMoves)
+                {
+                    <div class="stat-row"><span>@($"{move.From} → {move.To}")</span> <strong>@($"{move.Count}×")</strong></div>
+                }
+            </div>
+
+            <div class="stat-box">
+                <span class="pm-label stat-title">Melody vs chord</span>
+                @if (stats.ChordTones.ClassifiedNotes > 0)
+                {
+                    <div class="stat-highlight">
+                        <span class="stat-badge @(stats.ChordTones.ConsonancePercent >= 60 ? "badge-success" : "")">
+                            @($"{stats.ChordTones.ConsonancePercent:0}% chord tones")
+                        </span>
+                    </div>
+                    <div class="stat-row"><span>Root</span> <strong>@($"{stats.ChordTones.RootPercent:0.0}%")</strong></div>
+                    <div class="stat-row"><span>Third</span> <strong>@($"{stats.ChordTones.ThirdPercent:0.0}%")</strong></div>
+                    <div class="stat-row"><span>Fifth</span> <strong>@($"{stats.ChordTones.FifthPercent:0.0}%")</strong></div>
+                    <div class="stat-row"><span>Seventh</span> <strong>@($"{stats.ChordTones.SeventhPercent:0.0}%")</strong></div>
+                    <div class="stat-row"><span>Other tension</span> <strong>@($"{stats.ChordTones.TensionPercent:0.0}%")</strong></div>
+                }
+                else
+                {
+                    <div class="stat-row"><span>No chord was sounding under the transcribed notes.</span></div>
+                }
+            </div>
+
+            @* Only when the tempo actually moves bar to bar: a flat line across a programmed track
+               is noise. The canvas's tempo strip draws the same map over time; this is its figures. *@
+            @if (stats.TempoMap is { Measures.Count: > 1 } tempo)
+            {
+                <div class="stat-box">
+                    <span class="pm-label stat-title">Tempo, bar by bar</span>
+                    <div class="stat-row stat-note">
+                        <span>@(tempo.IsSteady
+                            ? $"Holds at about {tempo.MedianBpm:0} BPM the whole way through — machine-steady."
+                            : $"Moves from {tempo.MinBpm:0} to {tempo.MaxBpm:0} BPM, around {tempo.MedianBpm:0}. Amber bars are where it changed.")</span>
+                    </div>
+                    <div class="tempo-track">
+                        @foreach (var measure in tempo.Measures)
+                        {
+                            <div class="tempo-bar @(measure.Changed ? "tempo-changed" : "")"
+                                 title="@($"Bar {measure.Number} · {measure.Bpm:0.0} BPM at {Clock(measure.StartSec)}")">
+                                <div class="tempo-fill" style="--pm-fill: @(Height(tempo, measure))"></div>
+                            </div>
+                        }
+                    </div>
+                    <div class="tempo-scale">
+                        <span>@($"{tempo.MinBpm:0}")</span>
+                        <span>bar 1 → @tempo.Measures[^1].Number</span>
+                        <span>@($"{tempo.MaxBpm:0}")</span>
+                    </div>
+                </div>
+            }
+        </div>;
+
     [Parameter, EditorRequired] public required string JobId { get; set; }
 
     /// <summary>Loaded by the analysis view, which shares them with the "Why this mode?" panel.</summary>
@@ -330,8 +340,6 @@
 
     private VoiceProfileDto? _voice;
 
-    /// <summary>Set by the first opening of "Play the chords"; the shapes load from then on.</summary>
-    private bool _shapesOpened;
     private SongVoiceFitDto? _voiceFit;
     private bool _voiceLoading;
     private List<InterpreterOptionDto>? _interpreters;
@@ -685,6 +693,14 @@
         "What makes this hard to sing?",
         "How does the melody sit against the chords?",
     ];
+
+    /// <summary>The openers not yet asked: one already answered above would only be asked again.</summary>
+    private IEnumerable<string> OpenStarters => Starters.Where(s => !_conversation.Any(turn => turn.Question == s));
+
+    private static readonly Dictionary<string, object> AskInputAttributes = new()
+    {
+        ["aria-label"] = "Ask a question about this song",
+    };
 
     private async Task AskAsync(string question)
     {

@@ -3,6 +3,7 @@
 @inject NavigationManager Navigation
 @inject SessionState Session
 @inject ThemeState Theme
+@inject FeatureFlags Flags
 @using PoMode.Shared.Account
 @implements IAsyncDisposable
 
@@ -30,6 +31,12 @@
         {
             <span class="session-name" id="session-name" data-session-kind="@Session.Current.Kind">@who</span>
         }
+        @* The palette searches every song, beat, page and setting; Ctrl+K alone left it to people who
+           already knew it was there. A labelled button on a desktop, the glass alone on a phone. *@
+        <button class="icon-button search-toggle" type="button" @onclick="OpenPalette" id="open-search"
+                title="Search songs, pages and settings (Ctrl K)" aria-label="Search songs, pages and settings" aria-haspopup="dialog">
+            <RadzenIcon Icon="search" /><span class="search-label">Search</span><kbd class="search-kbd">Ctrl K</kbd>
+        </button>
         <button class="icon-button theme-toggle" type="button" @onclick="Theme.CycleAsync"
                 title="Theme: follows the system by default; click to override" aria-label="@($"Theme: {Theme.Label}")">
             @Theme.Glyph
@@ -81,9 +88,12 @@
                 <button class="overflow-item" type="button" role="menuitem" @onclick="OpenPalette">
                     Go to… <kbd class="overflow-kbd">Ctrl K</kbd>
                 </button>
-                <a class="overflow-item" role="menuitem" href="diagnostics" @onclick="CloseOverflow">
-                    Diagnostics
-                </a>
+                @if (Flags.Tools.Diagnostics)
+                {
+                    <a class="overflow-item" role="menuitem" href="diagnostics" @onclick="CloseOverflow">
+                        Diagnostics
+                    </a>
+                }
                 @* Offered only when the browser has actually handed us an install prompt, so the
                    item is never a button that does nothing. *@
                 @if (_canInstall)
@@ -160,6 +170,7 @@
     {
         Session.Changed += OnSessionChanged;
         Theme.Changed += OnSessionChanged;
+        Flags.Changed += OnSessionChanged;
         try
         {
             await Session.EnsureAsync();
@@ -237,6 +248,7 @@
             return;
         }
         await Theme.InitAsync();
+        await Flags.LoadAsync();
         // Before any effect module: init stamps data-fx on <html>, and every module below reads it
         // on the way up.
         _prefs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/prefs.js");
@@ -297,6 +309,7 @@
     {
         Session.Changed -= OnSessionChanged;
         Theme.Changed -= OnSessionChanged;
+        Flags.Changed -= OnSessionChanged;
         try
         {
             if (_palette is not null)

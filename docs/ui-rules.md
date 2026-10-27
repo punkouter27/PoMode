@@ -49,8 +49,18 @@ theme* — which is exactly what one hardcoded hex cannot do. The seven modes ge
   the literal text. It kept the Chords dropdown blank on both backing pages.
 
 - **Which buttons are not `RadzenButton`, on purpose:** the header's icon buttons and the rows of its
-  overflow menu (a menu, `role="menuitem"`), the text-sized disclosure toggles ("Why this mode?"), and
-  "+ New Track", which sits beside a download *link* and has to match it. Everything else is Radzen.
+  overflow menu (a menu, `role="menuitem"`), the text-sized disclosure and drawer toggles ("Why this mode?",
+  "The numbers behind it"). Everything else is Radzen.
+- **One action button per thing, the rest under its arrow.** The analysis page's Download MIDI,
+  Keep offline and Analyze another track are one `RadzenSplitButton`; three equal buttons wrapped
+  to a row of their own on a phone. The ask box's suggested questions are its `RadzenAutoComplete`
+  list, offered on focus, not a row of chips above it.
+- **Tabs for separate jobs on one route.** Practice is three `RadzenTabs` (Sing, Your takes, Guitar
+  jam) rendered client-side, so a take or a jam survives a look at another tab; leaving the jam tab
+  stops the jam.
+- **Accessibility is audited, not assumed.** `scripts/layout-audit.cs` runs axe-core (WCAG A/AA) on
+  every route in both themes. The two library findings it reports today come from inside Radzen
+  (the DataGrid's roles and `RadzenCheckBox`'s focusable inner input).
 - **Touch gets 44px.** Under `@media (pointer: coarse)` full-size buttons, disclosures, the header
   icons and the menu rows are at least 2.75rem tall; small buttons in dense rows keep their own phone
   layout. The 24px floor is for a pointer.
@@ -105,15 +115,26 @@ onto `data-*` for Playwright.
 ## Layout additions
 
 - **Settings** (`/settings`) holds every optional choice, each at its best value; the menu keeps only
-  places to go. Ctrl+K opens the palette.
+  places to go. Ctrl+K opens the palette. Its "More tools" section switches on the power-user
+  controls (inspector, rerun, MIDI, Diagnostics), all off by default; a flag hides one control in
+  place, never a second layout.
 - **`.pm-label`** is the one small-caps caption (section titles, figure labels); a component adds only
   what differs (a colour, a weight).
 - **Fluid type**: `--pm-text-sm`, `-md`, `-lg`, `-xl` are `clamp()`s that never go under the 12px floor.
-- **Drawers**: explanations that would push the canvas down open beside it (Radzen side dialogs).
+- **Drawers**: explanations that would push the canvas down open beside it (Radzen side dialogs):
+  "Why this mode?", the sections, "The numbers behind it" and "Play the chords". A fragment opens
+  in one through `DrawerContent.razor`, which keeps the owner's scoped styles.
+- **Search is a header button** as well as Ctrl+K: labelled "Search · Ctrl K" on a desktop, the
+  glass alone on a phone.
+- **The intake card shrinks to a toolbar** once the library holds a song of the person's own, and the
+  page then starts under the header instead of centring the card.
 - **Phone dock**: Play/Pause and the key dock at the foot of a phone's screen once the mixer's own
   transport has scrolled away, and only then.
 - **Sticky transport**: the Mode Lab's transport sticks under the header (`--pm-header-height`).
 
 Two documents are deliberately taller than a phone: the finished analysis page and the Mode Lab.
 Both are content that exists to be read and compared, and the alternative to scrolling them is
-hiding part of them. Every other route fits 390×844 and 1440×900 with no scrolling in either axis.
+hiding part of them. Practice's Guitar jam tab joins them on a phone only: its length is the
+generated progression's (four to six boxes and a sentence of one to five lines), so no fixed layout
+fits every one without hiding a chord. Practice's default tab fits.
+Every other route fits 390×844 and 1440×900 with no scrolling in either axis.

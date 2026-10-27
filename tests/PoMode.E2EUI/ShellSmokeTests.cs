@@ -24,9 +24,10 @@ public class ShellSmokeTests(AppFixture app)
         var hiddenOptions = new LocatorAssertionsToBeHiddenOptions { Timeout = AppFixture.ExpectTimeoutMs };
         await Assertions.Expect(page.GetByText("USING MOCK DATA")).ToBeHiddenAsync(hiddenOptions);
         await Assertions.Expect(page.GetByText("PoMode").First).ToBeVisibleAsync(expectOptions);
-        // Diagnostics is an operator's page: it sits in the overflow menu, not in the main nav.
+        // Diagnostics is an operator's page: off until Settings switches it on, then in the overflow menu.
         await page.GetByRole(AriaRole.Button, new() { Name = "More" }).ClickAsync();
-        await Assertions.Expect(page.GetByRole(AriaRole.Menuitem, new() { Name = "Diagnostics" })).ToBeVisibleAsync(expectOptions);
+        await Assertions.Expect(page.GetByRole(AriaRole.Menuitem, new() { Name = "Settings" })).ToBeVisibleAsync(expectOptions);
+        await Assertions.Expect(page.GetByRole(AriaRole.Menuitem, new() { Name = "Diagnostics" })).ToHaveCountAsync(0);
         await page.Keyboard.PressAsync("Escape");
 
         // Ctrl+K goes anywhere: typing a page's name and Enter lands on it. Settings is where the
@@ -38,5 +39,10 @@ public class ShellSmokeTests(AppFixture app)
         await page.Keyboard.PressAsync("Enter");
         await Assertions.Expect(page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex("/settings$"), new() { Timeout = AppFixture.ExpectTimeoutMs });
         await Assertions.Expect(page.GetByRole(AriaRole.Heading, new() { Name = "Settings", Level = 1 })).ToBeVisibleAsync(expectOptions);
+
+        // Switching the tool on shows it in the menu at once: the layout listens, no reload.
+        await page.Locator("#more-tools .settings-row", new() { HasText = "Diagnostics" }).Locator(".rz-switch").ClickAsync();
+        await page.GetByRole(AriaRole.Button, new() { Name = "More" }).ClickAsync();
+        await Assertions.Expect(page.GetByRole(AriaRole.Menuitem, new() { Name = "Diagnostics" })).ToBeVisibleAsync(expectOptions);
     }
 }

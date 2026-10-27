@@ -2,6 +2,7 @@
 @inject AnalysisClient Analysis
 @inject NavigationManager Navigation
 @inject ThemeState Theme
+@inject FeatureFlags Flags
 
 @* One keyboard way to anywhere: a page, a song in the library, a setting. Opened with Ctrl+K or from
    the ⋯ menu. A combobox over a listbox, so a screen reader hears the filter and the active row. *@
@@ -60,11 +61,12 @@
         new("Page", "Mode Lab", () => GoAsync("modes")),
         new("Page", "Practice", () => GoAsync("practice")),
         new("Page", "Settings", () => GoAsync("settings")),
-        new("Page", "Diagnostics", () => GoAsync("diagnostics")),
+        .. Flags.Tools.Diagnostics ? (Command[])[new("Page", "Diagnostics", () => GoAsync("diagnostics"))] : [],
         new("Setting", "Theme: follow my system", () => Theme.SetAsync("system")),
         new("Setting", "Theme: light", () => Theme.SetAsync("light")),
         new("Setting", "Theme: dark", () => Theme.SetAsync("dark")),
         new("Setting", "Analysis models", () => GoAsync("settings")),
+        new("Setting", "More tools: inspector, rerun, MIDI, diagnostics", () => GoAsync("settings#more-tools")),
         new("Setting", "Keyboard shortcuts", () => GoAsync("settings#shortcuts")),
         new("Setting", "Download everything I added", () => { Navigation.NavigateTo("api/account/export", forceLoad: true); return Task.CompletedTask; }),
         .. _songs,

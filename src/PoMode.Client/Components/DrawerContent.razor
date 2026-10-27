@@ -1,0 +1,7 @@
+@* Renders a fragment inside a Radzen side dialog, which opens components and not fragments. The fragment
+   is built by the component that owns it, so it keeps that component's scoped styles in the drawer. *@
+@Content
+
+@code {
+    [Parameter, EditorRequired] public required RenderFragment Content { get; set; }
+}

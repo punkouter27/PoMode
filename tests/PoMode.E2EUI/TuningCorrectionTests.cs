@@ -17,7 +17,7 @@ public class TuningCorrectionTests(AppFixture app)
     /// <summary>
     /// One WAV of the scale with every note detuned by the same amount, which is what a singer who
     /// is a few cents sharp throughout actually produces. Segments are concatenated past their
-    /// 44-byte headers and the RIFF sizes patched, the same way ModalHudTests builds a progression.
+    /// 44-byte headers and the RIFF sizes patched, the same way AnalysisPageTests builds a progression.
     /// </summary>
     private static byte[] DetunedScale(double cents)
     {

@@ -1,7 +1,9 @@
 @using PoMode.Shared.Analysis
 @inject AnalysisClient Client
 @inject DialogService Dialogs
+@inject FeatureFlags Flags
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 @implements IAsyncDisposable
 
 <div class="basic-container">
@@ -78,25 +80,22 @@
             </div>
 
             <div class="basic-actions-group">
-                @if (OnAnalyzeNew.HasDelegate)
-                {
-                    <button class="basic-btn-secondary" type="button" @onclick="() => OnAnalyzeNew.InvokeAsync()"
-                            title="Analyze a different audio file">
-                        + New Track
-                    </button>
-                }
-                <a class="basic-btn-secondary" href="@($"api/analysis/{Status.JobId}/midi")" target="_blank" rel="noopener"
-                   title="Download melody as standard MIDI file">
-                    Download MIDI
-                </a>
-                @* Keeps this song's readings and stems on the device (js/shell/offline.js), so it opens
-                   on a train. A toggle: pressed while kept. *@
-                <button class="basic-btn-secondary" type="button" @onclick="ToggleOfflineAsync" disabled="@_offlineBusy"
-                        aria-pressed="@(_offline ? "true" : "false")" data-offline="@(_offline ? "kept" : "no")"
-                        title="@(_offline ? "Kept on this device; press to free the space" : "Keep this song on this device so it opens without a connection")">
-                    @(_offlineBusy ? "Saving…" : _offline ? $"Kept offline{(_offlineMb is { } mb ? $" · {mb:0.#} MB" : "")}" : "Keep offline")
-                </button>
-                @if (OnRerun.HasDelegate && Status.Origin is null)
+                @* One button for what is done with this song, rather than three in a row that wrapped
+                   to a line of their own on a phone: the download is the press, keeping it offline and
+                   starting another track are under the arrow. *@
+                <RadzenSplitButton Text="Download MIDI" Icon="download" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                                   Click="@OnSongActionAsync" class="basic-song-actions" data-offline="@(_offline ? "kept" : "no")"
+                                   ButtonAriaLabel="Download the melody as a MIDI file" OpenAriaLabel="More for this song">
+                    @* Keeps this song's readings and stems on the device (js/shell/offline.js), so it
+                       opens on a train. Saying "Kept offline" is the toggle's pressed state. *@
+                    <RadzenSplitButtonItem Value="offline" Icon="@(_offline ? "cloud_done" : "cloud_download")" Disabled="@_offlineBusy"
+                                           Text="@(_offlineBusy ? "Saving…" : _offline ? $"Kept offline{(_offlineMb is { } mb ? $" · {mb:0.#} MB" : "")} · free it" : "Keep offline")" />
+                    @if (OnAnalyzeNew.HasDelegate)
+                    {
+                        <RadzenSplitButtonItem Value="new" Icon="add" Text="Analyze another track" />
+                    }
+                </RadzenSplitButton>
+                @if (OnRerun.HasDelegate && Status.Origin is null && Flags.Tools.Rerun)
                 {
                     <RerunMenu JobId="@Status.JobId" Ran="@RanBy" OnStarted="@(status => OnRerun.InvokeAsync(status))" />
                 }
@@ -128,7 +127,10 @@
                             JobId="@Status.JobId" Describe="true"
                             OnReady="@(element => _canvasElement = element)" />
             <div class="basic-canvas-foot">
-                <WindowInspector Windows="Visual.Windows" SelectedWindowIndex="SelectedWindowIndex" />
+                @if (Flags.Tools.WindowInspector)
+                {
+                    <WindowInspector Windows="Visual.Windows" SelectedWindowIndex="SelectedWindowIndex" />
+                }
                 @if (Visual.Sections.Count > 0)
                 {
                     <button class="basic-why-toggle" type="button" @onclick="ToggleSections"
@@ -165,7 +167,9 @@
         {
             <p class="basic-analyzed-with" data-analyzed-with="@string.Join(",", Executors.Select(e => e.Executor))">
                 Analyzed with
-                @foreach (var (tier, executor) in Executors)
+                @* Each executor named once: the demo's written score did both the notes and the chords,
+                   and listing it twice read as two different things. The attribute keeps every stage. *@
+                @foreach (var (tier, executor) in Executors.DistinctBy(e => e.Executor))
                 {
                     <span class="basic-executor"><TierBadge Tier="tier" /> @ExecutorNames.Display(executor)</span>
                 }
@@ -222,6 +226,23 @@
         }
     }
 
+    private async Task OnSongActionAsync(RadzenSplitButtonItem? item)
+    {
+        switch (item?.Value)
+        {
+            case null:
+                // An attachment: the browser downloads it and the page stays where it is.
+                Navigation.NavigateTo($"api/analysis/{Status.JobId}/midi", forceLoad: true);
+                break;
+            case "offline":
+                await ToggleOfflineAsync();
+                break;
+            case "new":
+                await OnAnalyzeNew.InvokeAsync();
+                break;
+        }
+    }
+
     private async Task ToggleOfflineAsync()
     {
         _offlineBusy = true;
@@ -270,6 +291,8 @@
     private SongStats? _stats;
     private string? _statsFor;
     private bool _statsLoading;
+
+    protected override Task OnInitializedAsync() => Flags.LoadAsync();
 
     protected override async Task OnParametersSetAsync()
     {

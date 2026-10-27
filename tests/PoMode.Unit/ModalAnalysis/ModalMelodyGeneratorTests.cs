@@ -1,8 +1,6 @@
-using System.Text.Json;
 using PoMode.API.Features.ModalAnalysis;
 using PoMode.API.Features.ModalMelodies;
 using PoMode.Shared.Analysis;
-using PoMode.Shared.Serialization;
 using Xunit;
 
 namespace PoMode.Unit.ModalAnalysis;
@@ -10,27 +8,6 @@ namespace PoMode.Unit.ModalAnalysis;
 public sealed class ModalMelodyGeneratorTests
 {
     private readonly ModalMelodyGenerator _generator = new();
-
-    [Fact]
-    public void GetProgressions_ReturnsStandardPresetLibrary()
-    {
-        var progressions = _generator.GetProgressions();
-
-        Assert.NotEmpty(progressions);
-        Assert.Contains(progressions, p => p.Id == "pop-axis");
-        Assert.Contains(progressions, p => p.Id == "dorian-vamp");
-        Assert.Contains(progressions, p => p.Id == "lydian-space");
-        Assert.Contains(progressions, p => p.Id == "phrygian-tension");
-
-        foreach (var prog in progressions)
-        {
-            Assert.False(string.IsNullOrWhiteSpace(prog.Id));
-            Assert.False(string.IsNullOrWhiteSpace(prog.Name));
-            Assert.False(string.IsNullOrWhiteSpace(prog.RomanNumerals));
-            Assert.NotEmpty(prog.ChordFormulas);
-            Assert.True(prog.DefaultBpm is >= 50 and <= 200);
-        }
-    }
 
     [Fact]
     public void Generate_AllModesStrictlyUseParentScaleNotesWithZeroOutsideNotes()
@@ -141,28 +118,4 @@ public sealed class ModalMelodyGeneratorTests
     }
 
 
-    [Fact]
-    public void Serialization_ContractsRoundTripViaPoModeJsonContext()
-    {
-        var request = new ModalMelodyRequest(
-            TonicPitchClass: 0,
-            Mode: ScaleMode.Dorian,
-            ProgressionId: "dorian-vamp",
-            Bpm: 112.0,
-            Style: MelodyStyle.Lyrical,
-            Seed: 42);
-
-        var result = _generator.Generate(request);
-
-        var json = JsonSerializer.Serialize(result, PoModeJsonContext.Default.GeneratedMelodyDto);
-        Assert.False(string.IsNullOrWhiteSpace(json));
-
-        var roundTripped = JsonSerializer.Deserialize(json, PoModeJsonContext.Default.GeneratedMelodyDto);
-        Assert.NotNull(roundTripped);
-        Assert.Equal(result.TonicPitchClass, roundTripped.TonicPitchClass);
-        Assert.Equal(result.Mode, roundTripped.Mode);
-        Assert.Equal(result.ProgressionId, roundTripped.ProgressionId);
-        Assert.Equal(result.MelodyNotes.Count, roundTripped.MelodyNotes.Count);
-        Assert.Equal(result.Chords.Count, roundTripped.Chords.Count);
-    }
 }

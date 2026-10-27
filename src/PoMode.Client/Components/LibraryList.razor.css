@@ -50,9 +50,12 @@
         background: var(--pm-surface);
     }
 
+    /* The row is the card, so the cells take its ground: left to Radzen, each cell kept a table
+       cell's own white and the key and tempo sat in patches on the grey card. */
     .library-grid ::deep .rz-grid-table td {
         border: 0 !important;
         padding: 0 !important;
+        background: transparent !important;
         color: var(--pm-fg-muted);
         font-size: var(--pm-text-sm);
     }

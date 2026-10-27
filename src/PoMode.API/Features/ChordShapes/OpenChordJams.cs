@@ -26,8 +26,12 @@ public static class OpenChordJams
     private static readonly string[] StringNames = ["low E", "A", "D", "G", "B", "high E"];
     private static readonly string[] Patterns = ["D-DU-UDU", "B-DUB-DU", "D-D-DUDU", "B-D-B-DU"];
 
-    /// <summary>One open-position chord as fingered, low E string first.</summary>
-    public sealed record Voicing(string Symbol, int Root, int[] Frets, int[] Fingers)
+    /// <summary>One open-position chord as fingered, low E string first. A rare one is a shape most
+    /// players never meet (a maj9, a 6 with the open B, a slash bass): it comes up now and then, not as
+    /// a matter of course, so a jam is mostly chords to learn and occasionally one to discover. A slid one
+    /// is an open shape moved up the neck with its open strings left ringing: it belongs to the slide
+    /// jams that teach that move and is never picked for a step on its own.</summary>
+    public sealed record Voicing(string Symbol, int Root, int[] Frets, int[] Fingers, bool Rare = false, bool Slid = false)
     {
         public int[] Midi { get; } = [.. Frets.Select((fret, s) => fret < 0 ? -1 : Tuning[s] + fret).Where(midi => midi >= 0)];
         public HashSet<int> PitchClasses { get; } = [.. Frets.Select((fret, s) => fret < 0 ? -1 : (Tuning[s] + fret) % 12).Where(pc => pc >= 0)];
@@ -89,7 +93,48 @@ public static class OpenChordJams
         new("Bm7add11", 11, [X, 2, 0, 2, 3, 0], [0, 1, 0, 2, 3, 0]),
         new("F#m7", 6, [2, X, 2, 2, 2, 0], [1, 0, 2, 3, 4, 0]),
         new("C#m7", 1, [X, 4, 2, 1, 0, 0], [0, 4, 2, 1, 0, 0]),
+
+        // The rare ones: each still open, still within the 4th fret, still only its chord's notes.
+        new("Cmaj9", 0, [X, 3, 0, 0, 0, 0], [0, 3, 0, 0, 0, 0], Rare: true),
+        new("Cmaj7#11", 0, [X, 3, 2, 0, 0, 2], [0, 3, 2, 0, 0, 1], Rare: true),
+        new("C/G", 0, [3, 3, 2, 0, 1, 0], [4, 3, 2, 0, 1, 0], Rare: true),
+        new("D6", 2, [X, X, 0, 2, 0, 2], [0, 0, 0, 1, 0, 2], Rare: true),
+        new("Emaj7", 4, [0, 2, 1, 1, 0, 0], [0, 3, 1, 2, 0, 0], Rare: true),
+        new("E6", 4, [0, 2, 2, 1, 2, 0], [0, 2, 3, 1, 4, 0], Rare: true),
+        new("Eadd9", 4, [0, 2, 4, 1, 0, 0], [0, 2, 4, 1, 0, 0], Rare: true),
+        new("E/G#", 4, [4, X, 2, 1, 0, 0], [4, 0, 2, 1, 0, 0], Rare: true),
+        new("F#m7add11", 6, [2, X, 2, 2, 0, 0], [1, 0, 2, 3, 0, 0], Rare: true),
+        new("Aadd9", 9, [X, 0, 2, 4, 2, 0], [0, 0, 1, 4, 2, 0], Rare: true),
+        new("Amadd9", 9, [X, 0, 2, 4, 1, 0], [0, 0, 2, 4, 1, 0], Rare: true),
+        new("A9", 9, [X, 0, 2, 4, 2, 3], [0, 0, 1, 3, 2, 4], Rare: true),
+        new("B7sus4", 11, [X, 2, 2, 2, 0, 0], [0, 1, 2, 3, 0, 0], Rare: true),
+
+        // Slid: the E shape up one fret and up three, the open B and high E kept; the C shape up two,
+        // the open G and high E kept. Same fingers as the shape they came from.
+        new("Fmaj7#11/E", 5, [0, 3, 3, 2, 0, 0], [0, 2, 3, 1, 0, 0], Slid: true),
+        new("G6/E", 7, [0, 5, 5, 4, 0, 0], [0, 2, 3, 1, 0, 0], Slid: true),
+        new("Dadd9add11", 2, [X, 5, 4, 0, 3, 0], [0, 3, 2, 0, 1, 0], Slid: true),
     ];
+
+    /// <summary>
+    /// Jams built on one shape slid along the neck while the open strings ring, written out rather than
+    /// generated: the E shape walked up a fret and three frets is the Spanish sound (E Phrygian with E
+    /// major as home, its raised third the one note the mode borrows, as flamenco does), and the C
+    /// shape up two frets is the V of G that keeps G and E sounding. Each is the symbols in order, as
+    /// written in <see cref="Voicings"/>, with the move described for the player.
+    /// </summary>
+    private static readonly (string Key, string Name, string[] Chords, string Feel)[] Slides =
+    [
+        ("E Phrygian", "I – ♭II – ♭III – ♭II", ["E", "Fmaj7#11/E", "G6/E", "Fmaj7#11/E"],
+            "Hold an E chord and slide those three fingers up one fret, then up three, and back: the open B and high E strings never move, and the shape walking over them is the Spanish sound."),
+        ("E Phrygian", "iv – ♭III – ♭II – I", ["Am", "G6/E", "Fmaj7#11/E", "E"],
+            "The Andalusian cadence, stepping down to home: from Am, make an E shape three frets up, slide it down to one fret up, then down to the open E. The open strings carry the flamenco ring."),
+        ("G major", "IV – V – IV – I", ["C", "Dadd9add11", "C", "G"],
+            "Play C, then slide every fretted finger up two frets for the V: the open G and high E keep ringing, so it sounds like D with a ninth and an eleventh added for free."),
+    ];
+
+    /// <summary>How often a jam is a slide jam instead of a generated one.</summary>
+    private const double SlideChance = 0.1;
 
     /// <summary>Keys and modes whose chords open shapes can cover, how often each comes up (major the
     /// most, Lydian the least), and progression shapes for each as scale degrees (0 is the tonic).</summary>
@@ -111,6 +156,10 @@ public static class OpenChordJams
     public static ChordJamDto Generate(int seed)
     {
         var random = new Random(seed);
+        if (random.NextDouble() < SlideChance)
+        {
+            return Slide(seed, random);
+        }
         for (var attempt = 0; ; attempt++)
         {
             var (mode, _, tonics, shapes) = PickKey(random);
@@ -160,6 +209,16 @@ public static class OpenChordJams
         }
     }
 
+    private static ChordJamDto Slide(int seed, Random random)
+    {
+        var (key, name, symbols, feel) = Slides[random.Next(Slides.Length)];
+        var chords = symbols.Select(symbol => Voicings.First(v => v.Symbol == symbol)).ToList();
+        return new ChordJamDto(
+            seed.ToString(System.Globalization.CultureInfo.InvariantCulture), name, key, feel,
+            72 + (4 * random.Next(11)), Patterns[random.Next(Patterns.Length)],
+            [.. chords.Select(v => new JamChordDto(v.Symbol, v.Frets, v.Fingers, Barres(v), v.Midi, 4))]);
+    }
+
     private static (ScaleMode Mode, double Weight, int[] Tonics, int[][] Shapes) PickKey(Random random)
     {
         var roll = random.NextDouble() * Keys.Sum(key => key.Weight);
@@ -180,18 +239,22 @@ public static class OpenChordJams
         var root = (tonic + intervals[degree]) % 12;
         var third = (intervals[(degree + 2) % 7] - intervals[degree] + 12) % 12;
         var fifth = (intervals[(degree + 4) % 7] - intervals[degree] + 12) % 12;
-        return fifth != 7 ? [] : [.. Voicings.Where(v => v.Root == root && v.PitchClasses.IsSubsetOf(scale) && (v.Third is null || v.Third == third))];
+        return fifth != 7 ? [] : [.. Voicings.Where(v => !v.Slid && v.Root == root && v.PitchClasses.IsSubsetOf(scale) && (v.Third is null || v.Third == third))];
     }
 
     /// <summary>Weighted: colour counts triple, strings left as they were count most (squared, so a
-    /// shape that keeps three strings ringing beats one that keeps one by far), and the very shape just
-    /// played counts for little, so a repeated step changes voicing (G, then G6).</summary>
+    /// shape that keeps three strings ringing beats one that keeps one by far), the very shape just
+    /// played counts for little, so a repeated step changes voicing (G, then G6), and a rare shape
+    /// counts for a fraction, so it turns up in some jams rather than most.</summary>
+    private const double RareWeight = 0.12;
+
     private static Voicing Pick(Random random, List<Voicing> options, Voicing? previous)
     {
         var weights = options.Select(v =>
             (v.HasColour ? 3.0 : 1.0)
             * Math.Pow(1 + (previous is null ? 0 : Shared(previous, v)), 2)
-            * (ReferenceEquals(v, previous) ? 0.2 : 1.0)).ToArray();
+            * (ReferenceEquals(v, previous) ? 0.2 : 1.0)
+            * (v.Rare ? RareWeight : 1.0)).ToArray();
         var roll = random.NextDouble() * weights.Sum();
         for (var i = 0; i < options.Count; i++)
         {

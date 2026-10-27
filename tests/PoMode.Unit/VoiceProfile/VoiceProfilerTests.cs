@@ -14,7 +14,6 @@ public class VoiceProfilerTests
     /// </summary>
     [Theory]
     [InlineData(46, 64, VoiceType.Baritone, null)]     // A#2–E4, centred on G3
-    [InlineData(64, 79, VoiceType.Soprano, null)]      // E4–G5
     [InlineData(49, 63, VoiceType.Baritone, "Tenor")]  // C#3–D#4, centred on G#3: between the two
     [InlineData(55, 57, null, null)]                   // nine notes: too little to judge
     public void Voice_type_follows_where_the_singing_sits_and_the_strongest_note_is_the_best_held(

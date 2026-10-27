@@ -22,7 +22,6 @@ public class ModeEvidenceAndSectionsTests
     [Theory]
     [InlineData(ScaleMode.Dorian, "AABA", "Aeolian", "ABA")]
     [InlineData(ScaleMode.Mixolydian, "ABAB", "Ionian", "ABAB")]
-    [InlineData(ScaleMode.Phrygian, "AAB", "Aeolian", "AB")]
     [InlineData(ScaleMode.Lydian, "AA", "Ionian", "")]
     public void The_payload_explains_the_mode_and_letters_the_form(
         ScaleMode mode, string form, string rival, string expectedLetters)

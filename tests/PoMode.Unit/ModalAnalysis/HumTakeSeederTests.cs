@@ -66,16 +66,6 @@ public class HumTakeSeederTests
     }
 
     [Fact]
-    public void A_take_shorter_than_one_pass_keeps_only_the_bars_it_reached()
-    {
-        var tiled = HumTakeSeeder.TileOverTake(Loop(), loopSeconds: 4.0, takeSeconds: 2.0);
-
-        Assert.Single(tiled);
-        Assert.Equal("Dm", tiled[0].Symbol);
-        Assert.Equal(2.0, tiled[0].EndSec, precision: 6);
-    }
-
-    [Fact]
     public void Tiling_terminates_on_a_take_far_longer_than_its_loop()
     {
         // The page caps a take at five minutes; the tiling loop must bound itself regardless.

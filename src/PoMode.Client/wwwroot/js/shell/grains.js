@@ -9,7 +9,7 @@
 //
 // A job opened from the library, or one whose audio could not be decoded here, has nothing held for
 // it; the grains are then filtered noise whose brightness follows each slice's level, so a loud
-// slice still lands brighter than a quiet one. Every grain is gated on fx-prefs through sfx.js.
+// slice still lands brighter than a quiet one. Every grain is gated on shell/prefs.js through sfx.js.
 
 import * as prefs from './prefs.js';
 import { liveContext } from './sfx.js';

@@ -8,6 +8,11 @@
     min-width: 0;
 }
 
+/* With songs of their own the list is the page: it starts under the header rather than centred. */
+.intake--toolbar {
+    margin-block: 0 auto;
+}
+
 .analyze-another {
     margin-top: var(--pm-space-3);
 }

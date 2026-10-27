@@ -24,8 +24,8 @@
    arriving after it moved the whole card. Both are local reads, a fraction of a second. *@
 @if (_intakeReady && _visual is null && _status is null)
 {
-    <div class="intake">
-        <IntakeCard Demo="_demo" Pins="_executorChoices" ClientCapability="@_clientCapability" Probed="_probed"
+    <div class="intake @(_hasSongs ? "intake--toolbar" : "")">
+        <IntakeCard Compact="_hasSongs" Demo="_demo" Pins="_executorChoices" ClientCapability="@_clientCapability" Probed="_probed"
                     Shared="@Shared" OnStarted="TrackJobAsync" OnOpenDemo="OpenDemoAsync" />
         @* The same page lists what is already here: adding a song and finding one again are one
            job, so the songs sit under the ways to add one rather than on a page of their own. *@
@@ -132,6 +132,10 @@
     /// <summary>The library's demo row, when it is the only row: what the empty state points at.</summary>
     private LibraryEntryDto? _demo;
 
+    /// <summary>Whether the library holds a song of the person's own, which shrinks the intake card to
+    /// a toolbar: the songs are then what the page is for, and the invitation has done its job.</summary>
+    private bool _hasSongs;
+
     /// <summary>
     /// Reads the library for its demo row. The read is also what seeds a new user's demo on the server,
     /// so a first visit that lands here rather than on the Library still gets one. Best-effort: with no
@@ -141,10 +145,12 @@
     {
         try
         {
-            if (await Analysis.GetLibraryAsync() is [{ Origin.Kind: TakeOrigin.Demo, Stage: JobStage.Complete } only])
+            var library = await Analysis.GetLibraryAsync();
+            if (library is [{ Origin.Kind: TakeOrigin.Demo, Stage: JobStage.Complete } only])
             {
                 _demo = only;
             }
+            _hasSongs = library?.Any(entry => entry.Origin?.Kind != TakeOrigin.Demo) == true;
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
         {

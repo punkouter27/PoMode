@@ -15,6 +15,7 @@ builder.Services.AddScoped<ChordFingerings>();
 builder.Services.AddScoped<SessionState>();
 builder.Services.AddScoped<BrowserPrefs>();
 builder.Services.AddScoped<ThemeState>();
+builder.Services.AddScoped<FeatureFlags>();
 // Same-origin, so the session cookie rides on every request with no header to add; the same is true
 // of the JS modules' fetch() calls and the browser's own uploads.
 builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });

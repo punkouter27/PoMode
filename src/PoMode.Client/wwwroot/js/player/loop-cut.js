@@ -1,7 +1,7 @@
 // Splices a drum recording made without a click into a loop at a stated tempo.
 //
 // Pure arithmetic over samples, no audio graph and no DOM, so the same file runs under Node
-// (tests/loop-cut.check.mjs). Nothing is stretched: the recording is cut at its hits, each hit is
+// (tests/js/loop-cut.check.mjs). Nothing is stretched: the recording is cut at its hits, each hit is
 // given the sixteenth-note it was played on, and the pieces are laid back down on that grid at the
 // tempo asked for. A hand-played take drifts, so the grid follows the player from hit to hit rather
 // than being ruled once across the whole recording.
@@ -24,7 +24,7 @@ export const STEPS_PER_BAR = 16;    // ponytail: straight sixteenths in 4/4; swi
 
 /// The lengths a loop may be: phrases come in 1, 2, 4 and 8 bars, and a loop of any other length
 /// drifts against the chords as a polymeter that nobody asked for by recording three bars of drums.
-export const LOOP_BARS = Object.freeze([1, 2, 4, 8]);
+const LOOP_BARS = Object.freeze([1, 2, 4, 8]);
 
 /// The loop length for a take of `played` bars: the longest allowed length that the take fills, so a
 /// three-bar take loops its first two bars rather than padding a fourth with silence.

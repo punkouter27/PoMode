@@ -84,20 +84,20 @@ public static class ScaleModes
             {
                 return Names[pc];
             }
-            // A flat key spells a black key as a flat. Ranking flat above natural above sharp means a
-            // flat key reads Bb and Eb, while C stays C and the one pitch with no flat spelling yet.
+            // A flat key spells a black key as a flat. Ranking natural above flat above sharp means a
+            // flat key reads Bb and Eb while a white key keeps its letter: E, not Fb.
             var bestLetter = -1;
-            var bestAccidental = '\0';
+            var bestAccidental = "";
             var bestRank = int.MaxValue;
             for (var letter = 0; letter < Letters.Length; letter++)
             {
                 var offset = Mod(pc - LetterPitchClasses[letter]);
                 var (accidental, rank) = offset switch
                 {
-                    11 => ('b', 0),
-                    0 => ('\0', 1),
-                    1 => ('#', 2),
-                    _ => ('\0', int.MaxValue),
+                    0 => ("", 0),
+                    11 => ("b", 1),
+                    1 => ("#", 2),
+                    _ => ("", int.MaxValue),
                 };
                 if (rank < bestRank)
                 {

@@ -42,7 +42,7 @@ MODES.MinorPentatonic = MODES.Aeolian;
 
 /// Steps around the circle of fifths between two sections' key signatures, 0..6, or null when either
 /// section's mode was not named (there is then no key change to show).
-export function fifthsBetween(fromMode, toMode) {
+function fifthsBetween(fromMode, toMode) {
     const from = MODES[fromMode];
     const to = MODES[toMode];
     if (!from || !to) {

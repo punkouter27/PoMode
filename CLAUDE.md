@@ -13,7 +13,8 @@ dotnet test tests/PoMode.Integration     # needs Azurite running
 dotnet test tests/PoMode.E2EAPI          # HTTP contract tests (in-process app)
 dotnet test tests/PoMode.E2EUI           # Playwright browser tests (boots the real app)
 dotnet test tests/PoMode.Unit --filter "FullyQualifiedName~TempoEstimator"   # single test/class
-node tests/loop-cut.check.mjs            # the drum-loop splice (player/loop-cut.js); CI runs it too
+pwsh scripts/test-caps.ps1              # fails if a suite is over its cap (100/50/25/25); CI runs it too
+node tests/js/loop-cut.check.mjs            # the drum-loop splice (player/loop-cut.js); CI runs it too
 pwsh scripts/get-models.ps1              # pre-fetch every ONNX/browser model into models/ (warms the E2EUI cache)
 dotnet run scripts/layout-audit.cs -- capture before        # app running: screenshot + audit every route, phone and desktop
 dotnet run scripts/layout-audit.cs -- compare before after notes.md name   # one annotated SCREENSHOTS/name.html
@@ -80,11 +81,17 @@ These override any default instinct. Where one contradicts a habit, the rule win
   script an Azure or GitHub change (`az`, `gh`, Bicep) instead of describing where to click.
 - **UI changes get a before/after page.** When a change alters what the UI looks like, screenshot the
   old state before editing and the new state after (Playwright, as in `tests/PoMode.E2EUI`), annotate
-  what changed, and save both into one HTML file under `SCREENSHOTS/` at the repo root. Give the full
-  path to that file in the reply.
+  what changed, and save both into one HTML file, `SCREENSHOTS/{YYMMDD}-{feature}.html` at the repo
+  root. Give the full path to that file in the reply.
+- **Docs move with the code.** When a dependency, a configuration key or a major endpoint changes,
+  update `docs/` (and `docs/README.md`) in the same change.
+- **The build watermark stays.** The layout shows the build version as `YYMMDD` (build or commit
+  date), fixed bottom-right. Don't remove it in a layout pass.
 - **Answers over ~100 words end with a TLDR.** One line, about 20 words, saying what happened.
 - **A code change over 20 lines gets a three-level TLDR** instead: one line each pitched at a
   toddler, a child, and an adult.
+- **A code change over 100 lines ends with three questions** about the app's direction and the
+  follow-on work, unless the user's prompt already left questions open.
 
 ## Architecture
 

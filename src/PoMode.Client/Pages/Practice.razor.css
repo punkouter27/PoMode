@@ -8,6 +8,46 @@
     max-width: 72ch;
 }
 
+/* ---- The tabs ----
+   The cards inside a tab keep the page's own spacing between them; the tab strip adds no ground or
+   border of its own, so a tab reads as the page rather than as a box holding it. */
+.practice ::deep .practice-tabs.rz-tabview {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+
+/* Sentence case like every other label in the app, rather than the Material theme's capitals, which
+   also wrapped each name onto two lines on a phone. */
+.practice ::deep .practice-tabs {
+    --rz-tabs-tab-text-transform: none;
+    --rz-tabs-tab-letter-spacing: normal;
+    --rz-tabs-tab-font-size: var(--pm-text-md);
+}
+
+/* Radzen hides the tabs not shown itself; only their padding and the space between cards are set
+   here, so nothing fights how it hides them. */
+.practice ::deep .practice-tabs .rz-tabview-panels {
+    padding: var(--pm-space-3) 0 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    overflow: visible;
+}
+
+.practice ::deep .practice-tabs .rz-tabview-panel {
+    padding: 0;
+}
+
+.practice ::deep .practice-tabs .rz-tabview-panel > * + * {
+    margin-top: 1rem;
+}
+
+/* The take card's height while its chords are generated, so the page does not move when they land. */
+.take-skeleton {
+    height: 24rem;
+}
+
 /* ---- Your voice ---- */
 
 .practice-voice {
@@ -215,6 +255,18 @@
        and a half at either height. */
     .take-plot {
         height: 88px;
+    }
+
+    .take-skeleton {
+        height: 18rem;
+    }
+
+    .practice ::deep .practice-tabs .rz-tabview-panels {
+        padding-top: var(--pm-space-2);
+    }
+
+    .practice ::deep .practice-tabs .rz-tabview-panel > * + * {
+        margin-top: 0.5rem;
     }
 
     /* One tap target per row rather than three squeezed onto one. */

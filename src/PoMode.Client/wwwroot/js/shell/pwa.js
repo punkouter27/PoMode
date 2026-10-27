@@ -69,7 +69,7 @@ export async function promptInstall() {
 }
 
 /// True when the app is running as an installed app rather than in a browser tab.
-export function isStandalone() {
+function isStandalone() {
     try {
         return window.matchMedia('(display-mode: standalone)').matches
             || window.navigator.standalone === true;

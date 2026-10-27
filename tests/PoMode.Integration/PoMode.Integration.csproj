@@ -18,7 +18,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\TestCommon\TestAudio.cs" Link="TestAudio.cs" />
-    <Compile Include="..\TestCommon\TestPaths.cs" Link="TestPaths.cs" />
+    <Compile Include="..\PoMode.TestCommon\TestAudio.cs" Link="TestAudio.cs" />
+    <Compile Include="..\PoMode.TestCommon\TestPaths.cs" Link="TestPaths.cs" />
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 // The JS side of spec §5's "specified once, implemented twice" contract. This is a direct port of
 // PoMode.API/Features/PitchTracking/BasicPitchDecoder.cs — same thresholds, same emit rules, same
 // ordering. Both implementations are asserted against the same fixture file
-// (tests/TestCommon/basic-pitch-decoder.fixture.json); change one side and the other's test fails
+// (tests/PoMode.TestCommon/basic-pitch-decoder.fixture.json); change one side and the other's test fails
 // naming the note. Plain ES module: no npm, no bundler.
 
 /**

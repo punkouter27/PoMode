@@ -4,6 +4,7 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject NotificationService NotificationService
+@inject FeatureFlags Flags
 @implements IAsyncDisposable
 
 <PageTitle>PoMode · Mode Lab</PageTitle>
@@ -58,7 +59,7 @@
                           Click="@SendToAnalyzerAsync" Disabled="@(_isSendingToAnalyzer || _melody is null)"
                           title="Synthesize this loop and run it through the song analyzer" />
 
-            @if (_midiSupported)
+            @if (_midiSupported && Flags.Tools.Midi)
             {
                 @* A MIDI keyboard plays along in the loop's room and lights its notes on the home-note
                    view (midi-in.js). Asked for on this click only, never on load. *@
@@ -376,6 +377,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await Flags.LoadAsync();
         try
         {
             var progs = await Analysis.GetModalProgressionsAsync();

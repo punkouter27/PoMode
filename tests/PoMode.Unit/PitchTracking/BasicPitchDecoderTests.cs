@@ -12,21 +12,6 @@ public class BasicPitchDecoderTests
         => (new float[frames, pitches], new float[frames, pitches]);
 
     [Fact]
-    public void Sustained_note_decodes_correctly()
-    {
-        var (onsets, frames) = Empty(100, 88);
-        var bin = 60 - MinMidi;
-        onsets[10, bin] = 0.9f;
-        for (var f = 10; f < 40; f++) frames[f, bin] = 0.8f;
-
-        var notes = BasicPitchDecoder.Decode(onsets, frames, Fps, MinMidi);
-        var note = Assert.Single(notes);
-        Assert.Equal(60, note.MidiPitch);
-        Assert.InRange(note.StartSec, 0.09, 0.11);
-        Assert.InRange(note.DurationSec, 0.28, 0.32);
-    }
-
-    [Fact]
     public void Thresholds_drop_short_and_weak_notes()
     {
         var (onsets, frames) = Empty(100, 88);

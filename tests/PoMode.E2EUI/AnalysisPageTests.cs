@@ -1,0 +1,161 @@
+using Microsoft.Playwright;
+using PoMode.TestCommon;
+using Xunit;
+
+namespace PoMode.E2EUI;
+
+[Collection("App")]
+public class AnalysisPageTests(AppFixture app)
+{
+    private static readonly LocatorAssertionsToBeVisibleOptions Visible =
+        new() { Timeout = AppFixture.ExpectTimeoutMs };
+
+    /// <summary>A single WAV holding four two-second triads, so the pipeline produces real chords and
+    /// therefore real modal windows to click. The silent fixture used elsewhere yields zero chords.</summary>
+    private static byte[] Progression(params (int Root, string Quality, double Seconds)[] chords)
+    {
+        using var stream = new MemoryStream();
+        foreach (var (root, quality, seconds) in chords)
+        {
+            var wav = TestAudio.MakeChord(seconds, TestAudio.Triad(root, quality));
+            var skipHeader = stream.Length == 0 ? 0 : 44;
+            stream.Write(wav, skipHeader, wav.Length - skipHeader);
+        }
+        var bytes = stream.ToArray();
+        var dataSize = bytes.Length - 44;
+        BitConverter.GetBytes(36 + dataSize).CopyTo(bytes, 4);
+        BitConverter.GetBytes(dataSize).CopyTo(bytes, 40);
+        return bytes;
+    }
+
+    /// <summary>
+    /// The C–Am–F–G progression with a sung lead riding over it. Since YinPitchTracker (real,
+    /// model-less) took over from FakePitchTracker in this no-model test host, the sung material
+    /// must actually exist in the audio for the engine to name a mode: four melody notes per
+    /// chord, together covering the full C-major scale, so the primary mode is genuinely Ionian.
+    /// </summary>
+    private static byte[] ProgressionWithMelody()
+    {
+        var tones = new List<(int Midi, double StartSec, double DurationSec, double Amplitude)>();
+        (int Root, string Quality)[] chords = [(0, "maj"), (9, "min"), (5, "maj"), (7, "maj")];
+        int[][] melody = [[72, 76, 79, 74], [69, 72, 76, 71], [65, 69, 72, 76], [67, 71, 74, 72]];
+        for (var chord = 0; chord < chords.Length; chord++)
+        {
+            foreach (var midi in TestAudio.Triad(chords[chord].Root, chords[chord].Quality))
+            {
+                tones.Add((midi, chord * 2.0, 2.0, 0.12));
+            }
+            for (var note = 0; note < melody[chord].Length; note++)
+            {
+                tones.Add((melody[chord][note], (chord * 2.0) + (note * 0.5), 0.45, 0.4));
+            }
+        }
+        return TestAudio.MakeSong(8.0, tones);
+    }
+
+    private static async Task<IPage> AnalysedPageAsync(IBrowser browser, string baseUrl, byte[] audio)
+    {
+        var context = await browser.NewContextAsync();
+        // The window inspector is one of the tools Settings switches on (FeatureFlags); these tests are about it.
+        await context.AddInitScriptAsync("localStorage.setItem('pm-advanced-tools', JSON.stringify({ WindowInspector: true }))");
+        var page = await context.NewPageAsync();
+        await page.GotoAsync($"{baseUrl}/");
+
+        var wavPath = Path.Combine(Path.GetTempPath(), $"pomode-hud-{Guid.NewGuid():N}.wav");
+        await File.WriteAllBytesAsync(wavPath, audio);
+        try
+        {
+            await page.Locator("input.upload-input").SetInputFilesAsync(wavPath);
+            await Assertions.Expect(page.Locator("canvas.analysis-canvas")).ToBeVisibleAsync(Visible);
+            await Assertions.Expect(page.Locator("canvas.analysis-canvas"))
+                .ToHaveAttributeAsync("data-painted", "1", new() { Timeout = AppFixture.ExpectTimeoutMs });
+        }
+        finally
+        {
+            File.Delete(wavPath);
+        }
+        return page;
+    }
+
+    [Fact]
+    public async Task The_hud_reports_the_primary_mode_and_tonic()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        await using var browser = await playwright.Chromium.LaunchAsync();
+        var page = await AnalysedPageAsync(browser, app.BaseUrl, ProgressionWithMelody());
+
+        // The key badge is the one headline now; the old HUD card repeated it under the player.
+        await Assertions.Expect(page.GetByText("Key & Mode")).ToBeVisibleAsync(Visible);
+        // Tonic C with a C-Am-F-G progression; the engine names Ionian from the sung material —
+        // real melody notes in the fixture, really transcribed (YIN in this no-model host).
+        await Assertions.Expect(page.Locator(".basic-badge-value").First).ToContainTextAsync("C");
+        await Assertions.Expect(page.Locator(".basic-badge-value").First).ToContainTextAsync("Ionian");
+        await Assertions.Expect(page.GetByText("confidence")).ToBeVisibleAsync(Visible);
+    }
+
+    [Fact]
+    public async Task Before_any_click_the_inspector_invites_a_selection_rather_than_inventing_one()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        await using var browser = await playwright.Chromium.LaunchAsync();
+        var page = await AnalysedPageAsync(browser, app.BaseUrl, Progression(
+            (0, "maj", 2.0), (9, "min", 2.0), (5, "maj", 2.0), (7, "maj", 2.0)));
+
+        await Assertions.Expect(page.GetByText("Click a chord block on the timeline to inspect a window."))
+            .ToBeVisibleAsync(Visible);
+        await Assertions.Expect(page.Locator(".degree-grid")).ToHaveCountAsync(0);
+    }
+
+    [Fact]
+    public async Task Clicking_the_timeline_fills_in_the_chord_mask_and_degree_grid()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        await using var browser = await playwright.Chromium.LaunchAsync();
+        var page = await AnalysedPageAsync(browser, app.BaseUrl, Progression(
+            (0, "maj", 2.0), (9, "min", 2.0), (5, "maj", 2.0), (7, "maj", 2.0)));
+
+        // 12.5% across the ~8 s track lands inside the first chord.
+        await CanvasTests.ClickCanvasAsync(page.Locator("canvas.analysis-canvas"), 0.125f, 0.85f);
+
+        await Assertions.Expect(page.Locator(".hud-chord")).ToBeVisibleAsync(Visible);
+        await Assertions.Expect(page.Locator(".hud-mask")).ToContainTextAsync("0x");
+        await Assertions.Expect(page.Locator(".degree-grid .degree")).ToHaveCountAsync(12);
+    }
+
+    [Fact]
+    public async Task A_window_without_enough_sung_notes_says_so_instead_of_showing_a_fake_match()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        await using var browser = await playwright.Chromium.LaunchAsync();
+        var page = await AnalysedPageAsync(browser, app.BaseUrl, Progression(
+            (0, "maj", 2.0), (9, "min", 2.0), (5, "maj", 2.0), (7, "maj", 2.0)));
+
+        // FakePitchTracker's eight notes all land near the start of the track, so the later windows
+        // genuinely have fewer than the three distinct sung pitch classes spec §6 requires.
+        await CanvasTests.ClickCanvasAsync(page.Locator("canvas.analysis-canvas"), 0.9f, 0.85f);
+
+        await Assertions.Expect(page.Locator(".hud-chord")).ToBeVisibleAsync(Visible);
+        await Assertions.Expect(page.GetByText("Not enough sung notes in this window to name a mode."))
+            .ToBeVisibleAsync(Visible);
+    }
+
+    /// <summary>
+    /// Was ModalResultTests, which asserted the deleted ModalResultView's "Key:" heading. The silent
+    /// fixture yields no notes and no chords, so the headline must say nothing was detected and the
+    /// tempo must read as unmeasured rather than invent either, and the MIDI download must still be offered.
+    /// </summary>
+    [Fact]
+    public async Task A_track_with_no_detected_chords_still_renders_an_honest_headline()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        await using var browser = await playwright.Chromium.LaunchAsync();
+        var page = await AnalysedPageAsync(browser, app.BaseUrl, TestAudio.MakeWav(seconds: 0.5));
+
+        await Assertions.Expect(page.GetByText("Key & Mode")).ToBeVisibleAsync(Visible);
+        await Assertions.Expect(page.Locator(".basic-badge-value").First).ToContainTextAsync("nothing detected");
+        await Assertions.Expect(page.GetByText("nothing to measure")).ToBeVisibleAsync(Visible);
+        // The one export left: the press of the song's split button, with the rest under its arrow.
+        await Assertions.Expect(page.Locator(".basic-song-actions")).ToContainTextAsync("Download MIDI");
+    }
+
+}

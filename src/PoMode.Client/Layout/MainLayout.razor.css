@@ -104,6 +104,42 @@
     transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
+/* Wider than the other icons because it is labelled where there is room; bordered so it reads as a
+   field to type into rather than one more glyph. */
+.search-toggle {
+    width: auto;
+    gap: 0.35rem;
+    padding: 0 0.55rem;
+    border-color: var(--pm-border);
+    font-size: var(--pm-text-sm);
+}
+
+.search-toggle ::deep .rzi {
+    font-size: 1.15rem;
+}
+
+.search-kbd {
+    font: inherit;
+    font-size: var(--pm-text-xs);
+    padding: 0 0.3rem;
+    border: 1px solid var(--pm-border);
+    border-radius: 0.25rem;
+}
+
+@media (max-width: 640px) {
+    /* One more glyph among the header's icons on a phone, with no frame to set it apart. */
+    .search-toggle {
+        width: 2rem;
+        padding: 0;
+        border-color: transparent;
+    }
+
+    .search-label,
+    .search-kbd {
+        display: none;
+    }
+}
+
 .icon-button:hover {
     background: var(--pm-surface);
     color: var(--pm-fg);

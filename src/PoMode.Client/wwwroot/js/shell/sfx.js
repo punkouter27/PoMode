@@ -13,7 +13,7 @@
 // never derives a scale, never decides major against minor, and the one chord it builds (`fanfare`)
 // is deliberately tonic-fifth-octave so it states no third. Same rule canvas.js follows for colour.
 //
-// Every sound and every buzz is gated on fx-prefs: a user who has muted the effects hears nothing
+// Every sound and every buzz is gated on shell/prefs.js: a user who has muted the effects hears nothing
 // from here, and one who has turned the level off feels nothing either.
 //
 // The tonal cues (chime, fanfare, stage steps) are struck on the FM electric piano from voices.js and
@@ -249,23 +249,6 @@ export function stageStep(index) {
         // stages span most of an octave without needing to know how many there will be.
         const freq = paletteFreq(step * stride()) ??(440 * Math.pow(2, (step * 2) / 12));
         epiano(ctx, roomOf(ctx), midiOf(freq * 2), ctx.currentTime, 0.2, 0.05);
-    } catch {
-        // Fail silent.
-    }
-}
-
-/// Practice: the singer landed on a target note. `strength` 0..1 scales brightness and level, so a
-/// note just inside tolerance sounds duller than a dead-centre one without ever sounding wrong —
-/// the verdict is the server's, this is only a nudge.
-export function land(strength = 1) {
-    const ctx = ensureContext();
-    if (!ctx) {
-        return;
-    }
-    try {
-        const s = Math.max(0, Math.min(1, Number(strength) || 0));
-        const now = ctx.currentTime;
-        voice(ctx, { type: 'sine', freq: 1200 + (s * 400), when: now, duration: 0.07, peak: 0.03 + (s * 0.03) });
     } catch {
         // Fail silent.
     }

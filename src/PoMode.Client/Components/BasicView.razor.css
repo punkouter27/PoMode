@@ -106,27 +106,6 @@
     gap: 0.5rem;
 }
 
-.basic-btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    background: var(--pm-surface);
-    color: var(--pm-fg);
-    border: 1px solid var(--pm-border);
-    padding: 0.3rem 0.65rem;
-    border-radius: 5px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.basic-btn-secondary:hover {
-    background: var(--pm-surface);
-    color: var(--pm-fg);
-    border-color: var(--pm-accent);
-}
-
 .basic-canvas-section ::deep .canvas-wrap {
     margin: 0.2rem 0;
 }
@@ -212,15 +191,6 @@
     .basic-actions-group {
         display: flex;
         gap: 0.3rem;
-    }
-
-    .basic-btn-secondary {
-        flex: 1;
-        justify-content: center;
-        min-height: 2.25rem;
-        padding: 0.2rem 0.3rem;
-        font-size: var(--pm-text-sm);
-        text-align: center;
     }
 
     .stats-skeleton {

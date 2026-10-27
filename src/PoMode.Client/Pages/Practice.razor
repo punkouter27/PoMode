@@ -25,170 +25,196 @@
    restart-safe job whose harmony is known and whose melody is the singer's. This page is a second,
    narrower door onto that — the Mode Lab is a studio, and this is the one exercise. *@
 
-<RadzenCard class="practice-setup">
-    <RadzenText class="practice-description"
-                Text="Sing any melody over these chords and the analyzer tells you which mode it turned out to be in. Nothing is scored." />
+@* Three jobs, three tabs, so the page is one screen rather than a stack of cards: singing over the
+   chords (with the backing it is sung over), what earlier takes over them turned out to be, and the
+   guitar jam, which has its own key and needs none of the backing row. Client rendering keeps every
+   tab mounted, so a take, a plot or a jam survives a look at another tab. *@
+<div class="practice">
+<RadzenTabs RenderMode="TabRenderMode.Client" class="practice-tabs" SelectedIndexChanged="@OnTabChangedAsync">
+    <Tabs>
+        <RadzenTabsItem Text="Sing">
+            <RadzenCard class="practice-setup">
+                <RadzenText class="practice-description"
+                            Text="Sing any melody over these chords and the analyzer tells you which mode it turned out to be in. Nothing is scored." />
 
-    @* The same backing row as the Mode Lab's, so the two pages cannot drift on range or wording. *@
-    <BackingControls ShowMode="true" Mode="_mode" ModeChanged="OnModePickedAsync"
-                     Tonic="_tonic" TonicChanged="OnTonicPickedAsync"
-                     ProgressionId="@_progressionId" ProgressionIdChanged="OnProgressionPickedAsync"
-                     Progressions="_progressions"
-                     Bpm="_bpm" BpmChanged="OnTempoPickedAsync"
-                     Disabled="@Busy" />
+                @* The same backing row as the Mode Lab's, so the two pages cannot drift on range or wording. *@
+                <BackingControls ShowMode="true" Mode="_mode" ModeChanged="OnModePickedAsync"
+                                 Tonic="_tonic" TonicChanged="OnTonicPickedAsync"
+                                 ProgressionId="@_progressionId" ProgressionIdChanged="OnProgressionPickedAsync"
+                                 Progressions="_progressions"
+                                 Bpm="_bpm" BpmChanged="OnTempoPickedAsync"
+                                 Disabled="@Busy" />
 
-    @* The singer's range, pooled from their own finished takes, and a key that sits the chosen mode
-       inside it. Both sentences and the key are the server's: choosing where a mode's home note
-       should land is a musical decision, so this only applies the key it is handed. *@
-    @if (_voice is { } voice)
-    {
-        <div class="practice-voice" data-voice-takes-needed="@voice.TakesNeeded">
-            <span class="practice-voice-range">@voice.Summary</span>
-            @if (FitForMode is { } fit)
-            {
-                <RadzenButton Text="@(fit.TonicPitchClass == _tonic ? "Fitted to your voice" : "Fit to my voice")"
-                              Icon="tune" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
-                              Disabled="@(Busy || fit.TonicPitchClass == _tonic)"
-                              Click="@FitToVoiceAsync" id="practice-fit" title="@fit.Explanation" />
-            }
-        </div>
-        @* Voice type and strongest note from the same takes, worded server-side. Present only once
-           the range is: both are read from the same pool of notes. *@
-        @if (voice.Voice is { TypeLabel: not null } singer)
-        {
-            <SingerCard Voice="singer" Id="practice-singer" />
-        }
-        @* The reason is shown once it applies rather than before: until then it would be a sentence
-           about a key the page is not playing. *@
-        @if (FitForMode is { } applied && applied.TonicPitchClass == _tonic)
-        {
-            <p class="practice-voice-why">@applied.Explanation</p>
-        }
-    }
-</RadzenCard>
-
-@if (_melody is { } melody)
-{
-    <RadzenCard class="practice-take" data-practice-state="@_state">
-        <div class="take-head">
-            <RadzenText TextStyle="TextStyle.H6" TagName="TagName.H2" Text="@melody.ProgressionName" />
-            @* The chord symbols the server wrote. Naming a chord is a musical statement, so these
-               are read from the generated progression rather than spelled here. *@
-            <div class="chord-row" aria-label="The chords you will sing over">
-                @foreach (var chord in melody.Chords)
+                @* The singer's range, pooled from their own finished takes, and a key that sits the chosen mode
+                   inside it. Both sentences and the key are the server's: choosing where a mode's home note
+                   should land is a musical decision, so this only applies the key it is handed. *@
+                @if (_voice is { } voice)
                 {
-                    <span class="chord-cell">@chord.Symbol</span>
+                    <div class="practice-voice" data-voice-takes-needed="@voice.TakesNeeded">
+                        <span class="practice-voice-range">@voice.Summary</span>
+                        @if (FitForMode is { } fit)
+                        {
+                            <RadzenButton Text="@(fit.TonicPitchClass == _tonic ? "Fitted to your voice" : "Fit to my voice")"
+                                          Icon="tune" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                          Disabled="@(Busy || fit.TonicPitchClass == _tonic)"
+                                          Click="@FitToVoiceAsync" id="practice-fit" title="@fit.Explanation" />
+                        }
+                    </div>
+                    @* Voice type and strongest note from the same takes, worded server-side. Present only once
+                       the range is: both are read from the same pool of notes. *@
+                    @if (voice.Voice is { TypeLabel: not null } singer)
+                    {
+                        <SingerCard Voice="singer" Id="practice-singer" />
+                    }
+                    @* The reason is shown once it applies rather than before: until then it would be a sentence
+                       about a key the page is not playing. *@
+                    @if (FitForMode is { } applied && applied.TonicPitchClass == _tonic)
+                    {
+                        <p class="practice-voice-why">@applied.Explanation</p>
+                    }
                 }
-            </div>
-        </div>
+            </RadzenCard>
 
-        @* Chord tones as bands, your line drawn over them as you sing it. It reports no verdict:
-           the lit segments mean "this note is in the chord underneath", which is a set membership
-           test against notes the server voiced, not an opinion about the mode. *@
-        @* Its room is held from the first render and given up only if the plot declines, so the buttons
-           and the history under it do not jump down when it comes up. *@
-        @* Under the plot, the vibrato measured off the voice as moving dye: a held note leaves a smooth
-           ribbon, a wide vibrato curls it. The readout is the measurement itself, filled in by the
-           module while a take runs. *@
-        <div class="take-plot-wrap @(_plotChecked && !_plotOn ? "hidden" : "")">
-            <canvas class="vibrato-fluid" @ref="_fluidCanvas" aria-hidden="true" data-testid="practice-vibrato-fluid"></canvas>
-            <canvas class="take-plot" @ref="_plotCanvas" aria-hidden="true" data-testid="practice-plot"></canvas>
-            <span class="take-plot-legend">chord tones · your line</span>
-            <span class="vibrato-readout" data-vibrato-readout data-testid="practice-vibrato-readout"></span>
-        </div>
-
-        <div class="take-actions">
-            @switch (_state)
+            @if (_melody is { } melody)
             {
-                case TakeState.Idle:
-                    <RadzenButton Text="@(_previewing ? "Stop chords" : "Hear the chords")" Icon="volume_up"
-                                  ButtonStyle="ButtonStyle.Light" Click="@TogglePreviewAsync"
-                                  id="practice-hear" />
-                    <RadzenButton Text="Sing over them" Icon="mic" ButtonStyle="ButtonStyle.Primary"
-                                  Click="@StartTakeAsync" id="practice-sing" />
-                    <RadzenButton Text="New chords" Icon="casino" ButtonStyle="ButtonStyle.Light"
-                                  Click="@RerollAsync" id="practice-reroll"
-                                  title="A different progression — the key and tempo are left alone" />
-                    break;
+                <RadzenCard class="practice-take" data-practice-state="@_state">
+                    <div class="take-head">
+                        <RadzenText TextStyle="TextStyle.H6" TagName="TagName.H2" Text="@melody.ProgressionName" />
+                        @* The chord symbols the server wrote. Naming a chord is a musical statement, so these
+                           are read from the generated progression rather than spelled here. *@
+                        <div class="chord-row" aria-label="The chords you will sing over">
+                            @foreach (var chord in melody.Chords)
+                            {
+                                <span class="chord-cell">@chord.Symbol</span>
+                            }
+                        </div>
+                    </div>
 
-                case TakeState.CountingIn:
-                    <span class="take-cue counting">Counting you in…</span>
-                    break;
+                    @* Chord tones as bands, your line drawn over them as you sing it. It reports no verdict:
+                       the lit segments mean "this note is in the chord underneath", which is a set membership
+                       test against notes the server voiced, not an opinion about the mode. *@
+                    @* Its room is held from the first render and given up only if the plot declines, so the buttons
+                       and the history under it do not jump down when it comes up. *@
+                    @* Under the plot, the vibrato measured off the voice as moving dye: a held note leaves a smooth
+                       ribbon, a wide vibrato curls it. The readout is the measurement itself, filled in by the
+                       module while a take runs. *@
+                    <div class="take-plot-wrap @(_plotChecked && !_plotOn ? "hidden" : "")">
+                        <canvas class="vibrato-fluid" @ref="_fluidCanvas" aria-hidden="true" data-testid="practice-vibrato-fluid"></canvas>
+                        <canvas class="take-plot" @ref="_plotCanvas" aria-hidden="true" data-testid="practice-plot"></canvas>
+                        <span class="take-plot-legend">chord tones · your line</span>
+                        <span class="vibrato-readout" data-vibrato-readout data-testid="practice-vibrato-readout"></span>
+                    </div>
 
-                case TakeState.Recording:
-                    <span class="take-dot" aria-hidden="true"></span>
-                    <RadzenButton Text="@($"Stop · {_elapsedSec:0.0}s")" ButtonStyle="ButtonStyle.Danger"
-                                  Click="@StopTakeAsync" id="practice-stop" />
-                    <span class="take-cue recording">Sing anything you like over the chords.</span>
-                    break;
+                    <div class="take-actions">
+                        @switch (_state)
+                        {
+                            case TakeState.Idle:
+                                <RadzenButton Text="@(_previewing ? "Stop chords" : "Hear the chords")" Icon="volume_up"
+                                              ButtonStyle="ButtonStyle.Light" Click="@TogglePreviewAsync"
+                                              id="practice-hear" />
+                                <RadzenButton Text="Sing over them" Icon="mic" ButtonStyle="ButtonStyle.Primary"
+                                              Click="@StartTakeAsync" id="practice-sing" />
+                                <RadzenButton Text="New chords" Icon="casino" ButtonStyle="ButtonStyle.Light"
+                                              Click="@RerollAsync" id="practice-reroll"
+                                              title="A different progression — the key and tempo are left alone" />
+                                break;
 
-                case TakeState.Captured:
-                    <span class="take-length">Take: @($"{_takeSec:0.0}s")</span>
-                    <RadzenButton Text="@(_reviewing ? "Stop" : "Hear it back")" Icon="replay"
-                                  ButtonStyle="ButtonStyle.Light" Disabled="@_sending"
-                                  Click="@ToggleReviewAsync" id="practice-review"
-                                  title="Your take against the chords it was sung over" />
-                    <RadzenButton Text="@(_sending ? "Analyzing…" : "What mode did I sing? →")"
-                                  ButtonStyle="ButtonStyle.Primary" Disabled="@_sending"
-                                  Click="@AnalyzeTakeAsync" id="practice-analyze" />
-                    <RadzenButton Text="Redo" Icon="delete" ButtonStyle="ButtonStyle.Light"
-                                  Disabled="@_sending" Click="@DiscardTakeAsync" id="practice-redo" />
-                    break;
+                            case TakeState.CountingIn:
+                                <span class="take-cue counting">Counting you in…</span>
+                                break;
+
+                            case TakeState.Recording:
+                                <span class="take-dot" aria-hidden="true"></span>
+                                <RadzenButton Text="@($"Stop · {_elapsedSec:0.0}s")" ButtonStyle="ButtonStyle.Danger"
+                                              Click="@StopTakeAsync" id="practice-stop" />
+                                <span class="take-cue recording">Sing anything you like over the chords.</span>
+                                break;
+
+                            case TakeState.Captured:
+                                <span class="take-length">Take: @($"{_takeSec:0.0}s")</span>
+                                <RadzenButton Text="@(_reviewing ? "Stop" : "Hear it back")" Icon="replay"
+                                              ButtonStyle="ButtonStyle.Light" Disabled="@_sending"
+                                              Click="@ToggleReviewAsync" id="practice-review"
+                                              title="Your take against the chords it was sung over" />
+                                <RadzenButton Text="@(_sending ? "Analyzing…" : "What mode did I sing? →")"
+                                              ButtonStyle="ButtonStyle.Primary" Disabled="@_sending"
+                                              Click="@AnalyzeTakeAsync" id="practice-analyze" />
+                                <RadzenButton Text="Redo" Icon="delete" ButtonStyle="ButtonStyle.Light"
+                                              Disabled="@_sending" Click="@DiscardTakeAsync" id="practice-redo" />
+                                break;
+                        }
+                        @* A beat to sing against, not only chord changes: it plays under the preview, the take and
+                           the playback, and can be flipped while any of them runs. *@
+                        @* Tinted rather than solid when on, as the mixer's click is, so it does not outshout Sing. *@
+                        <RadzenButton Text="Click" Icon="av_timer"
+                                      ButtonStyle="@(_click ? ButtonStyle.Primary : ButtonStyle.Light)"
+                                      Variant="@(_click ? Variant.Flat : Variant.Filled)"
+                                      Shade="@(_click ? Shade.Lighter : Shade.Default)"
+                                      aria-pressed="@(_click ? "true" : "false")" Click="@ToggleClickAsync"
+                                      id="practice-click" class="take-click"
+                                      title="@(_click ? $"Clicking every beat at {_bpm:0} BPM" : "No click, chords only")" />
+                    </div>
+
+                    @if (_error is { } error)
+                    {
+                        <p class="take-error">@error</p>
+                    }
+                </RadzenCard>
             }
-            @* A beat to sing against, not only chord changes: it plays under the preview, the take and
-               the playback, and can be flipped while any of them runs. *@
-            @* Tinted rather than solid when on, as the mixer's click is, so it does not outshout Sing. *@
-            <RadzenButton Text="Click" Icon="av_timer"
-                          ButtonStyle="@(_click ? ButtonStyle.Primary : ButtonStyle.Light)"
-                          Variant="@(_click ? Variant.Flat : Variant.Filled)"
-                          Shade="@(_click ? Shade.Lighter : Shade.Default)"
-                          aria-pressed="@(_click ? "true" : "false")" Click="@ToggleClickAsync"
-                          id="practice-click" class="take-click"
-                          title="@(_click ? $"Clicking every beat at {_bpm:0} BPM" : "No click, chords only")" />
-        </div>
-
-        @if (_error is { } error)
-        {
-            <p class="take-error">@error</p>
-        }
-    </RadzenCard>
-}
-else if (_loadError is { } loadError)
-{
-    <RadzenCard>
-        <p class="take-error">@loadError</p>
-    </RadzenCard>
-}
-
-@* What the singer's earlier melodies over these chords turned out to be. A mirror, not a grade: the
-   server tallies the readings without marking any as the expected one, so there is no best take, no
-   run of matches and no percentage here — a take that came out Mixolydian over Dorian chords is a
-   finding about the melody, not a miss. *@
-@if (_history is { } history)
-{
-    <RadzenCard class="practice-history" data-take-count="@history.Takes.Count">
-        <RadzenText TextStyle="TextStyle.H6" TagName="TagName.H2" Text="Your takes over these chords" />
-        <p class="history-summary">@history.Summary</p>
-        @if (history.Takes.Count > 0)
-        {
-            <ul class="history-list">
-                @foreach (var take in history.Takes)
-                {
-                    <li class="history-row" data-job-id="@take.JobId" data-take-stage="@take.Stage">
-                        <time class="history-when" datetime="@take.CreatedAt.ToString("o")">@take.CreatedAt.ToLocalTime().ToString("MMM d, HH:mm")</time>
-                        <span class="history-reading">@take.Reading</span>
-                        <span class="history-over">@take.SungOver</span>
-                        <a class="history-open" href="@($"/?job={take.JobId}")">Open analysis</a>
-                    </li>
-                }
-            </ul>
-        }
-    </RadzenCard>
-}
-
-@* Practice for the hands rather than the voice: open guitar chords that sound richer than they are to
-   play. It takes the page's audio when started, and gives it up when the page plays its own chords. *@
-<ChordJam @ref="_jam" Disabled="@(_state is TakeState.CountingIn or TakeState.Recording)" Started="@StopForJamAsync" />
+            else if (_loadError is { } loadError)
+            {
+                <RadzenCard>
+                    <p class="take-error">@loadError</p>
+                </RadzenCard>
+            }
+            else
+            {
+                @* The take card's room, held while the first progression is generated: arriving late, the card
+                   used to push everything under it down the page. *@
+                <div class="pm-skeleton take-skeleton" aria-hidden="true"></div>
+            }
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="@TakesTabLabel">
+            @* What the singer's earlier melodies over these chords turned out to be. A mirror, not a grade: the
+               server tallies the readings without marking any as the expected one, so there is no best take, no
+               run of matches and no percentage here — a take that came out Mixolydian over Dorian chords is a
+               finding about the melody, not a miss. *@
+            @if (_history is { } history)
+            {
+                <RadzenCard class="practice-history" data-take-count="@history.Takes.Count">
+                    <h2 class="pm-sr-only">Your takes over these chords</h2>
+                    <p class="history-summary">@history.Summary</p>
+                    @if (history.Takes.Count > 0)
+                    {
+                        <ul class="history-list">
+                            @foreach (var take in history.Takes)
+                            {
+                                <li class="history-row" data-job-id="@take.JobId" data-take-stage="@take.Stage">
+                                    <time class="history-when" datetime="@take.CreatedAt.ToString("o")">@take.CreatedAt.ToLocalTime().ToString("MMM d, HH:mm")</time>
+                                    <span class="history-reading">@take.Reading</span>
+                                    <span class="history-over">@take.SungOver</span>
+                                    <a class="history-open" href="@($"/?job={take.JobId}")">Open analysis</a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </RadzenCard>
+            }
+            else
+            {
+                <RadzenCard class="practice-history">
+                    <p class="history-summary">No takes to show yet.</p>
+                </RadzenCard>
+            }
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Guitar jam">
+            @* Practice for the hands rather than the voice: open guitar chords that sound richer than they are to
+               play. It takes the page's audio when started, and gives it up when the page plays its own chords. *@
+            <ChordJam @ref="_jam" Disabled="@(_state is TakeState.CountingIn or TakeState.Recording)" Started="@StopForJamAsync" />
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
+</div>
 
 @code {
     /// <summary>Where a take is in its cycle — one answer to "what is happening" rather than four
@@ -203,8 +229,25 @@ else if (_loadError is { } loadError)
     /// time, so this bounds memory rather than musical patience.</summary>
     private const double MaxTakeSeconds = 300.0;
 
+    /// <summary>The jam is the third tab.</summary>
+    private const int JamTab = 2;
+
     private IJSObjectReference? _hum;
     private ChordJam? _jam;
+    private int _tab;
+
+    /// <summary>The count is on the tab, so how many takes there are is known without opening it.</summary>
+    private string TakesTabLabel => _history is { Takes.Count: > 0 } history ? $"Your takes ({history.Takes.Count})" : "Your takes";
+
+    /// <summary>A jam left behind on a hidden tab would keep strumming under whatever is shown.</summary>
+    private async Task OnTabChangedAsync(int index)
+    {
+        if (_tab == JamTab && index != JamTab && _jam is not null)
+        {
+            await _jam.StopAsync();
+        }
+        _tab = index;
+    }
     private IJSObjectReference? _player;
     private IJSObjectReference? _plot;
     private DotNetObjectReference<Practice>? _selfRef;

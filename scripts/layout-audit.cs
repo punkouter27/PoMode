@@ -50,7 +50,7 @@ static async Task CaptureAsync(string outDir, string baseUrl)
     // One guest per run: the first visit mints the session, and the library read seeds the demo.
     var state = Path.Combine(outDir, "session.json");
     {
-        await using var context = await browser.NewContextAsync();
+        await using var context = await browser.NewContextAsync(new() { IgnoreHTTPSErrors = true });
         var page = await context.NewPageAsync();
         await page.GotoAsync(baseUrl);
         await page.WaitForSelectorAsync("h1", new() { State = WaitForSelectorState.Attached, Timeout = 60000 });
@@ -63,7 +63,7 @@ static async Task CaptureAsync(string outDir, string baseUrl)
         ("library", "/", false), ("mode-lab", "/modes", true), ("practice", "/practice", false), ("settings", "/settings", true), ("diagnostics", "/diagnostics", true),
     };
     {
-        await using var context = await browser.NewContextAsync(new() { StorageStatePath = state });
+        await using var context = await browser.NewContextAsync(new() { StorageStatePath = state, IgnoreHTTPSErrors = true });
         var page = await context.NewPageAsync();
         await page.GotoAsync(baseUrl);
         var jobId = await page.EvaluateAsync<string?>(@"async () => {
@@ -83,6 +83,7 @@ static async Task CaptureAsync(string outDir, string baseUrl)
             await using var context = await browser.NewContextAsync(new()
             {
                 StorageStatePath = state,
+                IgnoreHTTPSErrors = true,
                 ViewportSize = new() { Width = viewport.Width, Height = viewport.Height },
                 HasTouch = viewport.Touch,
                 IsMobile = viewport.Touch,
@@ -135,7 +136,28 @@ static async Task CaptureAsync(string outDir, string baseUrl)
                 if (clipped) out.push(`${clipped} element(s) clip their own content, e.g. ${clips.join(' | ')}`);
                 if (window.__cls > 0.1) out.push(`layout shift after load: CLS ${window.__cls.toFixed(3)}`);
                 return out; }", route.MayScroll);
-            findings = [.. findings, .. errors.Distinct().Take(3).Select(e => $"console error: {e[..Math.Min(e.Length, 160)]}")];
+            // WCAG A/AA through axe-core, in both themes: the app's tokens are defined once per theme, and
+            // a contrast bug in one of them is exactly what a single-theme check misses.
+            var axe = new List<string>();
+            try
+            {
+                await page.AddScriptTagAsync(new() { Url = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js" });
+                foreach (var scheme in new[] { ColorScheme.Light, ColorScheme.Dark })
+                {
+                    await page.EmulateMediaAsync(new() { ColorScheme = scheme });
+                    await page.WaitForTimeoutAsync(300);
+                    var violations = await page.EvaluateAsync<string[]>(@"async () => {
+                        const r = await axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa'] } });
+                        return r.violations.map(v => `${v.id} ×${v.nodes.length}: ${v.nodes.slice(0, 2).map(n => n.html.replace(/\s+/g, ' ').slice(0, 90)).join(' | ')}`); }");
+                    axe.AddRange(violations.Select(v => $"a11y ({scheme.ToString().ToLowerInvariant()}): {v}"));
+                }
+                await page.EmulateMediaAsync(new() { ColorScheme = ColorScheme.Light });
+            }
+            catch (PlaywrightException ex)
+            {
+                axe.Add($"a11y check did not run: {ex.Message.Split('\n')[0]}");
+            }
+            findings = [.. findings, .. axe, .. errors.Distinct().Take(3).Select(e => $"console error: {e[..Math.Min(e.Length, 160)]}")];
 
             var file = $"{route.Name}-{viewport.Name}.png";
             await page.ScreenshotAsync(new() { Path = Path.Combine(outDir, file), FullPage = true });

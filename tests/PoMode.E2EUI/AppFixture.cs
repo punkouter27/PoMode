@@ -52,7 +52,7 @@ public class AppFixture : IAsyncLifetime
             {
                 ["ASPNETCORE_ENVIRONMENT"] = "Development",
                 ["Jobs__RootPath"] = _jobsRoot,
-                // Browser tests assert on FakePitchTracker's deterministic output; a real model download
+                // Browser tests assert on the deterministic YIN pitch track; a real model download
                 // completing mid-suite would flip ExecutionPlanner onto the (non-deterministic here) local
                 // tier and also make these tests depend on network access. Models:RootPath is isolated
                 // too (not just AutoDownload=false) so a stray .onnx file already sitting in the shared
@@ -61,9 +61,9 @@ public class AppFixture : IAsyncLifetime
                 ["Models__AutoDownload"] = "false",
                 ["Models__RootPath"] = _modelsRoot,
                 // Headless Chromium honestly declares WASM inference capability, and a capable
-                // browser outranks FakePitchTracker — which would make every test here run real
+                // browser outranks YIN — which would make every test here run real
                 // (network-downloading, non-deterministic) in-browser inference. These tests assert
-                // the fake pipeline's deterministic output, so the browser tier is switched off;
+                // the server pipeline's deterministic output, so the browser tier is switched off;
                 // ClientDelegatedFlowTests covers Tier 2 on its own fixture with it switched on.
                 ["Tier2__Enabled"] = "false",
                 // Browser tests drive the real endpoints as fast as Playwright can click, so the
@@ -73,7 +73,7 @@ public class AppFixture : IAsyncLifetime
                 // No first-run demo: its template build would take the single worker ahead of the
                 // uploads under test, and its row and Home-page pointer are not what these assert on.
                 ["Demo__Enabled"] = "false",
-                // And nothing here may call out to MusicBrainz or AcousticBrainz: a suite that
+                // And nothing here may call out to a third-party service: a suite that
                 // depends on a third party's uptime is a suite that fails for reasons of its own.
             },
         };
