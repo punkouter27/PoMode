@@ -10,7 +10,9 @@ public sealed record LibraryChip(string Label, string Token);
 /// The Library's one search box. It used to be a text box plus a key dropdown plus a mode dropdown;
 /// now "dorian 120" means Dorian songs near 120 BPM. Each word is read as the first thing it can be:
 /// a mode ("dorian", or three letters of one), a key ("D", "Eb", "f#"), a tempo ("120", or a range
-/// "90-110"), a kind ("beat", "hum", "demo"); anything else has to appear in the file name.
+/// "90-110"), a kind ("beat", "hum", "demo"); anything else has to appear in the file name. Those
+/// leftover words are also <see cref="Description"/>: when no file name has them, the library asks the
+/// server which songs sound like them instead ("dark acoustic").
 /// </summary>
 public sealed partial class LibraryQuery
 {
@@ -24,13 +26,27 @@ public sealed partial class LibraryQuery
 
     private readonly List<Func<LibraryEntryDto, bool>> _tests = [];
     private readonly List<LibraryChip> _chips = [];
+    private readonly List<string> _nameWords = [];
 
     public string Text { get; }
     public IReadOnlyList<LibraryChip> Chips => _chips;
 
     private LibraryQuery(string text) => Text = text;
 
-    public bool Matches(LibraryEntryDto entry) => _tests.All(test => test(entry));
+    public bool Matches(LibraryEntryDto entry) => MatchesFilters(entry) && MatchesName(entry);
+
+    /// <summary>The chips alone, without the words that went to the file name.</summary>
+    public bool MatchesFilters(LibraryEntryDto entry) => _tests.All(test => test(entry));
+
+    private bool MatchesName(LibraryEntryDto entry)
+        => _nameWords.All(word => entry.FileName.Contains(word, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The words that were not a filter, in order: a file name to find, or a sound to describe.</summary>
+    public string Description => string.Join(' ', _nameWords);
+
+    /// <summary>The text with the description taken out, leaving only the chips' words.</summary>
+    public string WithoutDescription()
+        => string.Join(' ', Text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Except(_nameWords, StringComparer.Ordinal));
 
     public static LibraryQuery Parse(string? text)
     {
@@ -74,8 +90,7 @@ public sealed partial class LibraryQuery
             }
             else
             {
-                var name = word;
-                query._tests.Add(entry => entry.FileName.Contains(name, StringComparison.OrdinalIgnoreCase));
+                query._nameWords.Add(word);
             }
         }
         return query;

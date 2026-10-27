@@ -11,8 +11,13 @@
         <span class="gravity-home">@ModeNames.OnRoot(Tonic, Mode)</span>
         <span class="gravity-desc">Each note sits on the clock by how far it is above home. Another card: the same notes, a new home, a new shape. Tap a note to hear it.</span>
     </div>
-    <canvas class="gravity-canvas" @ref="_canvas" id="mode-gravity" role="img"
-            aria-label="@($"{ModeNames.OnRoot(Tonic, Mode)}: home note at the centre, the other notes of the scale around it by distance above it")"></canvas>
+    @* The consonance field sits under the bodies: the notes sounding together joined into one shape,
+       melted where they are consonant and creased where they are not. *@
+    <div class="gravity-stage">
+        <canvas class="gravity-field" @ref="_field" aria-hidden="true"></canvas>
+        <canvas class="gravity-canvas" @ref="_canvas" id="mode-gravity" role="img"
+                aria-label="@($"{ModeNames.OnRoot(Tonic, Mode)}: home note at the centre, the other notes of the scale around it by distance above it")"></canvas>
+    </div>
 </div>
 
 @code {
@@ -24,6 +29,7 @@
     [Parameter] public ScaleMode Mode { get; set; }
 
     private ElementReference _canvas;
+    private ElementReference _field;
     private IJSObjectReference? _module;
     private (int Tonic, ScaleMode Mode)? _sent;
 
@@ -54,7 +60,7 @@
             if (_module is null)
             {
                 _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/player/mode-gravity.js");
-                await _module.InvokeVoidAsync("init", _canvas);
+                await _module.InvokeVoidAsync("init", _canvas, _field);
             }
             _sent = (Tonic, Mode);
             var token = ModeNames.CssClass(Mode) is { Length: > 0 } css ? $"--pm-{css}" : "--pm-accent";

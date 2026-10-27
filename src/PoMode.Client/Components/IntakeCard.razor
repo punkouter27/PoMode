@@ -147,6 +147,7 @@
     private IJSObjectReference? _uploader;
     private IJSObjectReference? _recorder;
     private IJSObjectReference? _sfx;
+    private IJSObjectReference? _grains;
     private DotNetObjectReference<IntakeCard>? _self;
     private int _uploadPercent;
     private long _uploadLoaded;
@@ -232,6 +233,13 @@
         {
             _uploader ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/upload/resumable-upload.js");
             _self ??= DotNetObjectReference.Create(this);
+            // Kept for the wait preview's pour, which is cut from this audio: handed over before the
+            // upload, because the uploader clears a file input. A beat is never analysed or previewed.
+            if (!asBeat)
+            {
+                _grains ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/grains.js");
+                await _grains.InvokeVoidAsync("hold", source);
+            }
             var uploadId = await _uploader.InvokeAsync<string>("upload", source, name, _self, asBeat);
             var (status, error) = await Analysis.StartFromUploadAsync(
                 uploadId, ClientCapability is not null, Pins, asBeat);
@@ -239,6 +247,10 @@
             {
                 Refused(error ?? "The analyzer would not accept the file.");
                 return;
+            }
+            if (_grains is not null && !asBeat)
+            {
+                await _grains.InvokeVoidAsync("bind", status.JobId);
             }
             _uploading = false;
             await PlaySfxAsync("chime");
@@ -437,6 +449,10 @@
             if (_sfx is not null)
             {
                 await _sfx.DisposeAsync();
+            }
+            if (_grains is not null)
+            {
+                await _grains.DisposeAsync();
             }
         }
         catch (JSDisconnectedException)

@@ -2,6 +2,7 @@ using System.Threading.Channels;
 using PoMode.API.Features.Lyrics;
 using PoMode.API.Features.Push;
 using PoMode.API.Features.SongStatistics;
+using PoMode.API.Features.SoundSearch;
 using PoMode.Shared.Analysis;
 
 namespace PoMode.API.Features.Analysis;
@@ -78,13 +79,14 @@ public sealed class JobAftercare(
     }
 }
 
-/// <summary>Everything that wants to hear a job finished: the owner's browsers (Web Push), and the
-/// work done ahead of the owner opening it (<see cref="JobAftercare"/>).</summary>
-public sealed class OutcomeFanOut(WebPushOutcomeNotifier push, JobAftercare aftercare) : IJobOutcomeNotifier
+/// <summary>Everything that wants to hear a job finished: the owner's browsers (Web Push), the work
+/// done ahead of the owner opening it (<see cref="JobAftercare"/>), and the library's sound index.</summary>
+public sealed class OutcomeFanOut(WebPushOutcomeNotifier push, JobAftercare aftercare, SoundIndexer sound) : IJobOutcomeNotifier
 {
     public async Task NotifyAsync(JobState state, CancellationToken ct)
     {
         aftercare.Enqueue(state);
+        sound.Enqueue(state);
         await push.NotifyAsync(state, ct);
     }
 }

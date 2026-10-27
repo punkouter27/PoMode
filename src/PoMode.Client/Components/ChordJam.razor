@@ -1,0 +1,253 @@
+@using PoMode.Shared.Analysis
+@using PoMode.Client.Services
+@inject AnalysisClient Analysis
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@* Open guitar chord jam: progressions built from open-position voicings that leave strings ringing,
+   so a beginner's fingers make add9, sus and seventh chords. Each one is made fresh by the server from
+   a seed (OpenChordJams.Generate) — key, progression, voicings and the sentence about them; this asks
+   for one, keeps the ones already heard so Previous can go back, draws the boxes and strums the loop.
+   Like the rest of Practice it is unscored: there is nothing to get wrong, only something to play. *@
+<RadzenCard class="jam-card" data-jam-id="@_jam?.Id" data-jam-count="@_heard.Count">
+    <RadzenText TextStyle="TextStyle.H6" TagName="TagName.H2" Text="Open guitar chord jam" />
+    <p class="jam-intro">Open-position chords that leave strings ringing, so they sound richer than they are to play. Every press makes a new progression: hear it, and play along.</p>
+
+    @if (_jam is null)
+    {
+        <p class="jam-pending" role="status">@(_failed ? "No progression could be made just now." : "Tuning up…")</p>
+    }
+    else
+    {
+        var jam = _jam;
+        <div class="jam-controls">
+            <RadzenButton Text="New progression" Icon="casino" ButtonStyle="ButtonStyle.Light"
+                          Disabled="@(Disabled || _loading)" Click="@NewAsync" id="jam-new" />
+            <RadzenButton Text="Previous" Icon="undo" ButtonStyle="ButtonStyle.Light"
+                          Disabled="@(Disabled || _loading || _at == 0)" Click="@PreviousAsync" id="jam-previous"
+                          title="Back to the progression before this one" />
+            <div class="jam-tempo">
+                <RadzenSlider TValue="double" Min="50" Max="160" Step="2" Value="@_bpm" Change="@(value => SetTempoAsync(value))"
+                              Disabled="@Disabled" aria-label="Tempo" class="jam-tempo-slider" />
+                <span class="jam-tempo-value">@($"{_bpm:0} BPM")</span>
+            </div>
+            <RadzenButton Text="@(_playing ? "Stop" : "Play the jam")" Icon="@(_playing ? "stop" : "play_arrow")"
+                          ButtonStyle="ButtonStyle.Primary" Disabled="@(Disabled && !_playing)"
+                          Click="@ToggleAsync" id="jam-play" />
+        </div>
+
+        <h3 class="jam-title" aria-live="polite"><span class="jam-key">@jam.Key</span> @jam.Name</h3>
+        <p class="jam-feel">@jam.Feel</p>
+
+        <div class="jam-pattern" aria-label="@PatternLabel(jam.Pattern)">
+            <span class="pm-label">Strum, one bar</span>
+            <ol class="jam-slots" aria-hidden="true">
+                @foreach (var slot in jam.Pattern)
+                {
+                    <li class="jam-slot @(slot == '-' ? "rest" : "")">@SlotGlyph(slot)</li>
+                }
+            </ol>
+        </div>
+
+        @* The board holds one canvas over every box: string-glow.js vibrates the strings of whichever chord
+           is sounding on it, so the page holds one GPU context however long the progression. *@
+        <div class="jam-board" @ref="_board">
+            <ol class="jam-chords" data-chord-count="@jam.Chords.Count">
+                @for (var i = 0; i < jam.Chords.Count; i++)
+                {
+                    var chord = jam.Chords[i];
+                    <li class="jam-chord @(_playing && i == _current ? "current" : "")" data-chord="@chord.Symbol"
+                        aria-current="@(_playing && i == _current ? "true" : null)">
+                        <ChordBox Fingering="@Fingering(chord)" Label="@Describe(chord)" />
+                        <strong class="jam-chord-name">@chord.Symbol</strong>
+                        <span class="jam-chord-beats">@(chord.Beats == 4 ? "1 bar" : chord.Beats % 4 == 0 ? $"{chord.Beats / 4} bars" : $"{chord.Beats} beats")</span>
+                    </li>
+                }
+            </ol>
+            <canvas class="jam-strings" aria-hidden="true"></canvas>
+        </div>
+    }
+</RadzenCard>
+
+@code {
+    /// <summary>Held while Practice records a take: a strum under the microphone would be sung over twice.</summary>
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>Raised when the jam starts, so the page can stop its own chords first.</summary>
+    [Parameter] public EventCallback Started { get; set; }
+
+    /// <summary>Every progression made this visit, in order, and which one is showing.</summary>
+    private readonly List<ChordJamDto> _heard = [];
+    private int _at = -1;
+    private ChordJamDto? _jam;
+    private bool _failed;
+    private bool _loading;
+    private double _bpm;
+    private bool _playing;
+    private int _current;
+    private IJSObjectReference? _strum;
+    private IJSObjectReference? _glow;
+    private DotNetObjectReference<ChordJam>? _self;
+    private ElementReference _board;
+
+    protected override Task OnInitializedAsync() => NewAsync();
+
+    /// <summary>Hooks the strings' overlay to the board once it exists; it listens to strum.js itself.</summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_jam is null || _glow is not null)
+        {
+            return;
+        }
+        try
+        {
+            _glow = await JS.InvokeAsync<IJSObjectReference>("import", "./js/player/string-glow.js");
+            await _glow.InvokeVoidAsync("attach", _board);
+        }
+        catch (JSException)
+        {
+            // The boxes and the sound stand without the moving strings.
+        }
+    }
+
+    /// <summary>A progression nobody has heard yet, from a fresh seed; playing carries on into it.</summary>
+    private async Task NewAsync()
+    {
+        _loading = true;
+        try
+        {
+            if (await Analysis.GetChordJamAsync(Random.Shared.Next()) is { } jam)
+            {
+                _heard.Add(jam);
+                await ShowAsync(_heard.Count - 1);
+            }
+            _failed = _jam is null;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException)
+        {
+            _failed = _jam is null; // the progression already showing stays
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task PreviousAsync() => _at > 0 ? ShowAsync(_at - 1) : Task.CompletedTask;
+
+    private async Task ShowAsync(int index)
+    {
+        _at = index;
+        _jam = _heard[index];
+        _bpm = _jam.Bpm;
+        if (_playing)
+        {
+            await StartAsync(); // the new progression from its first chord, at its own tempo
+        }
+    }
+
+    /// <summary>Stops the strumming; Practice calls this before it plays chords of its own.</summary>
+    public async Task StopAsync()
+    {
+        if (!_playing)
+        {
+            return;
+        }
+        _playing = false;
+        try
+        {
+            if (_strum is not null)
+            {
+                await _strum.InvokeVoidAsync("stop");
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        StateHasChanged();
+    }
+
+    private async Task ToggleAsync()
+    {
+        if (_playing)
+        {
+            await StopAsync();
+            return;
+        }
+        await Started.InvokeAsync();
+        await StartAsync();
+    }
+
+    private async Task StartAsync()
+    {
+        if (_jam is null)
+        {
+            return;
+        }
+        _strum ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/player/strum.js");
+        _self ??= DotNetObjectReference.Create(this);
+        _current = 0;
+        _playing = true;
+        await _strum.InvokeVoidAsync("play",
+            _jam.Chords.Select(chord => new { midi = chord.Midi, beats = chord.Beats, frets = chord.Frets }), _bpm, _jam.Pattern, _self);
+    }
+
+    private async Task SetTempoAsync(double bpm)
+    {
+        _bpm = bpm;
+        if (_playing)
+        {
+            await StartAsync();
+        }
+    }
+
+    [JSInvokable]
+    public void OnJamChord(int index)
+    {
+        _current = index;
+        StateHasChanged();
+    }
+
+    private static ChordFingering Fingering(JamChordDto chord) => new(chord.Frets, chord.Fingers, 1, chord.Barres);
+
+    private static string Describe(JamChordDto chord)
+        => $"{chord.Symbol}: frets {string.Join(' ', chord.Frets.Select(f => f < 0 ? "x" : f.ToString()))}, lowest string first";
+
+    private static string SlotGlyph(char slot) => slot switch
+    {
+        'D' => "↓",
+        'U' => "↑",
+        'B' => "B",
+        _ => "·",
+    };
+
+    private static string PatternLabel(string pattern)
+        => "Strum pattern, eighth notes: " + string.Join(", ", pattern.Select(slot => slot switch
+        {
+            'D' => "down",
+            'U' => "up",
+            'B' => "bass note",
+            _ => "rest",
+        }));
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_strum is not null)
+            {
+                await _strum.InvokeVoidAsync("dispose");
+                await _strum.DisposeAsync();
+            }
+            if (_glow is not null)
+            {
+                await _glow.InvokeVoidAsync("dispose");
+                await _glow.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        _self?.Dispose();
+    }
+}

@@ -61,6 +61,13 @@ function freqOf(midi) {
     return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
+/// How many palette entries one step of an earcon climbs. A whole mode is climbed every other note;
+/// the job progress's provisional palette (tonic and fifth only, from the first-look key guess,
+/// which names no mode) is climbed note by note, so it rises tonic, fifth, octave like the fanfare.
+function stride() {
+    return palette && palette.length < 5 ? 1 : 2;
+}
+
 /// The palette pitch at `index`, wrapping upward by octaves past the top of the set so a run of
 /// eight steps over a pentatonic keeps ascending instead of folding back on itself.
 function paletteFreq(index) {
@@ -96,6 +103,12 @@ function ensureContext() {
     } catch {
         return null;
     }
+}
+
+/// The running context, for a module that builds its own grains (grains.js) but must obey the same
+/// gate and share the one context. Null whenever a sound here would be skipped.
+export function liveContext() {
+    return ensureContext();
 }
 
 /// One enveloped oscillator note: quick attack, exponential-ish release, self-disposing.
@@ -159,7 +172,7 @@ export function chime() {
         // Index 4 is the fifth degree of a seven-note mode and the fourth of a pentatonic — in both
         // cases a consonant step up from the tonic, which is all this needs to be.
         const low = paletteFreq(0) ?? 660;
-        const high = paletteFreq(4) ?? 880;
+        const high = paletteFreq(stride() * 2) ?? 880;
         epiano(ctx, roomOf(ctx), midiOf(low * (palette ? 2 : 1)), now, 0.3, 0.09);
         epiano(ctx, roomOf(ctx), midiOf(high * (palette ? 2 : 1)), now + 0.18, 0.4, 0.09);
     } catch {
@@ -234,7 +247,7 @@ export function stageStep(index) {
         const step = Math.max(0, index | 0);
         // Degrees 0, 2, 4, 6 — every other note of the mode, which ascends fast enough that four
         // stages span most of an octave without needing to know how many there will be.
-        const freq = paletteFreq(step * 2) ?? (440 * Math.pow(2, (step * 2) / 12));
+        const freq = paletteFreq(step * stride()) ??(440 * Math.pow(2, (step * 2) / 12));
         epiano(ctx, roomOf(ctx), midiOf(freq * 2), ctx.currentTime, 0.2, 0.05);
     } catch {
         // Fail silent.

@@ -504,6 +504,37 @@ img, svg, video, canvas {
     display: none;
 }
 
+/* Motion tokens. One spring for every press and tilt, so a button and a song tile give the same way:
+   the curve runs past its end and comes back, which is what reads as springy rather than eased. */
+:root {
+    --pm-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --pm-dur-press: 180ms;
+}
+
+/* A press the hand can see: a Radzen button gives under the pointer and springs back past its rest.
+   The fact it animates is the press landing. Only where the effect level allows motion; the reduced
+   motion rule below holds it still unless Full was chosen explicitly. Radzen's own colour and shadow
+   transitions are kept beside the transform. */
+:root[data-fx="full"] .rz-button,
+:root[data-fx="subtle"] .rz-button {
+    transition: transform var(--pm-dur-press) var(--pm-ease-spring),
+        background-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+:root[data-fx="full"] .rz-button:not(:disabled):not(.rz-state-disabled):active {
+    transform: scale(0.97);
+}
+
+:root[data-fx="subtle"] .rz-button:not(:disabled):not(.rz-state-disabled):active {
+    transform: scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root:not([data-fx="full"]) .rz-button:active {
+        transform: none;
+    }
+}
+
 /* A key-tinted glow for the element the user should be looking at — the active take, the card the
    playhead is inside. One class so "this is live" looks the same everywhere. */
 .pm-keyed {

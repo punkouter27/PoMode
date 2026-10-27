@@ -11,6 +11,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddRadzenComponents();
 builder.Services.AddSingleton<MockDataState>();
 builder.Services.AddScoped<AnalysisClient>();
+builder.Services.AddScoped<ChordFingerings>();
 builder.Services.AddScoped<SessionState>();
 builder.Services.AddScoped<BrowserPrefs>();
 builder.Services.AddScoped<ThemeState>();

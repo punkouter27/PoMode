@@ -70,4 +70,24 @@ public sealed record WaveformPeaksDto(double DurationSec, string Source, IReadOn
 /// <summary>One sung line, as Whisper heard it on the separated vocal, with when it was sung.</summary>
 public sealed record LyricLineDto(double StartSec, double EndSec, string Text);
 
+/// <summary>A song's chords as a player fingers them (<c>GET /api/analysis/{id}/shapes</c>): the capo
+/// fret that puts most of its playing time into open shapes (0 for none), the server's sentence about
+/// it, and the chords, longest-held first.</summary>
+public sealed record ChordShapesDto(int CapoFret, string Advice, IReadOnlyList<ChordShapeDto> Chords);
+
+/// <summary>One chord: as it sounds (<see cref="Symbol"/>, <see cref="Root"/>) and the shape played
+/// behind the capo (<see cref="ShapeSymbol"/>, <see cref="ShapeRoot"/>), with chords-db's suffix and
+/// the share of the song it is held for.</summary>
+public sealed record ChordShapeDto(string Symbol, string ShapeSymbol, int Root, int ShapeRoot, string Suffix, double Percent);
+
+/// <summary>One open guitar chord jam on the Practice page (<c>GET /api/chord-jams</c>): a progression
+/// of open-position voicings, with the sentence saying why it sounds richer than it is to play, and an
+/// eighth-note strum pattern over a 4/4 bar (D down, U up, B bass alone, - rest).</summary>
+public sealed record ChordJamDto(
+    string Id, string Name, string Key, string Feel, double Bpm, string Pattern, IReadOnlyList<JamChordDto> Chords);
+
+/// <summary>One chord of a jam as fingered, low E string first: fret (-1 muted, 0 open) and finger per
+/// string, any barred frets, the MIDI notes a strum sounds in standard tuning, and its length in beats.</summary>
+public sealed record JamChordDto(string Symbol, int[] Frets, int[] Fingers, int[] Barres, int[] Midi, int Beats);
+
 public sealed record ChromaDto(double FramesPerSecond, int Frames, int TonicPitchClass, string Energy);

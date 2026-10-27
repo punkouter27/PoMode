@@ -30,11 +30,27 @@
     color: var(--pm-fg-muted);
 }
 
-.gravity-canvas {
-    display: block;
+/* The bodies' canvas and the consonance field under it share one box, so their pixels line up. */
+.gravity-stage {
+    position: relative;
     flex: 1 1 18rem;
     min-width: 0;
     height: 200px;
+}
+
+.gravity-field {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.gravity-canvas {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
     cursor: pointer;
     touch-action: pan-y;
 }
@@ -51,7 +67,7 @@
         flex: none;
     }
 
-    .gravity-canvas {
+    .gravity-stage {
         flex: none;
         width: 100%;
     }

@@ -1,0 +1,61 @@
+.shapes-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pm-space-2) var(--pm-space-3);
+    margin-bottom: var(--pm-space-2);
+}
+
+.shapes-advice,
+.shapes-pending {
+    flex: 1 1 16rem;
+    min-width: 0;
+    margin: 0;
+    font-size: var(--pm-text-sm);
+    color: var(--pm-fg);
+}
+
+.shapes-pending {
+    color: var(--pm-fg-muted);
+}
+
+.shapes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    gap: var(--pm-space-2);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.shape {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: var(--pm-space-2) 0.5rem;
+    background: var(--pm-lane-bg);
+    border: 1px solid var(--pm-border);
+    border-radius: 6px;
+    min-width: 0;
+    font-size: var(--pm-text-sm);
+}
+
+/* Holds the drawing's room when chords-db has no fingering, so the row of boxes stays aligned. */
+.shape-missing {
+    height: 110px;
+}
+
+.shape-name {
+    text-align: center;
+}
+
+.shape-as {
+    margin-left: 0.25rem;
+}
+
+.shape-as,
+.shape-share {
+    color: var(--pm-fg-muted);
+    font-size: var(--pm-text-xs);
+}

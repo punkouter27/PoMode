@@ -11,9 +11,14 @@
 //
 // A few dozen lines of spring physics rather than an engine: nine bodies at most, each pulled toward
 // its target and damped a little under critical, so it overshoots and settles.
+//
+// Under the bodies, the notes sounding together are joined into one shape by metaball-field.js: a
+// consonant pair melts into a single blob, a dissonant one pinches to a creased thread. What sounds
+// is modal-player's; how strongly two notes bond is their interval's consonance, nothing else.
 
 import * as prefs from '../shell/prefs.js';
 import { soundingPitches, audition } from './modal-player.js';
+import { consonance, createField, toRgb } from './metaball-field.js';
 
 const states = new Map();
 
@@ -21,6 +26,7 @@ const STIFFNESS = 90;
 const DAMPING = 11;
 const SETTLED = 0.2;
 const IDLE_POLL_MS = 250;
+const BOND_RATE = 7;
 
 function readColours(state) {
     const style = getComputedStyle(state.canvas);
@@ -33,6 +39,11 @@ function readColours(state) {
         inMode: read('--pm-note-in-mode', '#059669'),
         characteristic: read('--pm-note-characteristic', '#d97706'),
         home: (/^--pm-[a-z-]+$/.test(state.homeToken) ? read(state.homeToken, '') : '') || read('--pm-accent', '#6750a4'),
+    };
+    state.rgb = {
+        home: toRgb(state.colours.home),
+        inMode: toRgb(state.colours.inMode),
+        characteristic: toRgb(state.colours.characteristic),
     };
 }
 
@@ -69,8 +80,11 @@ function step(state, dt) {
         const alphaGoal = body.present ? 1 : 0;
         body.alpha += (alphaGoal - body.alpha) * Math.min(1, dt * 8);
         body.pulse = Math.max(0, body.pulse - (dt * 2.2));
+        // How far the body has melted into the chord: eased in and out with motion, set outright without.
+        const bondGoal = body.present && state.sounding.has(body.pitchClass) ? 1 : 0;
+        body.bond = state.animate ? body.bond + ((bondGoal - body.bond) * Math.min(1, dt * BOND_RATE)) : bondGoal;
         moving ||= Math.abs(body.vx) + Math.abs(body.vy) > SETTLED || Math.abs(body.alpha - alphaGoal) > 0.01
-            || body.pulse > 0.01;
+            || body.pulse > 0.01 || Math.abs(body.bond - bondGoal) > 0.01;
     }
     // Faded-out bodies (a seven-note mode's notes that a pentatonic leaves out) are dropped once gone.
     for (const [key, body] of state.bodies) {
@@ -81,13 +95,72 @@ function step(state, dt) {
     return moving;
 }
 
+/// Lights the sounding bodies and answers their pitch classes: the set the field joins together.
 function lightSounding(state) {
+    const sounding = new Set();
     for (const { midi, part } of soundingPitches()) {
-        const body = state.bodies.get(((midi % 12) + 12) % 12);
+        const pitchClass = ((midi % 12) + 12) % 12;
+        const body = state.bodies.get(pitchClass);
         if (body && body.present) {
             body.pulse = Math.max(body.pulse, part === 'melody' ? 1 : 0.55);
+            sounding.add(pitchClass);
         }
     }
+    return sounding;
+}
+
+/// The consonance field under the bodies. Only bonded bodies take part; each pair of them gets a
+/// neck shaped by its interval. At the subtle level it is drawn at half resolution, every other frame.
+function drawField(state) {
+    const field = state.field;
+    if (!field || field.renderer() === 'none') {
+        return;
+    }
+    const bonded = [...state.bodies.values()]
+        .filter(body => body.bond > 0.01 && body.alpha > 0.01)
+        .sort((a, b) => b.bond - a.bond)
+        .slice(0, 8);
+    const key = bonded.map(body => `${body.pitchClass}:${body.x.toFixed(1)},${body.y.toFixed(1)},${body.r.toFixed(1)},${body.bond.toFixed(2)}`).join('|')
+        + `|${state.canvas.clientWidth}x${state.canvas.clientHeight}|${state.themeVersion}`;
+    if (key === state.fieldKey) {
+        return;
+    }
+    const subtle = prefs.level() === 'subtle';
+    state.fieldFrame = (state.fieldFrame + 1) % 2;
+    if (subtle && state.fieldFrame === 1 && bonded.length > 0) {
+        return;
+    }
+    state.fieldKey = key;
+    if (bonded.length === 0) {
+        field.clear();
+        state.canvas.dataset.bonds = '';
+        return;
+    }
+    const bodies = bonded.map(body => ({
+        x: body.x,
+        y: body.y,
+        r: Math.max(body.r, 1) * 1.55,
+        bond: body.bond * body.alpha,
+        rgb: body.home ? state.rgb.home : body.characteristic ? state.rgb.characteristic : state.rgb.inMode,
+    }));
+    const pairs = [];
+    for (let a = 0; a < bonded.length; a++) {
+        for (let b = a + 1; b < bonded.length; b++) {
+            pairs.push({ a, b, consonance: consonance(bonded[a].pitchClass, bonded[b].pitchClass) });
+        }
+    }
+    field.render(bodies, pairs, subtle ? 0.5 : Math.min(window.devicePixelRatio || 1, 2));
+    // Which notes are joined and how strongly, for Playwright: "0-7:0.90,0-4:0.65".
+    state.canvas.dataset.bonds = pairs
+        .map(pair => `${bonded[pair.a].pitchClass}-${bonded[pair.b].pitchClass}:${pair.consonance.toFixed(2)}`)
+        .join(',');
+}
+
+function fieldStatus(state) {
+    if (!state.field || state.field.renderer() === 'none') {
+        return 'off';
+    }
+    return state.animate ? 'live' : 'still';
 }
 
 function draw(state) {
@@ -179,11 +252,10 @@ function loop(state, now) {
     const dt = state.last > 0 ? Math.min((now - state.last) / 1000, 1 / 30) : 1 / 60;
     state.last = now;
     const playing = document.body?.dataset.modalPlayer === 'playing';
-    if (playing) {
-        lightSounding(state);
-    }
+    state.sounding = playing ? lightSounding(state) : new Set();
     const moving = step(state, dt);
     draw(state);
+    drawField(state);
     state.canvas.dataset.settled = moving ? '0' : '1';
     if (moving || playing) {
         state.frame = requestAnimationFrame(next => loop(state, next));
@@ -217,10 +289,17 @@ function onPointerDown(state, event) {
     }
 }
 
-export function init(canvas) {
+/// `field` is the canvas laid under `canvas` for the consonance field; without one the view is the
+/// bodies alone.
+export function init(canvas, field) {
     dispose(canvas);
     const state = {
         canvas,
+        field: null,
+        fieldKey: null,
+        fieldFrame: 0,
+        sounding: new Set(),
+        themeVersion: 0,
         bodies: new Map(),
         homeToken: '',
         colours: null,
@@ -236,13 +315,33 @@ export function init(canvas) {
     state.resize.observe(canvas);
     state.onTheme = () => {
         readColours(state);
+        state.themeVersion++;
         wake(state);
     };
     state.scheme = window.matchMedia('(prefers-color-scheme: dark)');
     state.scheme.addEventListener('change', state.onTheme);
     state.themeObserver = new MutationObserver(state.onTheme);
     state.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    // With effects off the field still shows which notes are joined, but snaps rather than melts; a
+    // level change takes effect in place.
+    state.unsubscribe = prefs.subscribe(() => {
+        state.animate = prefs.allowsMotion();
+        state.fieldKey = null;
+        canvas.dataset.metaballs = fieldStatus(state);
+        wake(state);
+    });
+    canvas.dataset.metaballs = 'off';
     states.set(canvas, state);
+    if (field) {
+        state.field = createField(field);
+        state.field.ready.then(() => {
+            if (states.get(canvas) === state) {
+                canvas.dataset.metaballs = fieldStatus(state);
+                wake(state);
+            }
+        });
+    }
 }
 
 /// A note played from outside the loop (a MIDI keyboard) lights its body the way a tap does. A
@@ -278,7 +377,7 @@ export function setMode(canvas, bodies, homeToken) {
     for (const next of bodies) {
         incoming.add(next.pitchClass);
         const body = state.bodies.get(next.pitchClass)
-            ?? { x: cx, y: cy, r: 0, vx: 0, vy: 0, vr: 0, alpha: 0, pulse: 0 };
+            ?? { x: cx, y: cy, r: 0, vx: 0, vy: 0, vr: 0, alpha: 0, pulse: 0, bond: 0 };
         Object.assign(body, next, { present: true });
         state.bodies.set(next.pitchClass, body);
     }
@@ -307,5 +406,7 @@ export function dispose(canvas) {
     state.resize.disconnect();
     state.scheme.removeEventListener('change', state.onTheme);
     state.themeObserver.disconnect();
+    state.unsubscribe();
+    state.field?.dispose();
     states.delete(canvas);
 }

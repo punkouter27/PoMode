@@ -1,0 +1,113 @@
+@using PoMode.Shared.Analysis
+@using PoMode.Client.Services
+@inject AnalysisClient Client
+@inject ChordFingerings Fingerings
+
+@* The song's chords as boxes a guitarist or ukulele player reads at a glance, longest-held first, with
+   the server's capo advice. The capo is a guitarist's answer, so the ukulele shows the chords as they
+   sound and no advice. Fingerings are chords-db's first position for each chord. *@
+@if (_shapes is null)
+{
+    <p class="shapes-pending" role="status">@(_failed ? "No chords to show for this song." : "Reading the chords…")</p>
+}
+else
+{
+    <div class="shapes-head">
+        <RadzenSelectBar TValue="string" Value="@_instrument" Change="@(value => ShowAsync(value))" Size="ButtonSize.Small"
+                         aria-label="Instrument">
+            <Items>
+                <RadzenSelectBarItem Text="Guitar" Value="@ChordFingerings.Guitar" />
+                <RadzenSelectBarItem Text="Ukulele" Value="@ChordFingerings.Ukulele" />
+            </Items>
+        </RadzenSelectBar>
+        @if (IsGuitar && _shapes.Advice.Length > 0)
+        {
+            <p class="shapes-advice" data-capo="@_shapes.CapoFret">@_shapes.Advice</p>
+        }
+    </div>
+    <ul class="shapes-grid" data-instrument="@_instrument">
+        @foreach (var chord in _shapes.Chords)
+        {
+            var fingering = _boxes.GetValueOrDefault(chord.Symbol);
+            <li class="shape" data-chord="@chord.Symbol">
+                @if (fingering is { } box)
+                {
+                    <ChordBox Fingering="box" Label="@Describe(chord, box)" />
+                }
+                else
+                {
+                    <div class="shape-missing" aria-hidden="true"></div>
+                }
+                <span class="shape-name">
+                    <strong>@chord.Symbol</strong>
+                    @if (IsGuitar && _shapes.CapoFret > 0 && chord.ShapeSymbol != chord.Symbol)
+                    {
+                        <span class="shape-as">as @chord.ShapeSymbol</span>
+                    }
+                </span>
+                <span class="shape-share">@($"{chord.Percent:0}% of the song")</span>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter, EditorRequired] public required string JobId { get; set; }
+
+
+    private ChordShapesDto? _shapes;
+    private bool _failed;
+    private string _instrument = ChordFingerings.Guitar;
+    private Dictionary<string, ChordFingering?> _boxes = [];
+
+    private bool IsGuitar => _instrument == ChordFingerings.Guitar;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _shapes = await Client.GetChordShapesAsync(JobId);
+            _failed = _shapes is null;
+            if (_shapes is not null)
+            {
+                await ShowAsync(_instrument);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            _failed = true;
+        }
+    }
+
+    private async Task ShowAsync(string instrument)
+    {
+        _instrument = instrument;
+        if (_shapes is null)
+        {
+            return;
+        }
+        var boxes = new Dictionary<string, ChordFingering?>();
+        try
+        {
+            foreach (var chord in _shapes.Chords)
+            {
+                // Behind a capo the guitarist fingers the shape; the ukulele plays the chord as it sounds.
+                var root = IsGuitar ? chord.ShapeRoot : chord.Root;
+                boxes[chord.Symbol] = await Fingerings.FindAsync(instrument, root, chord.Suffix);
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException)
+        {
+            // The names and the capo advice still stand without the drawings.
+        }
+        _boxes = boxes;
+    }
+
+    /// <summary>What the drawing shows, string by string from the lowest: "x" muted, "0" open.</summary>
+    private string Describe(ChordShapeDto chord, ChordFingering box)
+    {
+        var frets = string.Join(' ', box.Frets.Select(f => f < 0 ? "x" : f == 0 ? "0" : (f + box.BaseFret - 1).ToString()));
+        var name = IsGuitar && _shapes?.CapoFret > 0 ? $"{chord.Symbol} as a {chord.ShapeSymbol} shape" : chord.Symbol;
+        return $"{name}: frets {frets}, lowest string first";
+    }
+}

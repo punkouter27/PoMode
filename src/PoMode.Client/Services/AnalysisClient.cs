@@ -140,6 +140,25 @@ public sealed class AnalysisClient(HttpClient http)
     public Task<List<SimilarSongDto>?> GetSimilarAsync(string jobId)
         => http.GetFromJsonAsync<List<SimilarSongDto>>($"api/library/{jobId}/similar");
 
+    /// <summary>The caller's songs that sound like the words, best first; null when this server cannot
+    /// search by sound at all (Azure, or the CLAP models not downloaded yet).</summary>
+    public async Task<List<SoundMatchDto>?> SearchBySoundAsync(string words)
+    {
+        using var response = await http.GetAsync($"api/library/sound?q={Uri.EscapeDataString(words)}");
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<List<SoundMatchDto>>() : null;
+    }
+
+    /// <summary>A fresh open guitar chord jam; the same seed always brings back the same one.</summary>
+    public Task<ChordJamDto?> GetChordJamAsync(int seed)
+        => http.GetFromJsonAsync<ChordJamDto>($"api/chord-jams/random?seed={seed}");
+
+    /// <summary>The song's chords as a player fingers them, with the capo advice; null when it has none.</summary>
+    public async Task<ChordShapesDto?> GetChordShapesAsync(string jobId)
+    {
+        using var response = await http.GetAsync($"api/analysis/{jobId}/shapes");
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<ChordShapesDto>() : null;
+    }
+
     /// <summary>The audio in the signed-in person's OneDrive, or NeedsConsent when Microsoft has not
     /// (or no longer) granted read access to their files.</summary>
     public async Task<(List<OneDriveFileDto>? Files, bool NeedsConsent)> GetOneDriveAudioAsync()

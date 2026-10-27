@@ -12,10 +12,45 @@
 // WebGL2 when available: the matrix is one R8 texture and the whole picture is one fragment shader
 // pass, which keeps a 256-bar song (65k cells, redrawn as the playhead moves) trivially cheap. Without
 // WebGL2 the same picture is painted with 2D canvas calls.
+//
+// When the playhead walks into a section whose mode moves the key signature, key-caustics.js sends a
+// ripple of light across the matrix from that boundary, with one ring per step around the circle of
+// fifths, and the lead voice glides the scale degree that changed from its old pitch to its new one.
+// Sections share the song's tonic (the server names a mode per section, not a key), so the distance
+// is the one between the two modes' key signatures on that tonic.
 
 import * as prefs from '../shell/prefs.js';
+import { bus, lead } from './voices.js';
+import { createCaustics } from './key-caustics.js';
 
 const states = new Map();
+
+/// Each mode's scale on its tonic, and where its key signature sits on the circle of fifths relative
+/// to the major (Ionian) one on the same tonic: Lydian a sharp more, Locrian five flats more. A
+/// pentatonic is placed with the scale it is cut from.
+const MODES = {
+    Lydian: { fifths: 1, steps: [0, 2, 4, 6, 7, 9, 11] },
+    Ionian: { fifths: 0, steps: [0, 2, 4, 5, 7, 9, 11] },
+    Mixolydian: { fifths: -1, steps: [0, 2, 4, 5, 7, 9, 10] },
+    Dorian: { fifths: -2, steps: [0, 2, 3, 5, 7, 9, 10] },
+    Aeolian: { fifths: -3, steps: [0, 2, 3, 5, 7, 8, 10] },
+    Phrygian: { fifths: -4, steps: [0, 1, 3, 5, 7, 8, 10] },
+    Locrian: { fifths: -5, steps: [0, 1, 3, 5, 6, 8, 10] },
+};
+MODES.MajorPentatonic = MODES.Ionian;
+MODES.MinorPentatonic = MODES.Aeolian;
+
+/// Steps around the circle of fifths between two sections' key signatures, 0..6, or null when either
+/// section's mode was not named (there is then no key change to show).
+export function fifthsBetween(fromMode, toMode) {
+    const from = MODES[fromMode];
+    const to = MODES[toMode];
+    if (!from || !to) {
+        return null;
+    }
+    const span = (((to.fifths - from.fifths) % 12) + 12) % 12;
+    return Math.min(span, 12 - span);
+}
 
 const MAX_BOUNDARIES = 32;
 const MAX_SECTIONS = 16;
@@ -404,6 +439,70 @@ function drawNovelty(state, kernel, play) {
     ctx.textAlign = 'start';
 }
 
+// ---- key-change ripple ----
+
+/// The section a moment falls in, or -1 before the first or after the last.
+function sectionAt(sections, seconds) {
+    return sections.findIndex(section => seconds >= section.startSec && seconds < section.endSec);
+}
+
+/// Plays the lead voice gliding the first scale degree the new mode moved, from its old pitch to its
+/// new one, around the tonic above middle C. Nothing when sound is off or the tonic is unknown.
+function glide(state, fromMode, toMode) {
+    const from = MODES[fromMode];
+    const to = MODES[toMode];
+    if (!prefs.allowsSound() || state.tonic === null || !from || !to) {
+        return;
+    }
+    const degree = from.steps.findIndex((step, i) => step !== to.steps[i]);
+    if (degree < 0) {
+        return;
+    }
+    try {
+        state.audio ??= new AudioContext();
+        const ctx = state.audio;
+        ctx.resume?.();
+        state.audioBus ??= bus(ctx, ctx.destination, 0.25);
+        const base = 60 + state.tonic;
+        const start = base + from.steps[degree];
+        const end = base + to.steps[degree];
+        const when = ctx.currentTime + 0.02;
+        const [body, air] = lead(ctx, state.audioBus, start, when, 0.7, 0.12);
+        // Hold the old pitch long enough to be heard, then bend to the new one.
+        for (const [osc, ratio] of [[body, 1], [air, 2]]) {
+            osc.frequency.setValueAtTime(440 * Math.pow(2, (start - 69) / 12) * ratio, when + 0.18);
+            osc.frequency.exponentialRampToValueAtTime(440 * Math.pow(2, (end - 69) / 12) * ratio, when + 0.42);
+        }
+    } catch {
+        // No audio hardware, or the browser refused the context: the ripple carries it alone.
+    }
+}
+
+/// Watches the playhead walk from one section into the next; a move between key signatures starts
+/// the ripple at that boundary. A seek is not a crossing: only the step into the following section,
+/// within a second of it starting, counts.
+function watchSections(state, seconds) {
+    const sections = state.data.sections;
+    const index = sectionAt(sections, seconds);
+    const previous = state.sectionIndex;
+    state.sectionIndex = index;
+    if (index <= 0 || previous !== index - 1 || seconds - sections[index].startSec > 1) {
+        return;
+    }
+    const steps = fifthsBetween(sections[index - 1].mode, sections[index].mode);
+    if (steps === null || sections[index - 1].mode === sections[index].mode) {
+        return;
+    }
+    const bar = state.sectionBars[index][0] / state.bars;
+    if (state.caustics) {
+        state.matrix.dataset.caustics = String(steps);
+        state.caustics.play({ x: bar, y: bar, steps, rgb: state.sectionRgb[index] }, prefs.level(), () => {
+            state.matrix.dataset.caustics = 'idle';
+        });
+    }
+    glide(state, sections[index - 1].mode, sections[index].mode);
+}
+
 // ---- loop ----
 
 function frame(state, now) {
@@ -411,6 +510,7 @@ function frame(state, now) {
     const source = state.playheadSource;
     const seconds = source ? Number(source.dataset.playhead) : 0;
     const play = barAt(state.data.barStarts, seconds);
+    watchSections(state, seconds);
 
     // The opening slide, then the kernel follows the playhead to the nearest bar line — or, before
     // anything has played, rests on the strongest boundary so the still picture explains itself.
@@ -439,8 +539,10 @@ function frame(state, now) {
 }
 
 /// Draws `data` (a SongStructureDto) into `matrix`, with the novelty strip in `novelty`.
-/// `playheadSource` is the analysis canvas, whose data-playhead the kernel follows.
-export function init(matrix, novelty, data, playheadSource) {
+/// `playheadSource` is the analysis canvas, whose data-playhead the kernel follows. `caustics` is
+/// the canvas laid over the matrix for the key-change ripple, and `tonic` the song's tonic pitch
+/// class (null when unknown, which silences the glide).
+export function init(matrix, novelty, data, playheadSource, caustics, tonic) {
     dispose(matrix);
     const cells = decodeMatrix(data.similarity);
     const bars = data.novelty.length;
@@ -470,7 +572,17 @@ export function init(matrix, novelty, data, playheadSource) {
         gl: null,
         image: null,
         raf: null,
+        tonic: Number.isInteger(tonic) ? tonic : null,
+        sectionIndex: -1,
+        caustics: caustics ? createCaustics(caustics) : null,
+        audio: null,
+        audioBus: null,
     };
+    matrix.dataset.caustics = 'idle';
+    // The opening slide and the ripple both read the level as it stands, so a change applies in place.
+    state.unsubscribe = prefs.subscribe(() => {
+        state.animate = prefs.allowsMotion();
+    });
     readColours(state);
     const webgl = initGl(state);
     matrix.dataset.renderer = webgl ? 'webgl2' : '2d';
@@ -505,5 +617,8 @@ export function dispose(matrix) {
         state.gl.gl.deleteTexture(state.gl.texture);
         state.gl.gl.deleteProgram(state.gl.program);
     }
+    state.unsubscribe();
+    state.caustics?.dispose();
+    state.audio?.close().catch(() => { });
     states.delete(matrix);
 }

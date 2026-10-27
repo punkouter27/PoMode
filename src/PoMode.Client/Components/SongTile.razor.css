@@ -26,3 +26,62 @@
 .tile-locrian .tile-ground { fill: #be185d; }
 .tile-minorpentatonic .tile-ground { fill: #0891b2; }
 .tile-majorpentatonic .tile-ground { fill: #65a30d; }
+
+/* The tilt, under effects only. Each key's class carries its angle (the stripes' own, 30 degrees a
+   semitone); a tile tips about that line when its row is pointed at or focused, so two songs in one
+   key tip the same way. The light that crosses the raised face is the mode's colour token, the same
+   one the analysis page titles its cards in; the pentatonics have none and take the accent. */
+.tile-key-0 { --pm-key: 0deg; }
+.tile-key-1 { --pm-key: 30deg; }
+.tile-key-2 { --pm-key: 60deg; }
+.tile-key-3 { --pm-key: 90deg; }
+.tile-key-4 { --pm-key: 120deg; }
+.tile-key-5 { --pm-key: 150deg; }
+.tile-key-6 { --pm-key: 180deg; }
+.tile-key-7 { --pm-key: 210deg; }
+.tile-key-8 { --pm-key: 240deg; }
+.tile-key-9 { --pm-key: 270deg; }
+.tile-key-10 { --pm-key: 300deg; }
+.tile-key-11 { --pm-key: 330deg; }
+
+.tile-keyed { --pm-tile-light: var(--pm-accent); }
+.tile-keyed.tile-ionian { --pm-tile-light: var(--pm-mode-ionian); }
+.tile-keyed.tile-dorian { --pm-tile-light: var(--pm-mode-dorian); }
+.tile-keyed.tile-phrygian { --pm-tile-light: var(--pm-mode-phrygian); }
+.tile-keyed.tile-lydian { --pm-tile-light: var(--pm-mode-lydian); }
+.tile-keyed.tile-mixolydian { --pm-tile-light: var(--pm-mode-mixolydian); }
+.tile-keyed.tile-aeolian { --pm-tile-light: var(--pm-mode-aeolian); }
+.tile-keyed.tile-locrian { --pm-tile-light: var(--pm-mode-locrian); }
+
+/* Clipped to its own corners so the band of light never shows outside the tile. */
+.tile-keyed {
+    clip-path: inset(0 round 6px);
+}
+
+.tile-specular {
+    fill: color-mix(in srgb, var(--pm-tile-light) 55%, white);
+    opacity: 0;
+}
+
+:root:not([data-fx="off"]) .tile-keyed {
+    --pm-tilt: 18deg;
+    transition: transform 220ms var(--pm-ease-spring, ease-out);
+}
+
+:root[data-fx="subtle"] .tile-keyed {
+    --pm-tilt: 9deg;
+}
+
+:root:not([data-fx="off"]) .tile-specular {
+    transition: opacity 220ms ease-out;
+}
+
+:root:not([data-fx="off"]) tr:hover .tile-keyed,
+:root:not([data-fx="off"]) tr:focus-within .tile-keyed {
+    transform: perspective(80px) rotate3d(cos(var(--pm-key)), sin(var(--pm-key)), 0, calc(var(--pm-tilt) * -1));
+}
+
+:root:not([data-fx="off"]) tr:hover .tile-specular,
+:root:not([data-fx="off"]) tr:focus-within .tile-specular {
+    opacity: 0.55;
+}

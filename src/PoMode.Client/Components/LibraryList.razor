@@ -39,7 +39,7 @@
                            @oninput="@(e => SetQueryAsync(e.Value?.ToString() ?? ""))" />
                     <span class="library-count" role="status">@LibraryCount</span>
         </div>
-        @if (_query.Chips.Count > 0)
+        @if (_query.Chips.Count > 0 || SoundMatches is not null)
         {
             <ul class="library-chips" aria-label="Filters in use">
                 @foreach (var chip in _query.Chips)
@@ -47,6 +47,15 @@
                     <li>
                         <button type="button" class="library-chip" @onclick="@(() => SetQueryAsync(_query.Without(chip)))"
                                 aria-label="@($"Remove filter {chip.Label}")">@chip.Label <span aria-hidden="true">×</span></button>
+                    </li>
+                }
+                @* The words no file name had, heard as a description: the rows are ranked by sound. *@
+                @if (SoundMatches is not null)
+                {
+                    <li>
+                        <button type="button" class="library-chip library-chip--sound" data-sound-search="@_query.Description"
+                                @onclick="@(() => SetQueryAsync(_query.WithoutDescription()))"
+                                aria-label="@($"Remove sound search {_query.Description}")">Sounds like “@_query.Description” <span aria-hidden="true">×</span></button>
                     </li>
                 }
             </ul>
@@ -60,7 +69,14 @@
                         <div class="library-empty" role="status">
                             <RadzenIcon Icon="search" class="library-empty-icon" />
                             <p class="library-empty-text">
-                                No song matches <strong>@(_query.Text)</strong>.
+                                @if (_soundPending)
+                                {
+                                    <text>Listening for songs that sound like <strong>@_query.Description</strong>…</text>
+                                }
+                                else
+                                {
+                                    <text>No song matches <strong>@(_query.Text)</strong>.</text>
+                                }
                             </p>
                             <RadzenButton Text="Clear the search" Icon="close" ButtonStyle="ButtonStyle.Light"
                                           Click="@(() => SetQueryAsync(string.Empty))" />
@@ -68,8 +84,26 @@
                     }
                     else
                     {
+                    @* Ranked by sound: the same songs as the table under it, drawn as distance from the
+                       words (sound-space.js). Each disc is a link and a label; pointing at a disc or a
+                       row lights both, and lets the song be heard from where its disc sits. *@
+                    @if (SoundSpace is { } space)
+                    {
+                        <div class="sound-space" @ref="_soundSpaceEl" data-sound-space="@space.Count"
+                             role="group" aria-label="@($"Songs that sound like {_query.Description}, nearest first")">
+                            <canvas class="sound-space-canvas" aria-hidden="true"></canvas>
+                            @foreach (var (entry, score) in space)
+                            {
+                                <a class="sound-disc" href="@($"/?job={entry.JobId}")" data-job="@entry.JobId"
+                                   data-similarity="@score.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture)"
+                                   title="@($"{entry.FileName} · {score:0.00}")"
+                                   aria-label="@($"{entry.FileName}, sound match {score:0.00}")"></a>
+                            }
+                        </div>
+                    }
                     <RadzenDataGrid Data="@Filtered" TItem="LibraryEntryDto" AllowSorting="true" Density="Density.Compact"
-                            AllowPaging="true" PageSize="8" PagerHorizontalAlign="HorizontalAlign.Center">
+                            AllowPaging="true" PageSize="8" PagerHorizontalAlign="HorizontalAlign.Center"
+                            RowRender="@MarkRow">
                 <Columns>
                     @* A tick per row rather than a toggle button beside an Open button: two ticked rows
                        are the comparison, and the song name itself is the way in. *@
@@ -280,16 +314,22 @@
     {
         get
         {
-            var key = (_entries, _expandedVersion, _query);
+            var key = (_entries, _expandedVersion, _query, _sound);
             if (_filteredCache is not null && _filteredKey == key)
             {
                 return _filteredCache;
             }
-            _filteredCache = (_entries ?? [])
+            var rows = (_entries ?? [])
                 .GroupBy(e => e.FileName)
                 .SelectMany(g => _expanded.Contains(g.Key) ? g : g.Take(1))
-                .Where(_query.Matches)
                 .ToList();
+            _filteredCache = rows.Where(_query.Matches).ToList();
+            // No file name has the words: the songs that sound like them, best first, under the chips.
+            if (_filteredCache.Count == 0 && SoundMatches is { } sound)
+            {
+                var rank = sound.Select((match, i) => (match.JobId, i)).ToDictionary(m => m.JobId, m => m.i);
+                _filteredCache = [.. rows.Where(e => rank.ContainsKey(e.JobId) && _query.MatchesFilters(e)).OrderBy(e => rank[e.JobId])];
+            }
             _filteredKey = key;
             return _filteredCache;
         }
@@ -318,7 +358,19 @@
     }
 
     private List<LibraryEntryDto>? _filteredCache;
-    private (List<LibraryEntryDto>? Entries, int Expanded, LibraryQuery Query) _filteredKey;
+    private (List<LibraryEntryDto>? Entries, int Expanded, LibraryQuery Query, (string Words, List<SoundMatchDto> Matches)? Sound) _filteredKey;
+
+    /// <summary>The last answer from the server's search by sound, and the words it answered.</summary>
+    private (string Words, List<SoundMatchDto> Matches)? _sound;
+    private bool _soundPending;
+
+    /// <summary>Set once the server says it cannot search by sound, so typing stops asking.</summary>
+    private bool _soundUnavailable;
+    private CancellationTokenSource? _soundDelay;
+
+    /// <summary>The sound matches when they answer the words in the box now and name some song.</summary>
+    private List<SoundMatchDto>? SoundMatches
+        => _sound is { } sound && sound.Words == _query.Description && sound.Matches.Count > 0 ? sound.Matches : null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -339,11 +391,78 @@
             if (await Prefs.GetAsync(BrowserPrefs.LibraryFiltersKey, PrefsJsonContext.Default.LibraryFilters) is { } saved)
             {
                 _query = LibraryQuery.Parse(saved.Search);
+                _ = SearchBySoundAsync();
             }
         }
 
+    /// <summary>The ranked songs the sound map draws, best first, while the table is showing a search
+    /// by sound rather than a match on names.</summary>
+    private List<(LibraryEntryDto Entry, double Score)>? SoundSpace
+    {
+        get
+        {
+            if (SoundMatches is not { } sound || Filtered.Count == 0 || Filtered.Any(_query.Matches))
+            {
+                return null;
+            }
+            var scores = sound.ToDictionary(m => m.JobId, m => m.Score);
+            List<(LibraryEntryDto Entry, double Score)> ranked = [.. Filtered.Where(e => scores.ContainsKey(e.JobId)).Select(e => (e, scores[e.JobId]))];
+            return ranked.Count > 0 ? ranked : null;
+        }
+    }
+
+    private ElementReference _soundSpaceEl;
+    private IJSObjectReference? _soundSpaceJs;
+
+    /// <summary>What the map was last drawn for, so it is redrawn only when the answer changes.</summary>
+    private string? _soundSpaceShown;
+
+    /// <summary>Each row names its song, so the map can light the row a disc stands for.</summary>
+    private static void MarkRow(RowRenderEventArgs<LibraryEntryDto> args)
+    {
+        if (args.Data is { } row)
+        {
+            args.Attributes["data-job"] = row.JobId;
+        }
+    }
+
+    private async Task SyncSoundSpaceAsync()
+    {
+        var space = SoundSpace;
+        var signature = space is null ? null
+            : string.Join(';', space.Select(m => $"{m.Entry.JobId}:{m.Score:0.000}"));
+        if (signature == _soundSpaceShown)
+        {
+            return;
+        }
+        _soundSpaceShown = signature;
+        try
+        {
+            _soundSpaceJs ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/player/sound-space.js");
+            if (space is null)
+            {
+                await _soundSpaceJs.InvokeVoidAsync("hide");
+            }
+            else
+            {
+                await _soundSpaceJs.InvokeVoidAsync("show", _soundSpaceEl, space.Select(m => new
+                {
+                    jobId = m.Entry.JobId,
+                    score = m.Score,
+                    tonic = m.Entry.TonicName,
+                    mode = m.Entry.PrimaryMode?.ToLowerInvariant() ?? "",
+                }).ToArray());
+            }
+        }
+        catch (JSException)
+        {
+            // The table is the same list; it stands without the map.
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        await SyncSoundSpaceAsync();
         if (!firstRender)
         {
             return;
@@ -365,11 +484,52 @@
         }
     }
 
-    private Task SetQueryAsync(string text)
+    private async Task SetQueryAsync(string text)
     {
         _query = LibraryQuery.Parse(text);
-        return Prefs.SetAsync(BrowserPrefs.LibraryFiltersKey, new LibraryFilters(text),
+        await Prefs.SetAsync(BrowserPrefs.LibraryFiltersKey, new LibraryFilters(text),
             PrefsJsonContext.Default.LibraryFilters);
+        await SearchBySoundAsync();
+    }
+
+    /// <summary>
+    /// Asks the server which songs sound like the words no file name had, once typing pauses. The
+    /// text tower takes a second or so on a CPU, so this waits for the person rather than the keys.
+    /// </summary>
+    private async Task SearchBySoundAsync()
+    {
+        _soundDelay?.Cancel();
+        var words = _query.Description;
+        if (_soundUnavailable || words.Length < 3 || _entries is null
+            || _entries.Any(_query.Matches) || _sound?.Words == words)
+        {
+            _soundPending = false;
+            return;
+        }
+        var delay = _soundDelay = new CancellationTokenSource();
+        _soundPending = true;
+        try
+        {
+            await Task.Delay(600, delay.Token);
+            var matches = await Analysis.SearchBySoundAsync(words);
+            if (delay.IsCancellationRequested)
+            {
+                return;
+            }
+            _soundUnavailable = matches is null;
+            // An empty answer is not kept: a song still being indexed may answer the same words in a moment.
+            _sound = matches is { Count: > 0 } ? (words, matches) : null;
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException)
+        {
+            _sound = null; // the name search's empty state stands
+        }
+        _soundPending = false;
+        StateHasChanged();
     }
 
     private async Task ToggleCompareAsync(LibraryEntryDto entry)
@@ -444,6 +604,11 @@
             if (_offlineJs is not null)
             {
                 await _offlineJs.DisposeAsync();
+            }
+            if (_soundSpaceJs is not null)
+            {
+                await _soundSpaceJs.InvokeVoidAsync("hide");
+                await _soundSpaceJs.DisposeAsync();
             }
         }
         catch (JSDisconnectedException)

@@ -12,6 +12,9 @@
 
 import * as prefs from '../shell/prefs.js';
 import { load as loadChromaLayer } from './chroma-layer.js';
+import { create as createGlass } from './spectral-glass.js';
+import { create as createHaze, PROFILE as HAZE_PROFILE } from './heat-haze.js';
+import { rgb, darkTheme } from './gpu-surface.js';
 
 const states = new Map();
 
@@ -43,6 +46,11 @@ const MIN_LABEL_ROW_HEIGHT_PX = 13;
 const MIN_VIEW_SECONDS = 0.5;
 const DRAG_THRESHOLD_PX = 4;
 const FALLBACK_DURATION_SECONDS = 10;
+/// How long after the mixer's last live frame the transport counts as paused: the glass and the
+/// haze then hold their last frame still.
+const LIVE_GRACE_MS = 250;
+/// Below this share of singing off the chord the heat-haze is not drawn at all.
+const HAZE_FLOOR = 0.05;
 
 /// The result reveal's timing, in seconds. Each note waits for its turn by how far across the view
 /// it sits, so the transcription arrives left to right as it was sung; chords land a beat behind the
@@ -230,6 +238,7 @@ function draw(state) {
     ctx.strokeRect(0.5, 0.5, width - 1, noteLaneHeight - 1);
     ctx.strokeRect(0.5, chordLaneTop + 0.5, width - 1, chordLaneHeight - 1);
 
+    drawGlass(state, ctx, width, noteLaneHeight, chordLaneTop, chordLaneHeight);
     drawWaveform(state, ctx, width, noteLaneHeight);
 
     const reveal = revealClock(state, now, width);
@@ -255,6 +264,12 @@ function draw(state) {
     }
 
     ctx.restore();
+
+    // Over everything in the note lane (notes, ribbon, glass), under the playhead, which stays sharp.
+    if (now < state.liveUntil) {
+        state.hazeClock += dt;
+    }
+    drawHaze(state, ctx, width, bodyTop, noteLaneHeight, reveal);
 
     // Full height on purpose: one playhead crossing all three lanes ties the tempo reading to the
     // moment it belongs to.
@@ -748,6 +763,141 @@ function drawTension(state, ctx, width, laneHeight) {
     ctx.restore();
 }
 
+/// The spectral glass behind both lanes (spectral-glass.js): the audible stem's spectrum over the
+/// last few seconds of playback, bass at the bottom of the chord lane, air at the top of the note
+/// lane, on the same time axis as everything above it. Drawn before the waveform, notes and chords,
+/// at a low opacity the shader caps, so every label stays on a near-plain lane. Mirrored to
+/// data-spectral-glass: 'live' while the mixer feeds it, 'still' once paused (the last frame held),
+/// 'off' without a GPU, without a spectrum yet, or with effects off.
+function drawGlass(state, ctx, width, noteLaneHeight, chordLaneTop, chordLaneHeight) {
+    const glass = state.glass;
+    let mode = 'off';
+    if (glass && glass.ready && glass.hasData && !state.reducedMotion) {
+        const subtle = state.fxLevel === 'subtle';
+        const height = chordLaneTop + chordLaneHeight;
+        const image = glass.render({
+            width,
+            height,
+            viewStart: state.viewStart,
+            viewEnd: state.viewEnd,
+            tint: state.glassTint,
+            dark: state.glassDark,
+            // Subtle renders at half the CSS size (the frost hides it) and a little fainter.
+            scale: subtle ? 0.5 : Math.min(window.devicePixelRatio || 1, 2),
+            opacity: subtle ? 0.75 : 1,
+        });
+        if (image) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, 0, width, noteLaneHeight);
+            ctx.rect(0, chordLaneTop, width, chordLaneHeight);
+            ctx.clip();
+            ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(image, 0, 0, width, height);
+            ctx.restore();
+            mode = performance.now() < state.liveUntil ? 'live' : 'still';
+        }
+    }
+    if (state.glassText !== mode) {
+        state.glassText = mode;
+        state.canvas.dataset.spectralGlass = mode;
+    }
+}
+
+/// The tension heat-haze (heat-haze.js) over the note lane around the playhead's window. Its
+/// strength is the tension ribbon's own figure: the window under the playhead at full value, its
+/// neighbours' values falling off with distance from it, so the shimmer sits over the stretch of
+/// ribbon that is glowing and is absent where the singing is on the chord. Mirrored to
+/// data-heat-haze as the window's value to two places, '0.00' when nothing is drawn.
+function drawHaze(state, ctx, width, bodyTop, laneHeight, reveal) {
+    const windows = state.model?.tension;
+    let strength = 0;
+    const playheadInView = state.playhead >= state.viewStart && state.playhead <= state.viewEnd;
+    if (!reveal && !state.reducedMotion && windows && windows.length > 0 && laneHeight > 8 && playheadInView) {
+        const current = windows.find(w => state.playhead >= w.startSec && state.playhead < w.endSec && w.value !== null);
+        if (current && current.value >= HAZE_FLOOR) {
+            // Created on first need, so a canvas whose singing never leaves the chord (or the Mode
+            // Lab's preview) never asks for a GPU device.
+            state.haze ??= createHaze(() => invalidate(state));
+            if (hazeOver(state, ctx, width, bodyTop, laneHeight, windows, current)) {
+                strength = current.value;
+            }
+        }
+    }
+    const text = strength.toFixed(2);
+    if (state.hazeText !== text) {
+        state.hazeText = text;
+        state.canvas.dataset.heatHaze = text;
+    }
+}
+
+function hazeOver(state, ctx, width, bodyTop, laneHeight, windows, current) {
+    const haze = state.haze;
+    if (!haze.ready) {
+        return false;
+    }
+    const start = timeToX(state, current.startSec, width);
+    const end = timeToX(state, current.endSec, width);
+    const centre = (start + end) / 2;
+    // A Gaussian a window and a half wide, never narrower than a few note capsules on a zoomed-out view.
+    const sigma = Math.max((end - start) * 0.75, 16);
+    const left = Math.max(0, Math.floor(centre - (sigma * 2.5)));
+    const right = Math.min(width, Math.ceil(centre + (sigma * 2.5)));
+    if (right - left < 4) {
+        return false;
+    }
+
+    // Each sample takes the value of the window it falls in, weighted by its distance from the
+    // playhead's window; samples line up with the shader's (sample i sits at i / (PROFILE - 1)).
+    const profile = state.hazeProfile;
+    const span = state.viewEnd - state.viewStart;
+    let cursor = 0;
+    for (let i = 0; i < HAZE_PROFILE; i++) {
+        const x = left + (i / (HAZE_PROFILE - 1)) * (right - left);
+        const t = state.viewStart + (x / width) * span;
+        while (cursor < windows.length - 1 && windows[cursor].endSec <= t) {
+            cursor++;
+        }
+        const w = windows[cursor];
+        const value = t >= w.startSec && t < w.endSec && w.value !== null ? w.value : 0;
+        const d = (x - centre) / sigma;
+        profile[i] = value * Math.exp(-0.5 * d * d);
+    }
+
+    const canvas = state.canvas;
+    const ratio = window.devicePixelRatio || 1;
+    const x = Math.max(0, Math.round(left * ratio));
+    const y = Math.max(0, Math.round(bodyTop * ratio));
+    const rect = {
+        x,
+        y,
+        width: Math.min(Math.round((right - left) * ratio), canvas.width - x),
+        height: Math.min(Math.round(laneHeight * ratio), canvas.height - y),
+    };
+    if (rect.width < 1 || rect.height < 1) {
+        return false;
+    }
+    const amplitude = (state.fxLevel === 'subtle' ? 2 : 4) * ratio;
+    const image = haze.render(canvas, rect, profile, state.hazeClock, amplitude, ratio);
+    if (!image) {
+        return false;
+    }
+    // The displaced copy replaces the pixels it was taken from.
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
+    ctx.drawImage(image, 0, 0, rect.width, rect.height, rect.x, rect.y, rect.width, rect.height);
+    ctx.restore();
+    return true;
+}
+
+/// The glass's colours follow the theme: tinted with the key colour, highlit in a dark theme and
+/// shaded in a light one. Read on init and on every theme flip, never per frame.
+function readGlassTheme(state) {
+    state.glassTint = rgb(state.colours.key);
+    state.glassDark = darkTheme();
+}
+
 /// The lyrics Whisper read off the vocal, shown in the now-playing chip as the line being sung. They
 /// are written in the background after the job finishes, so a song opened the moment it completes
 /// may not have them yet: one more look a little later picks them up.
@@ -1118,6 +1268,17 @@ export function init(canvas, dotNetRef, chip) {
         followTarget: null,
         followSuspendedUntil: 0,
         reducedMotion: !prefs.allowsMotion(),
+        fxLevel: prefs.level(),
+        glass: null,
+        glassTint: [0.5, 0.5, 0.5],
+        glassDark: false,
+        glassText: null,
+        haze: null,
+        hazeClock: 0,
+        hazeProfile: new Float32Array(HAZE_PROFILE),
+        hazeText: null,
+        liveUntil: 0,
+        stillTimer: null,
         overlay: { vocal: true, backing: false },
         colours: readColours(canvas),
         sectionColours: [],
@@ -1154,6 +1315,7 @@ export function init(canvas, dotNetRef, chip) {
     state.scheme = window.matchMedia('(prefers-color-scheme: dark)');
     state.onSchemeChange = () => {
         state.colours = readColours(canvas);
+        readGlassTheme(state);
         resolveSectionColours(state);
         // The chroma image is coloured from the theme, so a flip redraws it (the reading is cached).
         if (state.chromaJob) {
@@ -1166,6 +1328,15 @@ export function init(canvas, dotNetRef, chip) {
     // The manual theme toggle flips data-theme on <html>; re-read the palette when it does.
     state.themeObserver = new MutationObserver(state.onSchemeChange);
     state.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    readGlassTheme(state);
+
+    // The effects level can change while the page is open: 'off' stops the glass and the haze where
+    // they are (both are skipped from the next frame), 'subtle' calms them; either applies at once.
+    state.unsubscribePrefs = prefs.subscribe(level => {
+        state.fxLevel = level;
+        state.reducedMotion = level === 'off';
+        invalidate(state);
+    });
 
     states.set(canvas, state);
     invalidate(state);
@@ -1183,6 +1354,7 @@ export function setModel(canvas, payload) {
     state.reveal = null;
     state.chipKey = null;
     state.waveform = null; // a new job's waveform arrives from mixer.js after its stems decode
+    state.glass?.clear(); // the last song's spectrum is not this one's
     if (payload) {
         for (const note of payload.notes) {
             note.label = `${note.pitchLabel} ${note.degreeLabel}`;
@@ -1217,6 +1389,13 @@ export function setPlayhead(canvas, seconds, level = 0, stems = null) {
     state.playhead = seconds;
     state.level = level; // drives the playhead's motion trail; 0 when the caller has no analyser
     state.stems = stems ?? {};
+    // Only the mixer's running clock passes stems; a seek or a Blazor push does not. While it keeps
+    // coming the glass and haze are live, and a moment after it stops they are redrawn still.
+    if (stems) {
+        state.liveUntil = performance.now() + LIVE_GRACE_MS;
+        clearTimeout(state.stillTimer);
+        state.stillTimer = setTimeout(() => invalidate(state), LIVE_GRACE_MS + 20);
+    }
 
     // Auto-follow: when the playhead drifts out of the comfortable middle of the view, ease the
     // view so the playhead sits at 30% — unless the user panned recently (their view wins).
@@ -1232,6 +1411,29 @@ export function setPlayhead(canvas, seconds, level = 0, stems = null) {
             }
         }
     }
+    invalidate(state);
+}
+
+/// Whether the canvas will use a spectrum this frame, so the mixer can skip the FFT read when not.
+/// The first ask creates the glass (its GPU device arrives a little later); a canvas no mixer feeds,
+/// like the Mode Lab's, never makes one.
+export function wantsSpectrum(canvas) {
+    const state = states.get(canvas);
+    if (!state || state.reducedMotion) {
+        return false;
+    }
+    state.glass ??= createGlass(() => invalidate(state));
+    return state.glass.ready;
+}
+
+/// The audible stem's spectrum at `seconds` from mixer.js: `bands` log-spaced levels in 0..1, bass
+/// first, and `frost` its spectral flatness from 0 (pitched) to 1 (noisy). See drawGlass.
+export function setSpectrum(canvas, seconds, bands, frost) {
+    const state = states.get(canvas);
+    if (!state || !state.glass || state.reducedMotion) {
+        return;
+    }
+    state.glass.push(seconds, bands, frost);
     invalidate(state);
 }
 
@@ -1396,6 +1598,10 @@ export function dispose(canvas) {
     state.resizeObserver.disconnect();
     state.scheme.removeEventListener('change', state.onSchemeChange);
     state.themeObserver.disconnect();
+    state.unsubscribePrefs();
+    clearTimeout(state.stillTimer);
+    state.glass?.dispose();
+    state.haze?.dispose();
     tintForSection(state, null);
     states.delete(canvas);
 }

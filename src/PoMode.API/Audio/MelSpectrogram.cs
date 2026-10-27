@@ -64,7 +64,7 @@ public static class MelSpectrogram
     /// </summary>
     public static float[][] SlaneyFilterbank(int sampleRate, int nFft, int nMels, double fMin, double fMax)
     {
-        const double logStep = 27.0 / 2.0794415416798357; // 27 / ln(6.4)
+        var logStep = 27.0 / Math.Log(6.4);
         return Filterbank(sampleRate, nFft, nMels, fMin, fMax,
             hz => hz < 1000 ? 3.0 * hz / 200.0 : 15.0 + (Math.Log(hz / 1000.0) * logStep),
             mel => mel < 15 ? 200.0 * mel / 3.0 : 1000.0 * Math.Exp((mel - 15.0) / logStep));

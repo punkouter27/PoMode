@@ -47,9 +47,38 @@
     flex: 0 1 12rem;
 }
 
-.backing-field-slider ::deep .backing-slider {
+.backing-track {
+    position: relative;
     flex: 1;
     min-width: 5rem;
+    padding-bottom: 0.4rem;
+}
+
+.backing-track ::deep .backing-slider {
+    width: 100%;
+}
+
+/* A detent's mark: a short tick under the track at its tempo (--pm-at, placed by detents.js), lit
+   while the tempo rests on it. */
+.backing-detents {
+    position: absolute;
+    inset: auto 0 0;
+    height: 0.35rem;
+    pointer-events: none;
+}
+
+.backing-detent {
+    position: absolute;
+    left: calc(var(--pm-at, 0) * 100%);
+    width: 2px;
+    height: 100%;
+    margin-left: -1px;
+    border-radius: 1px;
+    background: var(--pm-fg-muted);
+}
+
+.backing-detent--on {
+    background: var(--pm-accent);
 }
 
 @media (max-width: 720px) {

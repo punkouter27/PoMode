@@ -108,7 +108,7 @@ export async function beginCapture() {
         if (downbeat !== null) {
             const elapsed = ctx.currentTime - downbeat;
             if (elapsed >= 0) {
-                review.pushLive(elapsed, detectPitch(frame, sampleRate));
+                review.pushLive(elapsed, detectPitch(frame, sampleRate), frame, sampleRate);
             }
         }
     };

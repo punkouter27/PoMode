@@ -9,7 +9,9 @@
 import {
     setPlayhead, setOverlay as canvasSetOverlay,
     setWaveform, dropNotes, resetFx, sectionBoundsAt,
+    wantsSpectrum, setSpectrum,
 } from './canvas.js';
+import { BANDS as SPECTRUM_BANDS } from './spectral-glass.js';
 import { VOICES, bus } from './voices.js';
 import { peaks } from './buffers.js';
 import { tap } from '../shell/sfx.js';
@@ -43,6 +45,15 @@ const VOICE_TIMBRES = {
 /// Stems whose level the canvas reacts to, mapped to the name the canvas knows them by. The mix is
 /// not here: it is both at once, and the point is to tell them apart.
 const METERED_STEMS = { vocals: 'vocal', instrumental: 'backing' };
+
+/// The stem each mode lets through, whose spectrum the canvas's glass shows (see spectrumOf).
+const AUDIBLE_STEM = { full: 'mix', vocals: 'vocals', backing: 'instrumental' };
+
+/// The spectrum the glass is drawn from: log-spaced bands over the range a voice and a band live
+/// in, levels mapped from this dB window to 0..1, flatness read over FLATNESS_HZ where both a sung
+/// note's harmonics and a cymbal's hiss sit.
+const SPECTRUM = { fftSize: 2048, lowHz: 50, highHz: 12000, minDb: -95, maxDb: -25 };
+const FLATNESS_HZ = [100, 8000];
 
 /// One `{ vocal: v, backing: v, chords: v }` object per call, derived from NOTE_SOURCE_NAMES so
 /// adding a source is a one-line change, not a hunt for every reset literal.
@@ -397,6 +408,10 @@ function startSources(state, offsetSeconds) {
         if (state.stemMeters[stem]) {
             source.connect(state.stemMeters[stem].analyser);
         }
+        // Also before the gain, so a mode switch changes which spectrum is read, not a ramped level.
+        if (state.spectra[stem]) {
+            source.connect(state.spectra[stem]);
+        }
         source.start(when, Math.min(offsetSeconds, buffer.duration));
         state.sources[stem] = source;
     }
@@ -428,6 +443,49 @@ function stemLevelsOf(state) {
         levels[METERED_STEMS[stem]] = Math.min(1, rms(meter.analyser, meter.data) * 3.2);
     }
     return levels;
+}
+
+/// The audible stem's spectrum for the canvas's glass: SPECTRUM_BANDS log-spaced band peaks in 0..1,
+/// bass first, and how noisy it is. Spectral flatness (the geometric over the arithmetic mean of the
+/// power) is near 0 for a held, pitched note and climbs towards 1 for breath, hiss and a dense mix;
+/// it is mapped so 0.01 reads as clear and 0.4 as fully frosted. Muted stems or a stem the job lacks
+/// give silence: the glass lies flat.
+function spectrumOf(state) {
+    const bands = state.spectrumBands;
+    const analyser = state.stemsMuted ? null : state.spectra[AUDIBLE_STEM[state.mode]];
+    if (!analyser) {
+        bands.fill(0);
+        return 0;
+    }
+    const data = state.spectrumData;
+    analyser.getFloatFrequencyData(data);
+    const binHz = state.context.sampleRate / SPECTRUM.fftSize;
+    const range = SPECTRUM.maxDb - SPECTRUM.minDb;
+    const ratio = SPECTRUM.highHz / SPECTRUM.lowHz;
+    for (let b = 0; b < SPECTRUM_BANDS; b++) {
+        const from = Math.floor(SPECTRUM.lowHz * (ratio ** (b / SPECTRUM_BANDS)) / binHz);
+        const to = Math.max(from + 1, Math.ceil(SPECTRUM.lowHz * (ratio ** ((b + 1) / SPECTRUM_BANDS)) / binHz));
+        let peak = SPECTRUM.minDb;
+        for (let i = from; i < to && i < data.length; i++) {
+            peak = Math.max(peak, data[i]);
+        }
+        bands[b] = Math.min(1, Math.max(0, (peak - SPECTRUM.minDb) / range));
+    }
+    let sumDb = 0;
+    let sumPower = 0;
+    let count = 0;
+    const last = Math.min(data.length, Math.ceil(FLATNESS_HZ[1] / binHz));
+    for (let i = Math.floor(FLATNESS_HZ[0] / binHz); i < last; i++) {
+        const db = Math.max(data[i], SPECTRUM.minDb); // -Infinity in true silence
+        sumDb += db;
+        sumPower += 10 ** (db / 10);
+        count++;
+    }
+    if (count === 0 || sumPower <= 0) {
+        return 0;
+    }
+    const flatness = (10 ** (sumDb / count / 10)) / (sumPower / count);
+    return Math.min(1, Math.max(0, (Math.log10(flatness) + 2) / 1.6));
 }
 
 /// A felt downbeat on a phone while the metronome is on: sfx.tap(), which already honours the
@@ -465,6 +523,10 @@ function tick(state) {
     if (state.playing) {
         const seconds = currentSeconds(state);
         setPlayhead(state.canvas, seconds, levelOf(state), stemLevelsOf(state));
+        if (wantsSpectrum(state.canvas)) {
+            const frost = spectrumOf(state);
+            setSpectrum(state.canvas, seconds, state.spectrumBands, frost);
+        }
         hapticDownbeats(state, state.lastTickSeconds, seconds);
         state.lastTickSeconds = seconds;
         state.root.dataset.mixerTime = seconds.toFixed(3);
@@ -636,6 +698,9 @@ export function init(root, canvas, dotNetRef) {
         analyser: null,
         levelData: null,
         stemMeters: {},
+        spectra: {},
+        spectrumData: new Float32Array(SPECTRUM.fftSize / 2),
+        spectrumBands: new Float32Array(SPECTRUM_BANDS),
         lastTickSeconds: 0,
         loop: null,
         synthShaper: null,
@@ -687,6 +752,7 @@ export async function load(root, urls) {
     state.buffers = {};
     state.gains = {};
     state.stemMeters = {};
+    state.spectra = {};
     for (const [stem, buffer] of loaded) {
         if (!buffer) {
             continue;
@@ -702,6 +768,12 @@ export async function load(root, urls) {
             analyser.fftSize = 256;
             state.stemMeters[stem] = { analyser, data: new Uint8Array(analyser.fftSize) };
         }
+        // Every stem gets a spectrum tap, another dead end, so whichever one the mode lets through
+        // can be read for the canvas's glass.
+        const spectrum = state.context.createAnalyser();
+        spectrum.fftSize = SPECTRUM.fftSize;
+        spectrum.smoothingTimeConstant = 0.5;
+        state.spectra[stem] = spectrum;
     }
 
     if (!state.synthGain) {

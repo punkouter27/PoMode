@@ -363,6 +363,33 @@ replaces it with an offline pitch track once the take is decoded, because that p
 take at a steadier hop than a capture callback manages. Its consonance tick is silenced while a take
 is running, for the same reason the page carries no score.
 
+### Open guitar chord jam
+
+The card at the foot of `/practice` is practice for the hands: progressions a beginner can finger
+that sound like extended chords (add9, sus, sevenths, a Lydian #11), because open strings keep
+ringing through them. Every press of New progression is a fresh one: `OpenChordJams.Generate(seed)`
+(in `Features/ChordShapes`, `GET /api/chord-jams/random?seed=`) picks a key and mode open shapes
+can cover (major most often, Lydian least), a progression shape as scale degrees, and for each step an
+open voicing from a library of 48 written out fret by fret. A voicing may stand on a step only when
+every note it sounds is in the key and its third, if any, is the step's. The pick is weighted toward
+colour (triple) and toward strings left as they were (squared), so changes ring into each other.
+A jam is redrawn unless a tonic chord carries its third (so home is heard) and, for a mode, unless some
+chord sounds the mode's characteristic note (`ScaleModes.CharacteristicIntervals`); otherwise
+C Lydian would be C major under another name. About four in ten split the last bar into a sus and its
+resolution. The sentence about each jam is written from its frets: the fingers that stay put, the open
+strings that drone, the chords that carry the colour. The same seed always gives the same jam, and the
+card keeps the ones heard this visit for Previous. The MIDI the browser strums is derived from the frets
+in standard tuning, so what plays is what the box shows. `OpenChordJamsTests` holds every voicing to
+its name and a thousand seeds to their key, home chord and mode.
+
+`js/player/strum.js` strums on the Karplus-Strong string from `voices.js` (down strokes spread 14 ms
+string to string, up strokes over the top four), from an eighth-note pattern per bar: D, U, B for
+bass alone, - to rest. Notes ring until the chord changes, which is the whole sound. It shares
+`modal-player.js`'s AudioContext. Practice stops the jam whenever it plays its own chords (every path
+goes through `EnsurePlayerAsync`), and the jam stops the page's chords when it starts. It is held
+while a take records. Like the rest of the page it is unscored. The boxes are `ChordBox`, the same
+drawing the analysis page's chord shapes use.
+
 ## Drum loop (in the Mode Lab)
 
 The Mode Lab's Drums strip takes a beat recorded without a click and plays it under the chords and
@@ -559,6 +586,18 @@ cache, which the network-first service worker's fallback finds like any other; t
 songs. Opening a song from the library morphs its key into the analysis headline (View Transitions,
 `js/shell/transitions.js`), the one page transition, and it carries a fact.
 
+**Search by sound** (`Features/SoundSearch`): the words in the box that are not a filter and match no
+file name are a description, and `GET /api/library/sound?q=` ranks the caller's songs by it. CLAP
+(LAION's music-and-speech checkpoint, int8 ONNX, Apache-2.0) puts audio and text in one space.
+`SoundIndexer` embeds each finished song in the background as `sound.json`: up to six evenly spaced
+10 s crops of the upload, averaged. Older songs are queued when the library is listed. A search runs
+only the text tower, which is unloaded after three idle minutes because it is 127 MB resident. The
+front end is Hugging Face's `ClapFeatureExtractor` (Slaney mel bank, repeat-pad); against
+transformers.js on the same signal the features agree to 1e-5 dB and the embeddings at cosine 0.9999.
+Scores are low by nature (a real match is about 0.1 to 0.45), so the cut is relative: within 0.1 of the
+best, above 0.08, at most 8. The answer is 404 where the server cannot listen (Azure, models absent),
+so the page keeps its "No song matches" instead of claiming nothing sounds alike.
+
 ## The analysis page, after the fact
 
 - **Chroma under the chords** (`GET /{id}/chroma`, cached as `chroma.json`): the DSP chord reader's own
@@ -582,6 +621,11 @@ songs. Opening a song from the library morphs its key into the analysis headline
 - **Try another model** (`JobRerun`, `POST /{id}/rerun?stage=&executor=`): a new job holding only what
   the stages before the chosen one produced (`JobStore.CopyAsync`'s include filter, so nothing later
   reaches the copy or its blob mirror), the chosen stage pinned. Ordinary uploads only.
+- **Play the chords** (`Features/ChordShapes`, `GET /{id}/shapes`): the song's chords as fingering
+  boxes, longest-held first, from chords-db (MIT), served through `/web-runtime/` like the browser
+  runtime and fetched only when the disclosure opens. `CapoAdvisor` picks the capo (frets 1 to 7) that
+  puts the most playing time into open shapes, and offers it only when that gains at least 20% of the
+  song. The ukulele shows the chords as they sound: the capo is a guitarist's answer.
 - **Time left** (`EtaEstimator`, `GET /{id}/eta`): seconds per audio second for each executor, the
   median of this server's finished stages, times the song's length; null when any remaining executor
   has never been timed here. Fetched once per stage change.

@@ -358,3 +358,65 @@
     background: var(--po-error-bg);
     color: var(--pm-fg);
 }
+
+/* The sound search chip reads as a different kind of filter: a ranking, not a yes or no. */
+.library-chip--sound {
+    background: var(--pm-violet-bg);
+    border-color: var(--pm-violet-edge);
+    color: var(--pm-violet);
+}
+
+/* The sound search as a map over the ranked table (sound-space.js): the words at the centre, each
+   song a disc as far out as its score falls below the best one. The canvas holds the glass; the
+   discs are links laid over it, so the map is reached by Tab and read by a screen reader. */
+.sound-space {
+    position: relative;
+    height: 10rem;
+    margin-bottom: var(--pm-space-2);
+    border: 1px solid var(--pm-border);
+    border-radius: 0.5rem;
+    background: var(--pm-surface);
+}
+
+.sound-space-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.sound-disc {
+    position: absolute;
+    left: var(--pm-x, 50%);
+    top: var(--pm-y, 50%);
+    width: 1.75rem;
+    height: 1.75rem;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+}
+
+.sound-disc:focus-visible {
+    outline: 2px solid var(--pm-accent);
+    outline-offset: 2px;
+}
+
+/* No WebGL2: the links are the map, drawn plain. */
+.sound-space[data-gl="none"] .sound-disc {
+    border: 1px solid var(--pm-border);
+    background: var(--pm-accent-soft);
+}
+
+.sound-space[data-gl="none"] .sound-disc[data-sound-lit] {
+    border-color: var(--pm-accent);
+}
+
+/* The row a lit disc stands for, and the other way round. */
+.library-grid ::deep tr[data-sound-lit] > td {
+    background: var(--pm-accent-soft);
+}
+
+@media (pointer: coarse) {
+    .sound-disc {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+}

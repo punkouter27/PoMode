@@ -78,6 +78,28 @@
     color: var(--pm-fg-muted);
 }
 
+/* The completion glint: one pass of the glass highlight over the row, as long as the stage took.
+   wait-preview.js shimmer() sets --pm-shimmer-ms and data-shimmer; the band is a pseudo-element
+   clipped to the row, so it takes no room. */
+.stage[data-shimmer] {
+    position: relative;
+    overflow: hidden;
+}
+
+.stage[data-shimmer="running"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 0%, var(--pm-glass-specular) 45%, var(--pm-key-soft) 55%, transparent 100%);
+    transform: translateX(-100%);
+    pointer-events: none;
+    animation: stage-shimmer var(--pm-shimmer-ms, 900ms) ease-out forwards;
+}
+
+@keyframes stage-shimmer {
+    to { transform: translateX(100%); }
+}
+
 .stage.active {
     color: var(--pm-fg);
     font-weight: 600;

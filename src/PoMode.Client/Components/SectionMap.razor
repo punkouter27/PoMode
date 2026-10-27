@@ -12,8 +12,13 @@
     {
         <p class="section-map-text">@structure.Explanation</p>
         <div class="section-map-body">
-            <canvas @ref="_matrix" class="section-map-matrix" role="img"
-                    aria-label="@($"Similarity of every bar's harmony to every other bar, {structure.Novelty.Count} bars, with the section boundaries marked")"></canvas>
+            @* The ripple layer over the matrix: light spreading from a boundary the playhead crosses
+               into a new key signature, one ring per step around the circle of fifths. *@
+            <div class="section-map-frame">
+                <canvas @ref="_matrix" class="section-map-matrix" role="img"
+                        aria-label="@($"Similarity of every bar's harmony to every other bar, {structure.Novelty.Count} bars, with the section boundaries marked")"></canvas>
+                <canvas @ref="_caustics" class="section-map-caustics" aria-hidden="true"></canvas>
+            </div>
             <canvas @ref="_novelty" class="section-map-novelty" aria-hidden="true"></canvas>
         </div>
         <p class="section-map-key">
@@ -42,11 +47,16 @@
     private string _state = "loading";
     private ElementReference _matrix;
     private ElementReference _novelty;
+    private ElementReference _caustics;
     private IJSObjectReference? _module;
     private bool _drawn;
 
+    /// <summary>The song's tonic, which the key-change glide is pitched on; null leaves it silent.</summary>
+    private int? _tonic;
+
     protected override async Task OnInitializedAsync()
     {
+        var tonic = TonicAsync();
         try
         {
             _structure = await Client.GetStructureAsync(JobId);
@@ -55,7 +65,20 @@
         {
             _structure = null;
         }
+        _tonic = await tonic;
         _state = _structure is null ? "missing" : "ready";
+    }
+
+    private async Task<int?> TonicAsync()
+    {
+        try
+        {
+            return (await Client.GetResultAsync(JobId))?.TonicPitchClass;
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -68,7 +91,7 @@
         try
         {
             _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/player/section-map.js");
-            await _module.InvokeAsync<bool>("init", _matrix, _novelty, _structure, PlayheadSource);
+            await _module.InvokeAsync<bool>("init", _matrix, _novelty, _structure, PlayheadSource, _caustics, _tonic);
         }
         catch (JSDisconnectedException)
         {

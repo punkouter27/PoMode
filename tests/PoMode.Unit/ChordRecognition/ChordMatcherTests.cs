@@ -14,7 +14,7 @@ public class ChordMatcherTests
     }
 
     [Fact]
-    public void Clean_and_noisy_triads_match_accurately()
+    public void Triads_match_and_flat_noise_or_silence_is_no_chord()
     {
         var (cMajor, cScore) = ChordMatcher.Match(Chroma(0, 4, 7));
         Assert.Equal("C", cMajor.Symbol);
@@ -27,11 +27,8 @@ public class ChordMatcherTests
         var (cPassing, passingScore) = ChordMatcher.Match(Chroma(0, 4, 7, 2));
         Assert.Equal("C", cPassing.Symbol);
         Assert.True(passingScore > 0.55);
-    }
 
-    [Fact]
-    public void Flat_noise_and_silence_yield_no_chord()
-    {
+        // Flat noise and silence are no chord at all.
         var (noiseChord, noiseScore) = ChordMatcher.Match(Chroma(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11));
         Assert.Equal("N", noiseChord.Symbol);
         Assert.Equal(0.0, noiseScore);

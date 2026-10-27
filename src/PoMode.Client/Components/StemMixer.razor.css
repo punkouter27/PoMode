@@ -63,6 +63,31 @@
     min-width: 6rem;
 }
 
+/* The ring round Play is the playhead's share of the song: dock.js sets --pm-progress (0..1) from
+   the mixer's own clock, so the filled arc is how much has been heard, never a spinner. A border-box
+   conic with the button's content masked out, so the ring follows the button's own corners. */
+.mixer ::deep .mixer-play,
+.mixer ::deep .mixer-dock-play {
+    position: relative;
+    overflow: visible;
+}
+
+.mixer ::deep .mixer-play::after,
+.mixer ::deep .mixer-dock-play::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    padding: 2px;
+    border-radius: inherit;
+    background: conic-gradient(var(--pm-accent) calc(var(--pm-progress, 0) * 1turn), var(--pm-border) 0);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    opacity: 1;
+    transform: none;
+    pointer-events: none;
+}
+
 .mixer-status-line {
     display: flex;
     align-items: center;

@@ -87,9 +87,14 @@
            test against notes the server voiced, not an opinion about the mode. *@
         @* Its room is held from the first render and given up only if the plot declines, so the buttons
            and the history under it do not jump down when it comes up. *@
+        @* Under the plot, the vibrato measured off the voice as moving dye: a held note leaves a smooth
+           ribbon, a wide vibrato curls it. The readout is the measurement itself, filled in by the
+           module while a take runs. *@
         <div class="take-plot-wrap @(_plotChecked && !_plotOn ? "hidden" : "")">
+            <canvas class="vibrato-fluid" @ref="_fluidCanvas" aria-hidden="true" data-testid="practice-vibrato-fluid"></canvas>
             <canvas class="take-plot" @ref="_plotCanvas" aria-hidden="true" data-testid="practice-plot"></canvas>
             <span class="take-plot-legend">chord tones · your line</span>
+            <span class="vibrato-readout" data-vibrato-readout data-testid="practice-vibrato-readout"></span>
         </div>
 
         <div class="take-actions">
@@ -181,6 +186,10 @@ else if (_loadError is { } loadError)
     </RadzenCard>
 }
 
+@* Practice for the hands rather than the voice: open guitar chords that sound richer than they are to
+   play. It takes the page's audio when started, and gives it up when the page plays its own chords. *@
+<ChordJam @ref="_jam" Disabled="@(_state is TakeState.CountingIn or TakeState.Recording)" Started="@StopForJamAsync" />
+
 @code {
     /// <summary>Where a take is in its cycle — one answer to "what is happening" rather than four
     /// booleans that can disagree. Mirrors the Mode Lab's hum states, whose flow this reuses.</summary>
@@ -195,10 +204,12 @@ else if (_loadError is { } loadError)
     private const double MaxTakeSeconds = 300.0;
 
     private IJSObjectReference? _hum;
+    private ChordJam? _jam;
     private IJSObjectReference? _player;
     private IJSObjectReference? _plot;
     private DotNetObjectReference<Practice>? _selfRef;
     private ElementReference _plotCanvas;
+    private ElementReference _fluidCanvas;
     private bool _plotOn;
     private bool _plotChecked;
 
@@ -721,10 +732,25 @@ else if (_loadError is { } loadError)
         }
     }
 
+    /// <summary>Every way this page starts its own chords (preview, take, review) comes through here,
+    /// so it is where the jam's strumming is stopped: two loops on one clock would play over each other.</summary>
     private async Task EnsurePlayerAsync()
     {
+        if (_jam is not null)
+        {
+            await _jam.StopAsync();
+        }
         _selfRef ??= DotNetObjectReference.Create(this);
         _player ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/player/modal-player.js");
+    }
+
+    /// <summary>The jam is starting: the page's own chords stop first, whichever of them is playing.</summary>
+    private async Task StopForJamAsync()
+    {
+        if (_previewing || _reviewing)
+        {
+            await StopEverythingAsync();
+        }
     }
 
     private async Task EnsureHumAsync()
@@ -741,7 +767,7 @@ else if (_loadError is { } loadError)
         try
         {
             _plot ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/player/take-plot.js");
-            var on = await _plot.InvokeAsync<bool>("init", _plotCanvas);
+            var on = await _plot.InvokeAsync<bool>("init", _plotCanvas, _fluidCanvas);
             if (on != _plotOn || !_plotChecked)
             {
                 _plotOn = on;

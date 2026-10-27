@@ -4,7 +4,9 @@
    two to six), and their angle is the key (30 degrees a semitone round the circle of pitch). Nothing
    on it is decoration: two tiles that look alike are two songs that measured alike. A beat, a song
    still being read, or one with no mode gets a plain tile rather than a guess. *@
-<svg class="song-tile @GroundClass" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" focusable="false">
+@* Pointed at, a keyed tile tips about the line of its own stripes, so the tilt points the way the
+   key does, and a band of light in the mode's colour crosses the face that tips up. *@
+<svg class="song-tile @GroundClass @KeyClass" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" focusable="false">
     <rect class="tile-ground" x="0" y="0" width="32" height="32" rx="7" />
     @if (Stripes > 0)
     {
@@ -14,6 +16,7 @@
                 var y = 16 - (Stripes * 4 / 2.0) + (i * 4) + 1;
                 <rect class="tile-stripe" x="-8" y="@y.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)" width="48" height="2" />
             }
+            <rect class="tile-specular" x="-8" y="-8" width="48" height="16" />
         </g>
     }
     else if (Entry.Origin?.Kind == TakeOrigin.Beat)
@@ -41,6 +44,9 @@
         && !string.IsNullOrEmpty(Entry.PrimaryMode);
 
     private string GroundClass => Analysed ? $"tile-{Entry.PrimaryMode!.ToLowerInvariant()}" : "tile-plain";
+
+    /// <summary>The key as a class, which carries its angle to the stylesheet's tilt.</summary>
+    private string KeyClass => Stripes > 0 ? $"tile-keyed tile-key-{Angle / 30}" : "";
 
     private int Stripes => Analysed && Entry.TempoBpm is { } bpm ? Math.Clamp((int)Math.Round(bpm / 30), 2, 6) : 0;
 

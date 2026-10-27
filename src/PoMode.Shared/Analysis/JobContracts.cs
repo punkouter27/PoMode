@@ -133,6 +133,10 @@ public sealed record EtaDto(double? SecondsLeft);
 /// server's sentence saying how (<c>GET /api/library/{jobId}/similar</c>).</summary>
 public sealed record SimilarSongDto(string JobId, string FileName, double Score, string Reason);
 
+/// <summary>A song in the caller's library whose sound is near the words searched for, with the CLAP
+/// cosine (<c>GET /api/library/sound</c>). Ranked best first.</summary>
+public sealed record SoundMatchDto(string JobId, double Score);
+
 public sealed record LibraryEntryDto(
     string JobId,
     string FileName,

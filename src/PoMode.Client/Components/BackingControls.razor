@@ -1,4 +1,6 @@
 @using PoMode.Shared.Analysis
+@inject IJSRuntime Js
+@implements IAsyncDisposable
 
 @* The settings that choose a generated backing: key, chords, tempo, and on Practice the mode. The
    Mode Lab and Practice each used to build this row themselves, and the copies had drifted — tempo
@@ -37,14 +39,26 @@
                         Change="@(value => ProgressionIdChanged.InvokeAsync((string)value))"
                         class="backing-dd backing-chords" id="prog-select" aria-labelledby="chords-label" />
     </div>
-    <div class="backing-field backing-field-slider">
+    <div class="backing-field backing-field-slider" data-detent="@RestingDetent">
         <span class="pm-label backing-label" id="tempo-label">@($"{_shownBpm ?? Bpm:0} BPM")</span>
         @* The label follows the thumb while it is dragged. Radzen raises Change on every step of a
-           drag, not only on release, so each page drops a regenerate that a later step superseded. *@
-        <RadzenSlider TValue="double" Value="@Bpm" Min="MinBpm" Max="MaxBpm" Step="2" Disabled="@Disabled"
-                      ValueChanged="@(value => _shownBpm = value)"
-                      Change="@(value => BpmChanged.InvokeAsync(value))"
-                      class="backing-slider" id="tempo-slider" aria-labelledby="tempo-label" />
+           drag, not only on release, so each page drops a regenerate that a later step superseded.
+           The marks under the track are the tempos with a reason to be chosen (the song's measured
+           tempo, or the chords' own, and its half and double); the thumb settles onto one within
+           2 BPM, and crossing one clicks once (detents.js). *@
+        <span class="backing-track" @ref="_track">
+            <RadzenSlider TValue="double" Value="@Bpm" Min="MinBpm" Max="MaxBpm" Step="2" Disabled="@Disabled"
+                          ValueChanged="OnTempoDraggedAsync"
+                          Change="@(value => BpmChanged.InvokeAsync(Snap(value)))"
+                          class="backing-slider" id="tempo-slider" aria-labelledby="tempo-label" />
+            <span class="backing-detents" aria-hidden="true">
+                @foreach (var detent in Detents)
+                {
+                    <span class="backing-detent @(Invariant(detent) == RestingDetent ? "backing-detent--on" : "")" data-bpm="@Invariant(detent)"
+                          data-at="@(((detent - MinBpm) / (MaxBpm - MinBpm)).ToString("0.####", System.Globalization.CultureInfo.InvariantCulture))"></span>
+                }
+            </span>
+        </span>
     </div>
     @ChildContent
 </div>
@@ -87,10 +101,122 @@
 
     [Parameter] public bool Disabled { get; set; }
 
+    /// <summary>The tempo the song measured, when the page has one; without it the detents sit on
+    /// the chosen chords' own default tempo.</summary>
+    [Parameter] public double? MeasuredBpm { get; set; }
+
+    /// <summary>How close the thumb must come to a detent to settle onto it.</summary>
+    private const double SnapBpm = 2;
+
     /// <summary>The tempo under the thumb mid-drag; cleared whenever the page hands down its own.</summary>
     private double? _shownBpm;
 
+    private ElementReference _track;
+    private IJSObjectReference? _detentsJs;
+    private string _placedDetents = "";
+
     protected override void OnParametersSet() => _shownBpm = null;
+
+    /// <summary>The tempo the detents are built on: the song's, else the progression's default.</summary>
+    private double? DetentBase
+    {
+        get
+        {
+            if (MeasuredBpm is { } measured && measured > 0)
+            {
+                return measured;
+            }
+            var chords = Progressions.FirstOrDefault(p => p.Id == ProgressionId)?.DefaultBpm ?? 0;
+            return chords > 0 ? chords : null;
+        }
+    }
+
+    /// <summary>The base tempo, its half and its double, where they fall inside the slider's range.</summary>
+    private IReadOnlyList<double> Detents
+        => DetentBase is { } basis
+            ? [.. new[] { basis / 2, basis, basis * 2 }.Select(b => Math.Round(b, 1)).Where(b => b is >= MinBpm and <= MaxBpm)]
+            : [];
+
+    private double Snap(double value)
+    {
+        foreach (var detent in Detents)
+        {
+            if (Math.Abs(value - detent) <= SnapBpm)
+            {
+                return detent;
+            }
+        }
+        return value;
+    }
+
+    /// <summary>The detent the tempo rests on, as data-detent; null leaves the attribute off.</summary>
+    private string? RestingDetent
+    {
+        get
+        {
+            var current = _shownBpm ?? Bpm;
+            return Detents.Any(d => Math.Abs(d - current) < 0.05) ? Invariant(Snap(current)) : null;
+        }
+    }
+
+    private static string Invariant(double bpm) => bpm.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>Follows the thumb, settling it onto a detent nearby, and clicks when one is reached
+    /// or passed over since the last step.</summary>
+    private async Task OnTempoDraggedAsync(double value)
+    {
+        var previous = _shownBpm ?? Bpm;
+        var next = Snap(value);
+        _shownBpm = next;
+        var crossed = Detents.Any(d =>
+            (Math.Abs(next - d) < 0.05 && Math.Abs(previous - d) >= 0.05)
+            || Math.Sign(previous - d) * Math.Sign(next - d) < 0);
+        if (crossed)
+        {
+            try
+            {
+                _detentsJs ??= await Js.InvokeAsync<IJSObjectReference>("import", "./js/shell/detents.js");
+                await _detentsJs.InvokeVoidAsync("cross");
+            }
+            catch (JSException)
+            {
+                // A click that cannot play changes nothing about the tempo.
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var placed = string.Join(',', Detents.Select(Invariant));
+        if (placed == _placedDetents)
+        {
+            return;
+        }
+        _placedDetents = placed;
+        try
+        {
+            _detentsJs ??= await Js.InvokeAsync<IJSObjectReference>("import", "./js/shell/detents.js");
+            await _detentsJs.InvokeVoidAsync("place", _track);
+        }
+        catch (JSException)
+        {
+            // Unplaced marks sit at the track's start; the snapping does not depend on them.
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_detentsJs is not null)
+            {
+                await _detentsJs.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
 
     /// <summary>Page-specific settings rendered between the key and the chords (the Mode Lab's
     /// "Match to mode", which decides what the chords dropdown holds).</summary>

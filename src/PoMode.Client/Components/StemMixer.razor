@@ -297,6 +297,7 @@
                 await _module.InvokeVoidAsync("init", _root, CanvasElement, _selfRef);
                 _dockJs = await Js.InvokeAsync<IJSObjectReference>("import", "./js/player/dock.js");
                 await _dockJs.InvokeVoidAsync("watch", _groups, _dock);
+                await _dockJs.InvokeVoidAsync("ring", _root);
             }
             catch (Exception ex)
             {
@@ -588,6 +589,7 @@
             if (_dockJs is not null)
             {
                 await _dockJs.InvokeVoidAsync("unwatch", _groups);
+                await _dockJs.InvokeVoidAsync("unring", _root);
                 await _dockJs.DisposeAsync();
             }
         }

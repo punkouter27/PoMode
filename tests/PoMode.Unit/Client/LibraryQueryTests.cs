@@ -33,5 +33,13 @@ public class LibraryQueryTests
         // Removing a chip takes its word out of the text and leaves the rest.
         var chip = query.Chips.First(c => c.Label == "Dorian");
         Assert.Equal("120 summer", query.Without(chip));
+
+        // The words left over are the description a search by sound is asked for; the chips still hold
+        // without them, and taking the description out leaves only the chips' words.
+        var described = LibraryQuery.Parse("dark dorian acoustic");
+        Assert.Equal("dark acoustic", described.Description);
+        Assert.False(described.Matches(dorian));
+        Assert.True(described.MatchesFilters(dorian));
+        Assert.Equal("dorian", described.WithoutDescription());
     }
 }

@@ -91,7 +91,7 @@
         <BackingControls Tonic="_selectedTonic" TonicChanged="OnTonicPickedAsync"
                          ProgressionId="@_selectedProgressionId" ProgressionIdChanged="OnProgressionPickedAsync"
                          Progressions="_progressions"
-                         Bpm="_bpm" BpmChanged="OnTempoPickedAsync">
+                         Bpm="_bpm" BpmChanged="OnTempoPickedAsync" MeasuredBpm="_beatBpm">
             <Between>
                 <div class="backing-field">
                     <span class="pm-label backing-label" title="Move the backing chords to the selected mode's own tonic, so the mode is heard as a colour rather than as the parent key with a displaced melody. Picking a mode card replaces the chords below; your tempo is left alone.">
@@ -194,6 +194,8 @@
     private MelodyStyle _selectedStyle = MelodyStyle.Lyrical;
     private double _targetPurity = 90.0;
     private double _bpm = 100.0;
+    // The tempo the picked beat was played at, so the tempo slider detents on it, its half and double.
+    private double? _beatBpm;
     private int _seed = 42;
     private bool _matchHarmonyToMode = true;
 
@@ -367,6 +369,7 @@
     private async Task OnBeatTempoAsync(double bpm)
     {
         _bpm = bpm;
+        _beatBpm = bpm;
         await RefreshMelodyAsync();
         StateHasChanged();
     }

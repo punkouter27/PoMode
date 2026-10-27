@@ -23,6 +23,7 @@
 import { detectPitch } from '../capture/live-pitch.js';
 import * as prefs from '../shell/prefs.js';
 import * as sfx from '../shell/sfx.js';
+import * as fluid from './vibrato-fluid.js';
 
 let state = null;
 
@@ -336,13 +337,24 @@ export function prepareLive(backingNotes, loopDuration, maxSeconds) {
         state.raf = requestAnimationFrame((now) => render(state, now));
     }
     state.canvas.dataset.humReview = 'live';
+
+    // The vibrato fluid underneath shares this plot's axes, read live through the same state so a
+    // range widened by pushLive moves its injection point along with the line.
+    const s = state;
+    fluid.begin({
+        x: (seconds) => seconds / Math.max(s.duration, 0.001),
+        y: (midi) => 1 - ((midi - s.minMidi) / Math.max(s.maxMidi - s.minMidi, 1)),
+    });
     return true;
 }
 
 /// One heard pitch during a take, timed from the loop's downbeat. Called from hum-recorder.js's
 /// capture callback, so it stays allocation-free in the common case and does no work beyond
 /// appending a reading and deciding whether it agrees with the chord under it.
-export function pushLive(seconds, midi) {
+///
+/// `frame` and `sampleRate` are optional: the raw capture frame the pitch was read from, which the
+/// vibrato fluid re-reads at a finer hop to resolve the wobble. Without them it measures depth only.
+export function pushLive(seconds, midi, frame, sampleRate) {
     if (!state || !state.live || seconds < 0) {
         return;
     }
@@ -354,6 +366,7 @@ export function pushLive(seconds, midi) {
         // A gap is recorded rather than skipped, so the line breaks where the singer stopped instead
         // of drawing a straight segment across a rest.
         state.readings.push({ timeSec: seconds, midi: null, inChord: false });
+        fluid.push(seconds, null, frame, sampleRate);
         return;
     }
     // A voice outside the chords' own range must not be clipped off the plot — the take is the
@@ -369,19 +382,25 @@ export function pushLive(seconds, midi) {
         midi,
         inChord: backingAt(state, seconds).some((b) => pitchClass(b) === pitchClass(midi)),
     });
+    fluid.push(seconds, midi, frame, sampleRate);
 }
 
 /// Starts the panel on `canvas`. Returns false with effects off or without a 2D context, in which
-/// case the review is audio-only exactly as it was.
-export function init(canvas) {
+/// case the review is audio-only exactly as it was. `fluidCanvas`, when given, is the vibrato fluid's
+/// layer under this one; it comes up (or declines) on its own and says which on data-vibrato-fluid.
+export function init(canvas, fluidCanvas) {
     dispose();
     if (!canvas || typeof canvas.getContext !== 'function' || !prefs.allowsMotion()) {
+        if (fluidCanvas) {
+            fluidCanvas.dataset.vibratoFluid = 'off';
+        }
         return false;
     }
     const ctx = canvas.getContext('2d');
     if (!ctx) {
         return false;
     }
+    fluid.init(fluidCanvas);
     state = {
         canvas,
         ctx,
@@ -432,6 +451,8 @@ export function prepare(audioBuffer, backingNotes, loopDuration) {
     // one performance.
     state.live = false;
     tileBacking(state, backingNotes, loopDuration);
+    // The take is over: the fluid stops on the frame the voice left it in.
+    fluid.halt();
 
     state.readings = pitchTrack(toMono(audioBuffer));
 
@@ -514,6 +535,7 @@ export function clear() {
     state.readings = [];
     state.backing = [];
     state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+    fluid.clear();
     state.canvas.dataset.humReview = 'ready';
 }
 
@@ -525,6 +547,7 @@ export function dispose() {
         cancelAnimationFrame(state.raf);
     }
     state.unsubscribe?.();
+    fluid.dispose();
     try {
         delete state.canvas.dataset.humReview;
     } catch {

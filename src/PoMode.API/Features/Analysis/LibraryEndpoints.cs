@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using PoMode.API.Features.Auth;
 using PoMode.API.Features.Demo;
+using PoMode.API.Features.SoundSearch;
 using PoMode.Shared.Analysis;
 
 namespace PoMode.API.Features.Analysis;
@@ -13,7 +14,7 @@ public static class LibraryEndpoints
         // so a listing that enumerated anyone else's would defeat that. Jobs from before ownership
         // existed belong to nobody and are listed for nobody.
         app.MapGet("/api/library", async Task<Ok<List<LibraryEntryDto>>> (
-            HttpContext context, JobStore store, DemoLibrary demo, CancellationToken ct) =>
+            HttpContext context, JobStore store, DemoLibrary demo, SoundIndexer sound, CancellationToken ct) =>
         {
             var owner = PoUser.IdOf(context.User);
             var entries = new List<LibraryEntryDto>();
@@ -28,12 +29,16 @@ public static class LibraryEndpoints
                 {
                     continue;
                 }
+                // Listing the library is when a song not yet heard by the sound search gets queued, so
+                // it is ready by the time anyone types a description into the box.
+                sound.EnqueueIfMissing(state);
                 entries.Add(await EntryOfAsync(state, store, ct));
             }
 
             // An empty library is the moment a new user gets the demo; DemoLibrary says why here.
             if (entries.Count == 0 && owner is not null && await demo.TrySeedAsync(owner, ct) is { } seeded)
             {
+                sound.EnqueueIfMissing(seeded);
                 entries.Add(await EntryOfAsync(seeded, store, ct));
             }
             return TypedResults.Ok(entries.OrderByDescending(e => e.CreatedAt).ToList());

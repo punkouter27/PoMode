@@ -1,0 +1,25 @@
+.shape-line {
+    stroke: var(--pm-fg-muted);
+    stroke-width: 1;
+}
+
+.shape-nut {
+    stroke: var(--pm-fg);
+    stroke-width: 4;
+}
+
+.shape-dot {
+    fill: var(--pm-fg);
+}
+
+.shape-box ::deep .shape-finger {
+    fill: var(--pm-surface);
+    font-size: var(--pm-text-xs);
+    font-weight: 700;
+}
+
+.shape-box ::deep .shape-open,
+.shape-box ::deep .shape-fret-label {
+    fill: var(--pm-fg-muted);
+    font-size: var(--pm-text-xs);
+}

@@ -37,10 +37,12 @@
             <RadzenText class="current-step" Text="@detail" />
         </div>
     }
-    <ul class="stages">
+    @* data-stage-chime names the key the stage chimes are voiced in: the first-look tonic once it
+       exists, "default" (keyless) before. *@
+    <ul class="stages" @ref="_stageList" data-stage-chime="@(_chimeKey ?? "default")">
         @foreach (var stage in Status.Plan)
         {
-            <li class="@StageClass(stage)">
+            <li class="@StageClass(stage)" data-stage="@stage.Stage">
                 <span class="tier"><TierBadge Tier="stage.Tier" /></span>
                 <span class="name">@FriendlyName(stage.Stage)</span>
                 <span class="executor">@ExecutorNames.Display(stage.Executor)</span>
@@ -130,7 +132,9 @@
     {
         try
         {
+            await KeyChimesAsync();
             await SoundStageChangeAsync();
+            await ShimmerStagesAsync();
             await RefreshPreviewAsync();
         }
         catch (JSDisconnectedException)
@@ -179,6 +183,76 @@
             if (done.Contains(StageNames.PitchTracking)) layers.Add("the transcribed notes");
             if (done.Contains(StageNames.ChordDetecting)) layers.Add("the chords");
             return "So far: " + (layers.Count == 1 ? layers[0] : $"{string.Join(", ", layers[..^1])} and {layers[^1]}") + ".";
+        }
+    }
+
+    /// <summary>The first-look tonic (preview.json) for <see cref="_previewTonicFor"/>, null until the
+    /// server has written one with any confidence.</summary>
+    private string? _previewTonic;
+    private string? _previewTonicFor;
+
+    /// <summary>The tonic the stage chimes are voiced in, null while they are keyless; and the job the
+    /// palette was last reset for.</summary>
+    private string? _chimeKey;
+    private string? _paletteJob;
+
+    /// <summary>
+    /// Voices the stage chimes in the song's likely key as soon as the first look names one. A new job
+    /// first clears whatever palette the last song left, so its early chimes are keyless rather than
+    /// in someone else's key. The palette is tonic and fifth only: the first look guesses a tonic, not
+    /// a mode, and the third is the one note that would claim major or minor. The finished result
+    /// replaces it with the mode's own scale (Home's setPalette).
+    /// </summary>
+    private async Task KeyChimesAsync()
+    {
+        if (!IsRunning)
+        {
+            return;
+        }
+        if (_paletteJob != Status.JobId)
+        {
+            _paletteJob = Status.JobId;
+            _chimeKey = null;
+            _sfx ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/sfx.js");
+            await _sfx.InvokeVoidAsync("setPalette", (int[]?)null);
+        }
+        if (_chimeKey is null && _previewTonic is { } tonic && LibraryQuery.PitchClassOf(tonic) is { } pitchClass)
+        {
+            _chimeKey = tonic;
+            _sfx ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/sfx.js");
+            await _sfx.InvokeVoidAsync("setPalette", new[] { 60 + pitchClass, 67 + pitchClass });
+            StateHasChanged();
+        }
+    }
+
+    private ElementReference _stageList;
+
+    /// <summary>The stages already seen complete for <see cref="_shimmeredJob"/>. Seeded silently on
+    /// the first look, like the earcons, so a resumed job does not glint for work nobody watched.</summary>
+    private HashSet<string>? _shimmered;
+    private string? _shimmeredJob;
+
+    /// <summary>One glass sweep across each newly completed stage's row, lasting as long as the stage
+    /// really took (log-mapped in wait-preview.js shimmer).</summary>
+    private async Task ShimmerStagesAsync()
+    {
+        var done = Status.CompletedStages ?? [];
+        if (_shimmered is null || _shimmeredJob != Status.JobId)
+        {
+            _shimmeredJob = Status.JobId;
+            _shimmered = [.. done];
+            return;
+        }
+        foreach (var stage in done)
+        {
+            if (!_shimmered.Add(stage))
+            {
+                continue;
+            }
+            var record = Status.StageHistory?.LastOrDefault(r => r.Stage == stage);
+            double? seconds = record?.CompletedAt is { } end ? (end - record.StartedAt).TotalSeconds : null;
+            _waitModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/player/wait-preview.js");
+            await _waitModule.InvokeVoidAsync("shimmer", _stageList, stage, seconds);
         }
     }
 
@@ -252,6 +326,27 @@
         catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException or TaskCanceledException)
         {
             _etaSec = null;
+        }
+        // The first look is written before the slow stages start; asked on the same stage-change
+        // pushes until it exists, for the chimes' key.
+        if (_previewTonicFor != Status.JobId)
+        {
+            _previewTonicFor = Status.JobId;
+            _previewTonic = null;
+        }
+        if (_previewTonic is null && Status.Stage != JobStage.Uploaded)
+        {
+            try
+            {
+                if (await Analysis.GetPreviewAsync(Status.JobId) is { Confidence: > 0 } preview)
+                {
+                    _previewTonic = preview.TonicName;
+                }
+            }
+            catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException or TaskCanceledException)
+            {
+                // No key yet; the chimes stay keyless.
+            }
         }
     }
 

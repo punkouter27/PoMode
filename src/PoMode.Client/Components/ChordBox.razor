@@ -1,0 +1,78 @@
+@using PoMode.Client.Services
+
+@* One chord box, as guitar books draw them: strings upright (lowest on the left), the nut on top or the
+   first fret's number beside the grid, ○ open and × muted above, a dot per fretted string with its
+   finger, and a bar for one finger laid across several strings. Used by the analysis page's chord
+   shapes and by Practice's open chord jam, which hand it the same fingering record. *@
+<svg class="shape-box" width="@Width" height="@Height" viewBox="0 0 @Width @Height" role="img" aria-label="@Label">
+    @if (Fingering.BaseFret == 1)
+    {
+        <line class="shape-nut" x1="@Left" y1="@Top" x2="@(Left + Span)" y2="@Top" />
+    }
+    else
+    {
+        @Text("shape-fret-label", Left - 4, Top + FretGap - 6, "end", Fingering.BaseFret.ToString())
+    }
+    @for (var fret = 0; fret <= Frets; fret++)
+    {
+        <line class="shape-line" x1="@Left" y1="@(Top + (fret * FretGap))" x2="@(Left + Span)" y2="@(Top + (fret * FretGap))" />
+    }
+    @for (var s = 0; s < Fingering.Frets.Length; s++)
+    {
+        var x = Left + (s * StringGap);
+        @* data-stop is where the string's sounding length begins: the nut when open, the fret wire under
+           the finger when fretted. The jam's string-glow.js vibrates the string from there down. *@
+        <line class="shape-line shape-string" x1="@x" y1="@Top" x2="@x" y2="@(Top + (Frets * FretGap))"
+              data-fret="@Fingering.Frets[s]" data-stop="@(Top + (Math.Clamp(Fingering.Frets[s], 0, Frets - 1) * FretGap))" />
+        @if (Fingering.Frets[s] <= 0)
+        {
+            @Text("shape-open", x, Top - 5, "middle", Fingering.Frets[s] < 0 ? "×" : "○")
+        }
+    }
+    @foreach (var barre in Fingering.Barres)
+    {
+        var strings = Enumerable.Range(0, Fingering.Frets.Length).Where(s => Fingering.Frets[s] == barre).ToList();
+        if (strings.Count > 1)
+        {
+            <rect class="shape-dot" x="@(Left + (strings[0] * StringGap) - Dot)" y="@(Top + ((barre - 0.5) * FretGap) - Dot)"
+                  width="@(((strings[^1] - strings[0]) * StringGap) + (2 * Dot))" height="@(2 * Dot)" rx="@Dot" />
+            @if (strings[0] < Fingering.Fingers.Length && Fingering.Fingers[strings[0]] > 0)
+            {
+                @Text("shape-finger", Left + ((strings[0] + strings[^1]) * StringGap / 2.0), Top + ((barre - 0.5) * FretGap) + 4,
+                    "middle", Fingering.Fingers[strings[0]].ToString())
+            }
+        }
+    }
+    @for (var s = 0; s < Fingering.Frets.Length; s++)
+    {
+        var fret = Fingering.Frets[s];
+        if (fret > 0 && !(Fingering.Barres.Contains(fret) && Fingering.Frets.Count(f => f == fret) > 1))
+        {
+            var (x, y) = (Left + (s * StringGap), Top + ((fret - 0.5) * FretGap));
+            <circle class="shape-dot" cx="@x" cy="@y" r="@Dot" />
+            @if (s < Fingering.Fingers.Length && Fingering.Fingers[s] > 0)
+            {
+                @Text("shape-finger", x, y + 4, "middle", Fingering.Fingers[s].ToString())
+            }
+        }
+    }
+</svg>
+
+@code {
+    [Parameter, EditorRequired] public required ChordFingering Fingering { get; set; }
+
+    /// <summary>What the drawing shows, for a screen reader.</summary>
+    [Parameter, EditorRequired] public required string Label { get; set; }
+
+    private const int Frets = 4, FretGap = 20, StringGap = 16, Left = 20, Top = 22, Dot = 7;
+    private const int Height = Top + (Frets * FretGap) + 8;
+
+    private int Span => (Fingering.Frets.Length - 1) * StringGap;
+    private int Width => Left + Span + 12;
+
+    /// <summary>An SVG <c>text</c> element: Razor reserves that tag name inside code blocks, so it is
+    /// written as markup, and styled through <c>::deep</c> since markup carries no scope attribute.</summary>
+    private static MarkupString Text(string cssClass, double x, double y, string anchor, string content)
+        => new(string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"<text class=\"{cssClass}\" x=\"{x}\" y=\"{y}\" text-anchor=\"{anchor}\">{System.Net.WebUtility.HtmlEncode(content)}</text>"));
+}
