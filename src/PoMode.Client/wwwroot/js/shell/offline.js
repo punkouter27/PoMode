@@ -35,14 +35,15 @@ export async function save(jobId) {
     }));
     // The page itself, so a cold start offline can open this song's link.
     try {
-        await cache.add(`/?job=${jobId}`);
+        await cache.add(`/song/${jobId}`);
     } catch { }
     return Math.round(bytes / 1048576 * 10) / 10;
 }
 
 export async function forget(jobId) {
     const cache = await caches.open(CACHE);
-    await Promise.all([...urlsFor(jobId), `/?job=${jobId}`].map((url) => cache.delete(url)));
+    // `/?job=` is where a song was kept before it had its own address.
+    await Promise.all([...urlsFor(jobId), `/song/${jobId}`, `/?job=${jobId}`].map((url) => cache.delete(url)));
 }
 
 /// The ids kept offline, read from the stored status responses.

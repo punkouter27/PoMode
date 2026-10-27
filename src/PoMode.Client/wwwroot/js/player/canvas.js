@@ -11,10 +11,10 @@
 // into one requestAnimationFrame callback, so panning a five-minute track stays smooth.
 
 import * as prefs from '../shell/prefs.js';
-import { load as loadChromaLayer } from './chroma-layer.js';
-import { create as createGlass } from './spectral-glass.js';
-import { create as createHaze, PROFILE as HAZE_PROFILE } from './heat-haze.js';
-import { rgb, darkTheme } from './gpu-surface.js';
+import { load as loadChromaLayer } from '../fx/chroma-layer.js';
+import { create as createGlass } from '../fx/spectral-glass.js';
+import { create as createHaze, PROFILE as HAZE_PROFILE } from '../fx/heat-haze.js';
+import { rgb, darkTheme } from '../fx/gpu-surface.js';
 
 const states = new Map();
 

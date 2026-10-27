@@ -23,22 +23,26 @@
     @if (Describe && Model is { Windows.Count: > 0 } described)
     {
         @* The canvas as words, for a screen reader: each window's time, chord, mode and the notes sung
-           in it, all as the server labelled them. Nothing a sighted reader sees is missing from it. *@
-        <table class="pm-sr-only" id="@_tableId">
-            <caption>Notes and chords, window by window</caption>
-            <thead><tr><th scope="col">Time</th><th scope="col">Chord</th><th scope="col">Mode</th><th scope="col">Notes sung</th></tr></thead>
-            <tbody>
-                @foreach (var window in described.Windows)
-                {
-                    <tr>
-                        <td>@Clock(window.StartSec) to @Clock(window.EndSec)</td>
-                        <td>@window.ChordSymbol</td>
-                        <td>@(window.ModeTag is { } mode ? ScaleModes.DisplayName(mode) : "unclear")</td>
-                        <td>@SungIn(described, window)</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+           in it, all as the server labelled them. Nothing a sighted reader sees is missing from it.
+           The hiding class is on a wrapper: a table treats height as a minimum and grows to its rows,
+           so on the table itself it reached 500px past the card and made a one-screen page scroll. *@
+        <div class="pm-sr-only">
+            <table id="@_tableId">
+                <caption>Notes and chords, window by window</caption>
+                <thead><tr><th scope="col">Time</th><th scope="col">Chord</th><th scope="col">Mode</th><th scope="col">Notes sung</th></tr></thead>
+                <tbody>
+                    @foreach (var window in described.Windows)
+                    {
+                        <tr>
+                            <td>@Clock(window.StartSec) to @Clock(window.EndSec)</td>
+                            <td>@window.ChordSymbol</td>
+                            <td>@(window.ModeTag is { } mode ? ScaleModes.DisplayName(mode) : "unclear")</td>
+                            <td>@SungIn(described, window)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     }
     <p class="canvas-legend">
         <span class="swatch chord-tone"></span>chord tone
@@ -143,18 +147,29 @@
     [JSInvokable]
     public Task OnCanvasSeek(double seconds) => OnSeek.InvokeAsync(seconds);
 
+    /// <summary>Set on teardown, so a call still in flight when the page is left can be told apart from a real failure.</summary>
+    private bool _disposed;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        try
         {
-            _module = await Js.InvokeAsync<IJSObjectReference>("import", "./js/player/canvas.js");
-            _self = DotNetObjectReference.Create(this);
-            await _module.InvokeVoidAsync("init", _canvas, _self, _chip);
+            if (firstRender)
+            {
+                _module = await Js.InvokeAsync<IJSObjectReference>("import", "./js/player/canvas.js");
+                _self = DotNetObjectReference.Create(this);
+                await _module.InvokeVoidAsync("init", _canvas, _self, _chip);
+            }
+            await PushStateAsync();
+            if (firstRender)
+            {
+                await OnReady.InvokeAsync(_canvas);
+            }
         }
-        await PushStateAsync();
-        if (firstRender)
+        catch (Exception ex) when (_disposed && ex is ObjectDisposedException or JSException or JSDisconnectedException)
         {
-            await OnReady.InvokeAsync(_canvas);
+            // Left mid-setup (a quick click away from a song): the module went with the page. Thrown
+            // on, it tripped the layout's error boundary and blanked the page being opened instead.
         }
     }
 
@@ -215,6 +230,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        _disposed = true;
         if (_module is not null)
         {
             try

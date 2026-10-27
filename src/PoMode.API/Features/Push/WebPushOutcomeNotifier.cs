@@ -40,7 +40,7 @@ public sealed class WebPushOutcomeNotifier(
 
         var (title, body) = Compose(state);
         var payload = JsonSerializer.Serialize(
-            new PushPayload(title, body, $"/?job={state.JobId}", state.JobId), JobStore.JsonOptions);
+            new PushPayload(title, body, $"/song/{state.JobId}", state.JobId), JobStore.JsonOptions);
         var client = new PushServiceClient(httpClients.CreateClient(HttpClientName))
         {
             DefaultAuthentication = new VapidAuthentication(settings.PublicKey!, settings.PrivateKey!)

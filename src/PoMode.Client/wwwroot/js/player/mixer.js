@@ -11,7 +11,7 @@ import {
     setWaveform, dropNotes, resetFx, sectionBoundsAt,
     wantsSpectrum, setSpectrum,
 } from './canvas.js';
-import { BANDS as SPECTRUM_BANDS } from './spectral-glass.js';
+import { BANDS as SPECTRUM_BANDS } from '../fx/spectral-glass.js';
 import { VOICES, bus } from './voices.js';
 import { peaks } from './buffers.js';
 import { tap } from '../shell/sfx.js';

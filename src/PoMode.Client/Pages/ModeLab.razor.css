@@ -267,3 +267,46 @@
         height: 180px !important;
     }
 }
+
+/* --- The roll and the home-note view: one row on a desktop, stacked under it --- */
+.studio-stage {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pm-space-2);
+    min-width: 0;
+}
+
+@media (min-width: 1024px) {
+    .studio-stage {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(16rem, 21rem);
+        align-items: stretch;
+    }
+
+    /* A column of its own: the sentence over the clock rather than beside it. */
+    .studio-stage ::deep .studio-gravity-panel {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+    }
+
+    .studio-stage ::deep .gravity-text,
+    .studio-stage ::deep .gravity-stage {
+        flex: none;
+        width: 100%;
+    }
+}
+
+.studio-to-practice {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    font-size: var(--pm-text-sm);
+    color: var(--pm-accent);
+}
+
+@media (pointer: coarse) {
+    .studio-to-practice {
+        min-height: 2.75rem;
+    }
+}

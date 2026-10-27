@@ -20,7 +20,7 @@ public class ShellSmokeTests(AppFixture app)
         var expectOptions = new LocatorAssertionsToBeVisibleOptions { Timeout = AppFixture.ExpectTimeoutMs };
         // No job has run yet — there's nothing on screen, mock or otherwise, so the banner must stay
         // hidden. It only flips on when a completed job's plan actually touched a fake/placeholder
-        // executor (see MockDataState.SetMock in Home.razor).
+        // executor (see MockDataState.SetMock in Song.razor).
         var hiddenOptions = new LocatorAssertionsToBeHiddenOptions { Timeout = AppFixture.ExpectTimeoutMs };
         await Assertions.Expect(page.GetByText("USING MOCK DATA")).ToBeHiddenAsync(hiddenOptions);
         await Assertions.Expect(page.GetByText("PoMode").First).ToBeVisibleAsync(expectOptions);

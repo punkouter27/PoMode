@@ -6,8 +6,8 @@
 //   dotnet run scripts/layout-audit.cs -- compare before after <notes.md> <name>
 //
 // capture writes SCREENSHOTS/audit/<label>/ (one PNG per route and viewport, plus results.json) and
-// checks what docs/ui-rules.md promises: no sideways scroll, no page taller than the viewport except
-// the two documents allowed to be, no text under 12px, no pointer target under 24px, no layout shift
+// checks what docs/ui-rules.md promises: no sideways scroll, no page taller than a desktop viewport (a
+// phone allows the documents marked MayScroll), no text under 12px, no pointer target under 24px, no layout shift
 // after first paint. compare writes one self-contained SCREENSHOTS/<name>.html with both states side
 // by side, each annotated with its findings, and the notes file as the summary of what changed.
 #:package Microsoft.Playwright@1.62.0
@@ -58,6 +58,7 @@ static async Task CaptureAsync(string outDir, string baseUrl)
         await context.StorageStateAsync(new() { Path = state });
     }
 
+    // MayScroll is a phone allowance only: on the desktop viewport every route has to fit one screen.
     var routes = new List<(string Name, string Path, bool MayScroll)>
     {
         ("library", "/", false), ("mode-lab", "/modes", true), ("practice", "/practice", false), ("settings", "/settings", true), ("diagnostics", "/diagnostics", true),
@@ -72,7 +73,7 @@ static async Task CaptureAsync(string outDir, string baseUrl)
             return done ? done.jobId : null; }");
         if (jobId is not null)
         {
-            routes.Add(("analysis", $"/?job={jobId}", true));
+            routes.Add(("analysis", $"/song/{jobId}", true));
         }
     }
 
@@ -135,7 +136,7 @@ static async Task CaptureAsync(string outDir, string baseUrl)
                 }
                 if (clipped) out.push(`${clipped} element(s) clip their own content, e.g. ${clips.join(' | ')}`);
                 if (window.__cls > 0.1) out.push(`layout shift after load: CLS ${window.__cls.toFixed(3)}`);
-                return out; }", route.MayScroll);
+                return out; }", route.MayScroll && viewport.Touch);
             // WCAG A/AA through axe-core, in both themes: the app's tokens are defined once per theme, and
             // a contrast bug in one of them is exactly what a single-theme check misses.
             var axe = new List<string>();

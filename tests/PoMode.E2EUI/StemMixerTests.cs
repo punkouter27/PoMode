@@ -46,7 +46,7 @@ public class StemMixerTests(AppFixture app)
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ReadyMixerPageAsync(browser, app.BaseUrl);
 
-        await Assertions.Expect(page.GetByRole(AriaRole.Button, new() { Name = "Play" })).ToBeVisibleAsync(Visible);
+        await Assertions.Expect(page.GetByRole(AriaRole.Button, new() { Name = "Play", Exact = true })).ToBeVisibleAsync(Visible);
         var sources = page.Locator(".mixer-sources");
         await Assertions.Expect(sources.GetByText("Full mix", new() { Exact = true })).ToBeVisibleAsync(Visible);
         await Assertions.Expect(sources.GetByText("Vocals", new() { Exact = true })).ToBeVisibleAsync(Visible);
@@ -63,7 +63,7 @@ public class StemMixerTests(AppFixture app)
         var page = await ReadyMixerPageAsync(browser, app.BaseUrl);
 
         Assert.Equal(0.0, await MixerTimeAsync(page), precision: 2);
-        await page.GetByRole(AriaRole.Button, new() { Name = "Play" }).ClickAsync();
+        await page.GetByRole(AriaRole.Button, new() { Name = "Play", Exact = true }).ClickAsync();
 
         await Assertions.Expect(page.Locator(".mixer"))
             .ToHaveAttributeAsync("data-mixer-status", "playing", new() { Timeout = AppFixture.ExpectTimeoutMs });
@@ -81,7 +81,7 @@ public class StemMixerTests(AppFixture app)
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ReadyMixerPageAsync(browser, app.BaseUrl);
 
-        await page.GetByRole(AriaRole.Button, new() { Name = "Play" }).ClickAsync();
+        await page.GetByRole(AriaRole.Button, new() { Name = "Play", Exact = true }).ClickAsync();
         await Assertions.Expect(page.Locator(".mixer"))
             .Not.ToHaveAttributeAsync("data-mixer-time", "0.000", new() { Timeout = AppFixture.ExpectTimeoutMs });
 
@@ -101,7 +101,7 @@ public class StemMixerTests(AppFixture app)
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ReadyMixerPageAsync(browser, app.BaseUrl);
 
-        await page.GetByRole(AriaRole.Button, new() { Name = "Play" }).ClickAsync();
+        await page.GetByRole(AriaRole.Button, new() { Name = "Play", Exact = true }).ClickAsync();
         await Assertions.Expect(page.Locator(".mixer"))
             .Not.ToHaveAttributeAsync("data-mixer-time", "0.000", new() { Timeout = AppFixture.ExpectTimeoutMs });
         var before = await MixerTimeAsync(page);

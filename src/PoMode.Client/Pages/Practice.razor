@@ -8,7 +8,7 @@
 @inject BrowserPrefs Prefs
 @implements IAsyncDisposable
 
-<PageTitle>PoMode</PageTitle>
+<PageTitle>PoMode · Practice</PageTitle>
 
 <h1 class="pm-sr-only">Practice: sing over the chords</h1>
 
@@ -44,6 +44,8 @@
                                  Progressions="_progressions"
                                  Bpm="_bpm" BpmChanged="OnTempoPickedAsync"
                                  Disabled="@Busy" />
+                <a class="practice-to-modes" id="practice-to-modes"
+                   href="@($"modes?{ModeLink.QueryFromParent(_tonic, _mode)}")">Hear @ModeNames.OnRoot(_tonic, _mode) in the Mode Lab</a>
 
                 @* The singer's range, pooled from their own finished takes, and a key that sits the chosen mode
                    inside it. Both sentences and the key are the server's: choosing where a mode's home note
@@ -60,12 +62,6 @@
                                           Click="@FitToVoiceAsync" id="practice-fit" title="@fit.Explanation" />
                         }
                     </div>
-                    @* Voice type and strongest note from the same takes, worded server-side. Present only once
-                       the range is: both are read from the same pool of notes. *@
-                    @if (voice.Voice is { TypeLabel: not null } singer)
-                    {
-                        <SingerCard Voice="singer" Id="practice-singer" />
-                    }
                     @* The reason is shown once it applies rather than before: until then it would be a sentence
                        about a key the page is not playing. *@
                     @if (FitForMode is { } applied && applied.TonicPitchClass == _tonic)
@@ -175,37 +171,18 @@
             }
         </RadzenTabsItem>
         <RadzenTabsItem Text="@TakesTabLabel">
-            @* What the singer's earlier melodies over these chords turned out to be. A mirror, not a grade: the
-               server tallies the readings without marking any as the expected one, so there is no best take, no
-               run of matches and no percentage here — a take that came out Mixolydian over Dorian chords is a
-               finding about the melody, not a miss. *@
-            @if (_history is { } history)
+            @* Voice type and strongest note from the takes below, worded server-side. Here rather than on
+               the Sing tab: it is a reading of those takes, and beside the backing it pushed the take
+               itself under the fold of a desktop screen. Present only once the range is: both are read
+               from the same pool of notes. *@
+            @if (_voice?.Voice is { TypeLabel: not null } singer)
             {
-                <RadzenCard class="practice-history" data-take-count="@history.Takes.Count">
-                    <h2 class="pm-sr-only">Your takes over these chords</h2>
-                    <p class="history-summary">@history.Summary</p>
-                    @if (history.Takes.Count > 0)
-                    {
-                        <ul class="history-list">
-                            @foreach (var take in history.Takes)
-                            {
-                                <li class="history-row" data-job-id="@take.JobId" data-take-stage="@take.Stage">
-                                    <time class="history-when" datetime="@take.CreatedAt.ToString("o")">@take.CreatedAt.ToLocalTime().ToString("MMM d, HH:mm")</time>
-                                    <span class="history-reading">@take.Reading</span>
-                                    <span class="history-over">@take.SungOver</span>
-                                    <a class="history-open" href="@($"/?job={take.JobId}")">Open analysis</a>
-                                </li>
-                            }
-                        </ul>
-                    }
+                <RadzenCard class="practice-singer-card">
+                    <h2 class="pm-label practice-singer-label">Your voice</h2>
+                    <SingerCard Voice="singer" Id="practice-singer" />
                 </RadzenCard>
             }
-            else
-            {
-                <RadzenCard class="practice-history">
-                    <p class="history-summary">No takes to show yet.</p>
-                </RadzenCard>
-            }
+            <TakeHistory History="_history" />
         </RadzenTabsItem>
         <RadzenTabsItem Text="Guitar jam">
             @* Practice for the hands rather than the voice: open guitar chords that sound richer than they are to
@@ -217,6 +194,11 @@
 </div>
 
 @code {
+    /// <summary>A song page's "Sing over it": the mode to open on (<see cref="ModeLink"/>).</summary>
+    [SupplyParameterFromQuery] public int? Tonic { get; set; }
+
+    [SupplyParameterFromQuery] public string? Mode { get; set; }
+
     /// <summary>Where a take is in its cycle — one answer to "what is happening" rather than four
     /// booleans that can disagree. Mirrors the Mode Lab's hum states, whose flow this reuses.</summary>
     private enum TakeState { Idle, CountingIn, Recording, Captured }
@@ -327,6 +309,12 @@
         // thing the singer hears on the parent key would put the wrong note under it.
         _progressionId = SignatureIdFor(_mode) ?? _progressions[0].Id;
         await RestoreSettingsAsync();
+        // A song page's "Sing over it" outranks the backing left last time: it is what was asked for.
+        if (ModeLink.TryRead(Tonic, Mode, out var parent, out var linked))
+        {
+            (_tonic, _mode) = (parent, linked);
+            _progressionId = SignatureIdFor(linked) ?? _progressionId;
+        }
         await ReloadAsync();
         await LoadVoiceAsync();
     }
@@ -696,7 +684,7 @@
                 NotificationService.Notify(
                     NotificationSeverity.Success, "Practice",
                     "Take saved — reading the mode of your melody.");
-                Navigation.NavigateTo($"/?job={job.JobId}");
+                Navigation.NavigateTo($"/song/{job.JobId}");
             }
             else
             {

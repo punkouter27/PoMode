@@ -23,7 +23,7 @@
 import { detectPitch } from '../capture/live-pitch.js';
 import * as prefs from '../shell/prefs.js';
 import * as sfx from '../shell/sfx.js';
-import * as fluid from './vibrato-fluid.js';
+import * as fluid from '../fx/vibrato-fluid.js';
 
 let state = null;
 

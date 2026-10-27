@@ -25,9 +25,9 @@
         </div>
     }
 
-    @* The transport sticks under the header as the page scrolls: the lab is a tall page by design
-       (ui-rules), and Play, the dice and what is sounding stay in reach from the cards, the home-note
-       view and the roll alike. The settings that make the loop are in the panel below it. *@
+    @* The transport sticks under the header as the page scrolls: on a desktop the lab is one screen,
+       but on a phone it is a tall page by design (ui-rules), and Play, the dice and what is sounding
+       stay in reach from the cards, the home-note view and the roll alike. *@
     <div class="studio-transport-bar pm-panel">
         <div class="studio-transport">
             @* Play and pause share a button; picking a card, rolling, or changing a setting restarts
@@ -73,6 +73,9 @@
             }
         </div>
         <span class="studio-now" role="status">@ModeNames.OnRoot(_selectedTonic, _selectedMode) · @($"{_bpm:0} BPM")@MidiReadout</span>
+        @* Hearing a mode and singing in it are the two halves of learning one. *@
+        <a class="studio-to-practice" id="modes-to-practice"
+           href="@($"practice?{ModeLink.QueryFromParent(_selectedTonic, _selectedMode)}")">Sing over it in Practice</a>
     </div>
 
     <div class="studio-top-bar pm-panel">
@@ -135,34 +138,37 @@
 
     <ModeCards Tonic="_selectedTonic" Selected="_selectedMode" Playing="_isPlaying" OnPick="SampleModeAsync" />
 
-    <GravityPanel @ref="_gravity" Tonic="_selectedTonic" Mode="_selectedMode" />
-
-    @if (_melody is not null)
-    {
-        @* The chords as text sit on the roll's own header: the roll draws them as blocks, and the pills
-           are the readable spelling of the same lane, lit while each sounds. *@
-        <div class="studio-canvas-panel pm-panel">
-            <div class="canvas-panel-header">
-                <span class="canvas-panel-desc">@_melody.CharacteristicExplanation</span>
-                <div class="compact-chords-list" aria-label="The chords in this loop">
-                    @foreach (var chord in _melody.Chords)
-                    {
-                        var isCurrent = _playheadSec >= chord.StartSec && _playheadSec < chord.EndSec;
-                        <span class="compact-chord-pill @(isCurrent ? "current" : "")"><span class="ch-sym">@chord.Symbol</span></span>
-                    }
+    @* The roll and the home-note view side by side on a desktop, so the whole lab is one screen at
+       1440×900: stacked, the clock took a 215px row of its own and pushed the roll under the fold. *@
+    <div class="studio-stage">
+        @if (_melody is not null)
+        {
+            @* The chords as text sit on the roll's own header: the roll draws them as blocks, and the pills
+               are the readable spelling of the same lane, lit while each sounds. *@
+            <div class="studio-canvas-panel pm-panel">
+                <div class="canvas-panel-header">
+                    <span class="canvas-panel-desc">@_melody.CharacteristicExplanation</span>
+                    <div class="compact-chords-list" aria-label="The chords in this loop">
+                        @foreach (var chord in _melody.Chords)
+                        {
+                            var isCurrent = _playheadSec >= chord.StartSec && _playheadSec < chord.EndSec;
+                            <span class="compact-chord-pill @(isCurrent ? "current" : "")"><span class="ch-sym">@chord.Symbol</span></span>
+                        }
+                    </div>
                 </div>
+                <AnalysisCanvas Model="_melody.Visual" SelectedWindowIndex="_activeWindowIndex"
+                                PlayheadSec="_playheadSec" OnSeek="OnSeek" />
             </div>
-            <AnalysisCanvas Model="_melody.Visual" SelectedWindowIndex="_activeWindowIndex"
-                            PlayheadSec="_playheadSec" OnSeek="OnSeek" />
-        </div>
-    }
-    else if (_isLoading)
-    {
-        <div class="modelab-loading">
-            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
-            <RadzenText Text="Generating modal melodies and harmonies…" />
-        </div>
-    }
+        }
+        else if (_isLoading)
+        {
+            <div class="modelab-loading">
+                <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+                <RadzenText Text="Generating modal melodies and harmonies…" />
+            </div>
+        }
+        <GravityPanel @ref="_gravity" Tonic="_selectedTonic" Mode="_selectedMode" />
+    </div>
 </div>
 
 @code {
@@ -221,6 +227,11 @@
 
     /// <summary>The library job to open as the drums, set by the Library's "Choose a beat".</summary>
     [SupplyParameterFromQuery] public string? Beat { get; set; }
+
+    /// <summary>A song page's "Explore it here": the mode to open on (<see cref="ModeLink"/>).</summary>
+    [SupplyParameterFromQuery] public int? Tonic { get; set; }
+
+    [SupplyParameterFromQuery] public string? Mode { get; set; }
 
     private DotNetObjectReference<ModeLab>? _selfRef;
 
@@ -386,6 +397,10 @@
                 _progressions = progs;
                 _selectedProgressionId = _progressions[0].Id;
                 _bpm = _progressions[0].DefaultBpm;
+                if (ModeLink.TryRead(Tonic, Mode, out var parent, out var linked))
+                {
+                    (_selectedTonic, _selectedMode) = (parent, linked);
+                }
 
                 // Open on the harmony that matches the mode the strip starts on, so the first thing
                 // heard is already the mode rather than the parent key.
@@ -636,7 +651,7 @@
             if (job is not null && !string.IsNullOrEmpty(job.JobId))
             {
                 NotificationService.Notify(NotificationSeverity.Success, "Mode Lab Bridge", "Synthesized WAV audio & queued analysis job!");
-                Navigation.NavigateTo($"/?job={job.JobId}");
+                Navigation.NavigateTo($"/song/{job.JobId}");
             }
             else
             {

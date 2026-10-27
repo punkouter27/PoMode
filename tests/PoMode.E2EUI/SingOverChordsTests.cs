@@ -129,7 +129,7 @@ public class SingOverChordsTests(AppFixture app)
 
         // The analyzer page, on this job — the whole point of the feature.
         await page.WaitForURLAsync(
-            url => url.Contains("job="), new PageWaitForURLOptions { Timeout = AppFixture.ExpectTimeoutMs });
+            url => url.Contains("/song/"), new PageWaitForURLOptions { Timeout = AppFixture.ExpectTimeoutMs });
 
         // And it says what it is. Without this the page reports a mode on an unexplained file.
         await Assertions.Expect(page.Locator("[data-take-origin='HumTake']")).ToHaveCountAsync(1, Count);

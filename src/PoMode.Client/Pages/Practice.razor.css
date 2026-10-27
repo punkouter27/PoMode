@@ -50,6 +50,26 @@
 
 /* ---- Your voice ---- */
 
+/* Back to the Mode Lab with this backing's mode, under the row that chose it. */
+.practice-to-modes {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    margin-top: var(--pm-space-1);
+    font-size: var(--pm-text-sm);
+    color: var(--pm-accent);
+}
+
+@media (pointer: coarse) {
+    .practice-to-modes {
+        min-height: 2.75rem;
+    }
+}
+
+.practice-singer-label {
+    margin: 0 0 var(--pm-space-1);
+}
+
 .practice-voice {
     display: flex;
     flex-wrap: wrap;
@@ -68,52 +88,6 @@
     font-size: var(--pm-text-sm);
     color: var(--pm-fg-muted);
     max-width: 64ch;
-}
-
-.practice-setup ::deep .singer {
-    margin-top: var(--pm-space-2);
-}
-
-/* ---- Earlier takes over these chords ---- */
-
-.history-summary {
-    margin: var(--pm-space-2) 0 var(--pm-space-3);
-    max-width: 64ch;
-}
-
-.history-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-/* One row per take: when, what the analyzer heard, what it was sung over, and the way in. A grid
-   rather than a table so it can fold to two lines on a phone without a horizontal scroll. */
-.history-row {
-    display: grid;
-    grid-template-columns: 7.5rem minmax(0, 1fr) minmax(0, 1.4fr) auto;
-    align-items: baseline;
-    gap: var(--pm-space-2) var(--pm-space-3);
-    padding: var(--pm-space-2) 0;
-    border-top: 1px solid var(--pm-border);
-}
-
-.history-when,
-.history-over {
-    font-size: var(--pm-text-sm);
-    color: var(--pm-fg-muted);
-    font-variant-numeric: tabular-nums;
-}
-
-.history-reading {
-    font-weight: 600;
-}
-
-.history-open {
-    font-size: var(--pm-text-sm);
-    color: var(--pm-accent);
 }
 
 /* ---- The take ---- */
@@ -272,26 +246,5 @@
     /* One tap target per row rather than three squeezed onto one. */
     .take-actions ::deep .rz-button {
         flex: 1 1 8rem;
-    }
-
-    /* Four columns do not fit a phone: the reading and its link keep the first line, when and what
-       it was sung over wrap beneath rather than being squeezed or clipped. */
-    .history-row {
-        grid-template-columns: minmax(0, 1fr) auto;
-    }
-
-    .history-reading {
-        grid-row: 1;
-        grid-column: 1;
-    }
-
-    .history-open {
-        grid-row: 1;
-        grid-column: 2;
-    }
-
-    .history-when,
-    .history-over {
-        grid-column: 1 / -1;
     }
 }

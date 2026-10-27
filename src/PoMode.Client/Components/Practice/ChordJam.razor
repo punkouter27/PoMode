@@ -104,7 +104,7 @@
         }
         try
         {
-            _glow = await JS.InvokeAsync<IJSObjectReference>("import", "./js/player/string-glow.js");
+            _glow = await JS.InvokeAsync<IJSObjectReference>("import", "./js/fx/string-glow.js");
             await _glow.InvokeVoidAsync("attach", _board);
         }
         catch (JSException)

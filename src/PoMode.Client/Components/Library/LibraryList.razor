@@ -94,7 +94,7 @@
                             <canvas class="sound-space-canvas" aria-hidden="true"></canvas>
                             @foreach (var (entry, score) in space)
                             {
-                                <a class="sound-disc" href="@($"/?job={entry.JobId}")" data-job="@entry.JobId"
+                                <a class="sound-disc" href="@($"/song/{entry.JobId}")" data-job="@entry.JobId"
                                    data-similarity="@score.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture)"
                                    title="@($"{entry.FileName} · {score:0.00}")"
                                    aria-label="@($"{entry.FileName}, sound match {score:0.00}")"></a>
@@ -129,7 +129,7 @@
                             }
                             else if (entry.Stage == JobStage.Complete)
                             {
-                                <a class="library-open" href="@($"/?job={entry.JobId}")" data-morph>@entry.FileName</a>
+                                <a class="library-open" href="@($"/song/{entry.JobId}")" data-morph>@entry.FileName</a>
                             }
                             else
                             {
@@ -212,7 +212,7 @@
             @foreach (var (entry, result) in _compareResults)
             {
                 <div class="compare-card">
-                    <div class="compare-title"><a class="library-open" href="@($"/?job={entry.JobId}")" data-morph>@entry.FileName</a></div>
+                    <div class="compare-title"><a class="library-open" href="@($"/song/{entry.JobId}")" data-morph>@entry.FileName</a></div>
                     @if (entry.Origin is { } sung)
                     {
                         <div class="compare-facts">@sung.Description</div>
@@ -250,7 +250,7 @@
                     @foreach (var song in _similar)
                     {
                         <li>
-                            <a class="library-open" href="@($"/?job={song.JobId}")">@song.FileName</a>
+                            <a class="library-open" href="@($"/song/{song.JobId}")">@song.FileName</a>
                             <span class="similar-reason">@song.Reason</span>
                         </li>
                     }

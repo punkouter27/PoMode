@@ -99,7 +99,7 @@
             _songs = [.. (await Analysis.GetLibraryAsync() ?? [])
                 .Where(entry => entry.Stage == JobStage.Complete)
                 .Select(entry => new Command(entry.Origin?.Kind == TakeOrigin.Beat ? "Beat" : "Song", entry.FileName,
-                    () => GoAsync(entry.Origin?.Kind == TakeOrigin.Beat ? $"modes?beat={entry.JobId}" : $"?job={entry.JobId}")))];
+                    () => GoAsync(entry.Origin?.Kind == TakeOrigin.Beat ? $"modes?beat={entry.JobId}" : $"song/{entry.JobId}")))];
             _matches = null;
         }
         catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException or TaskCanceledException)

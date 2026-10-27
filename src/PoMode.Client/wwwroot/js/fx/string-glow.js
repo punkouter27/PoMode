@@ -23,7 +23,7 @@
 // still frame, no loop. The board's data-strings says ringing while anything moves, still otherwise.
 
 import * as prefs from '../shell/prefs.js';
-import { plucks } from './strum.js';
+import { plucks } from '../player/strum.js';
 
 const SEGMENTS = 24;        // per string strip; a sine over 24 steps reads as a curve at this size
 const SWING = 3.2;          // CSS px either side at full level: under half the 16 px string gap

@@ -92,3 +92,25 @@
         padding: 0.25rem;
     }
 }
+
+/* Side by side on a desktop: the sentences on the left, the keyboard on the right. Stacked, the card
+   was 300px of a song page that has to fit one screen under the player. */
+@media (min-width: 1024px) {
+    .singer {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        column-gap: var(--pm-space-4);
+        row-gap: var(--pm-space-2);
+        align-content: start;
+    }
+
+    .singer > * {
+        grid-column: 1;
+    }
+
+    .singer ::deep .voice-map {
+        grid-column: 2;
+        grid-row: 1 / span 6;
+        margin: 0;
+    }
+}

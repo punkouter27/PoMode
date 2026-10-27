@@ -1,84 +1,33 @@
 @page "/"
 @page "/library"
 @using System.Text.Json
-@using Microsoft.AspNetCore.SignalR.Client
 @using PoMode.Shared.Analysis
 @inject AnalysisClient Analysis
-@inject MockDataState MockData
 @inject NavigationManager Navigation
-@inject NotificationService Notifications
 @inject IJSRuntime JS
 @inject BrowserPrefs Prefs
 @implements IAsyncDisposable
 
 <PageTitle>PoMode</PageTitle>
 
-@* One analysis view, not two.
-
-   This page used to render a "Basic" and an "Advanced" arrangement of the same job behind a header
-   switcher, which meant every result had two layouts, two mixers and two stats panels to keep
-   truthful. The kept view is the compact one: key and mode, the piano roll with the selected window
-   read out under it, the player, and the statistics. *@
+@* Getting audio in and finding it again. A song, from upload to result, is its own page (/song/{id}). *@
 
 @* Drawn once the demo pointer and the model choosers are known: the card is centred, so a row
    arriving after it moved the whole card. Both are local reads, a fraction of a second. *@
-@if (_intakeReady && _visual is null && _status is null)
+@if (_intakeReady)
 {
     <div class="intake @(_hasSongs ? "intake--toolbar" : "")">
         <IntakeCard Compact="_hasSongs" Demo="_demo" Pins="_executorChoices" ClientCapability="@_clientCapability" Probed="_probed"
-                    Shared="@Shared" OnStarted="TrackJobAsync" OnOpenDemo="OpenDemoAsync" />
+                    Shared="@Shared" OnStarted="OpenSong" OnOpenDemo="OpenDemoAsync" />
         @* The same page lists what is already here: adding a song and finding one again are one
            job, so the songs sit under the ways to add one rather than on a page of their own. *@
         <LibraryList />
     </div>
 }
 
-@* Where this audio came from, when the server knows. A hum take is a melody the user sang over a
-   progression this app chose for them, and the mode below is a fact about that melody — without the
-   provenance the page reports a mode on an unexplained file. The demo says it was synthesized. *@
-@if (_visual is null && _status?.Origin is { } origin)
-{
-    <div class="take-origin" role="note" data-take-origin="@origin.Kind">
-        <span class="take-origin-icon" aria-hidden="true">@(origin.Kind == TakeOrigin.Demo ? "🎹" : "🎤")</span>
-        <span class="take-origin-text">@origin.Description</span>
-    </div>
-}
-
-@if (_status is not null && (_status.Stage != JobStage.Complete || _visual is null))
-{
-    <JobProgress Status="_status" OnCancel="@CancelJobAsync" QueueAhead="_queueAhead" />
-    @if (_status.Stage is JobStage.Failed or JobStage.Cancelled)
-    {
-        @* The intake card only shows with no job; without this a failed or cancelled job is a dead end. *@
-        <div class="analyze-another">
-            <RadzenButton Text="Analyze another file" Icon="upload_file" ButtonStyle="ButtonStyle.Primary"
-                          Click="@ResetForNewUpload" />
-        </div>
-    }
-    @if (_preview is { } preview && preview.Confidence > 0 && !_status.Stage.IsTerminal())
-    {
-        <RadzenText class="preview-line"
-                    Text="@($"First look: likely {preview.TonicName}, ~{preview.TempoBpm:0} BPM — the full analysis is refining this…")" />
-    }
-    @if (_status.Stage == JobStage.Complete && _visual is null)
-    {
-        <RadzenCard aria-hidden="true">
-            <div class="pm-skeleton results-skeleton"></div>
-        </RadzenCard>
-    }
-}
-
-@if (_visual is not null && _result is not null && _status is not null)
-{
-    <BasicView Status="_status" Result="_result" Visual="_visual"
-               SelectedWindowIndex="_selectedWindow" PlayheadSec="_playheadSec"
-               OnSeek="OnSeek"
-               OnAnalyzeNew="@ResetForNewUpload"
-               OnRerun="@TrackJobAsync" />
-}
-
 @code {
-    /// <summary>Set by the library's Open link (/?job=…): load that job instead of waiting for an upload.</summary>
+    /// <summary>The song address before it had its own route. Push notices already sent, links kept
+    /// offline and bookmarks still carry it, so it forwards to /song/{id}.</summary>
     [Parameter, SupplyParameterFromQuery(Name = "job")]
     public string? Job { get; set; }
 
@@ -87,43 +36,9 @@
     [Parameter, SupplyParameterFromQuery(Name = "shared")]
     public string? Shared { get; set; }
 
-    private void ResetForNewUpload()
-    {
-        ClearJob();
-        Navigation.NavigateTo("/");
-    }
-
-    private void ClearJob()
-    {
-        _status = null;
-        _visual = null;
-        _result = null;
-        _selectedWindow = null;
-        _playheadSec = 0;
-        _preview = null;
-    }
-
-    private JobStatusDto? _status;
-    private VisualizationPayload? _visual;
-    private ModalResult? _result;
-    private HubConnection? _hub;
-
-    /// <summary>Jobs that will run before the tracked one, while it waits; pushed by the hub.</summary>
-    private int? _queueAhead;
-    private int? _selectedWindow;
-    private double _playheadSec;
     private IJSObjectReference? _pitchWorker;
-    private IJSObjectReference? _separation;
-    private IJSObjectReference? _sfx;
-    private IJSObjectReference? _themeJs;
-    private AnalysisPreviewDto? _preview;
-    private bool _previewFetching;
     private string? _clientCapability;
     private bool _probed;
-
-    /// <summary>Jobs already handed to the browser for Tier-2 inference, so a repeated status push
-    /// cannot start the work twice.</summary>
-    private readonly HashSet<string> _delegatedJobs = [];
 
     private readonly Dictionary<string, string> _executorChoices = [];
 
@@ -135,6 +50,11 @@
     /// <summary>Whether the library holds a song of the person's own, which shrinks the intake card to
     /// a toolbar: the songs are then what the page is for, and the invitation has done its job.</summary>
     private bool _hasSongs;
+
+    private bool Forwarding => !string.IsNullOrWhiteSpace(Job);
+
+    /// <summary>Every intake path (upload, recording, share target) ends here: the song page tracks it.</summary>
+    private void OpenSong(JobStatusDto status) => Navigation.NavigateTo($"/song/{Uri.EscapeDataString(status.JobId)}");
 
     /// <summary>
     /// Reads the library for its demo row. The read is also what seeds a new user's demo on the server,
@@ -164,7 +84,7 @@
         {
             if (await Analysis.GetStatusAsync(jobId) is { } status)
             {
-                await TrackJobAsync(status);
+                OpenSong(status);
             }
         }
         catch (HttpRequestException)
@@ -176,56 +96,21 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // The choosers' data loads concurrently with the job-resume path; they pop in when ready.
-        var executorsTask = LoadExecutorsAsync();
-        var demoTask = string.IsNullOrWhiteSpace(Job) ? LoadDemoAsync() : Task.CompletedTask;
-        if (!string.IsNullOrWhiteSpace(Job))
+        if (Forwarding)
         {
-            try
-            {
-                if (await Analysis.GetStatusAsync(Job) is { } status)
-                {
-                    await TrackJobAsync(status);
-                }
-            }
-            catch (HttpRequestException)
-            {
-                // A stale or mistyped link: the page simply starts empty, same as no query at all.
-            }
+            return;
         }
-        await Task.WhenAll(executorsTask, demoTask);
+        // The choosers' data loads concurrently with the demo read; the card waits for both.
+        await Task.WhenAll(LoadExecutorsAsync(), LoadDemoAsync());
         _intakeReady = true;
     }
 
-    /// <summary>
-    /// The URL is the job (TrackJobAsync writes it), so a later change to it is a navigation to follow:
-    /// Back from a job to the bare page, the header's Analyze link, or a push link opened in this tab.
-    /// Home is reused across all of them, so OnInitializedAsync never sees these.
-    /// </summary>
-    protected override async Task OnParametersSetAsync()
+    /// <summary>Also reached when an old link is followed from a page already on this route.</summary>
+    protected override void OnParametersSet()
     {
-        if (string.IsNullOrWhiteSpace(Job))
+        if (Forwarding)
         {
-            if (_status is not null)
-            {
-                ClearJob();
-            }
-            return;
-        }
-        if (Job == _status?.JobId)
-        {
-            return;
-        }
-        try
-        {
-            if (await Analysis.GetStatusAsync(Job) is { } status)
-            {
-                await TrackJobAsync(status);
-            }
-        }
-        catch (HttpRequestException)
-        {
-            // Same as a stale link on first load: the page stays as it is.
+            Navigation.NavigateTo($"/song/{Uri.EscapeDataString(Job!)}", replace: true);
         }
     }
 
@@ -249,12 +134,11 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
+        if (!firstRender || Forwarding)
         {
             return;
         }
         _pitchWorker = await JS.InvokeAsync<IJSObjectReference>("import", "./js/infer/pitch-worker.js");
-        _separation = await JS.InvokeAsync<IJSObjectReference>("import", "./js/infer/separation.js");
         _clientCapability = await _pitchWorker.InvokeAsync<string?>("probeCapability");
         // The intake card waits for this: a shared or unsent file gets the same browser-tier
         // treatment as one dropped on the page, and that is only known once the capability is in.
@@ -262,192 +146,11 @@
         StateHasChanged();
     }
 
-    /// <summary>Fire-and-forget UI sound; any failure (autoplay policy, torn-down circuit) is silent.</summary>
-    private async Task PlaySfxAsync(string name, params object?[] args)
-    {
-        try
-        {
-            _sfx ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/sfx.js");
-            await _sfx.InvokeVoidAsync(name, args);
-        }
-        catch (JSException)
-        {
-            // Sounds are garnish, never an error.
-        }
-    }
-
-    /// <summary>Canvas click. The window lookup is a plain time-range search, not analysis — the
-    /// musical decisions all happened server-side in VisualizationBuilder.</summary>
-    private void OnSeek(double seconds)
-    {
-        _playheadSec = seconds;
-        _selectedWindow = _result?.WindowIndexAt(seconds);
-    }
-
-    private async Task CancelJobAsync()
-    {
-        if (_status is null)
-        {
-            return;
-        }
-        await Analysis.CancelAsync(_status.JobId);
-        Notifications.Notify(NotificationSeverity.Info, "Cancel requested",
-            "The job stops at the next safe point.");
-    }
-
-    /// <summary>Shared by every intake path (upload, recording, share target): reset the result
-    /// panels, connect the hub once, subscribe to the job, and reconcile against the current
-    /// status.</summary>
-    private async Task TrackJobAsync(JobStatusDto status)
-    {
-        _visual = null;
-        _result = null;
-        _selectedWindow = null;
-        _playheadSec = 0;
-        _preview = null;
-        _queueAhead = null;
-        _status = status;
-        // Put the job in the address bar: an analysis runs for minutes, and a reload, a phone that
-        // discarded the tab or a copied link must come back to it rather than to an empty intake.
-        if (Job != status.JobId)
-        {
-            Navigation.NavigateTo($"/?job={status.JobId}");
-        }
-
-        if (_hub is null)
-        {
-            // Progress is pushed, never polled, so a dropped socket (a phone waking, a network blip)
-            // would otherwise freeze the progress bar for the rest of the job.
-            _hub = new HubConnectionBuilder()
-                .WithUrl(Navigation.ToAbsoluteUri("/hubs/analysis"))
-                .WithAutomaticReconnect()
-                .Build();
-            _hub.On<JobStatusDto>("JobStatusChanged", OnStatusChanged); // register once, not per upload
-            _hub.On<string, int>("QueuePosition", (jobId, ahead) =>
-            {
-                if (_status?.JobId == jobId)
-                {
-                    _queueAhead = ahead;
-                    InvokeAsync(StateHasChanged);
-                }
-            });
-            _hub.Reconnected += _ => _status is { } tracked ? SubscribeAndReconcileAsync(tracked.JobId) : Task.CompletedTask;
-        }
-        if (_hub.State == HubConnectionState.Disconnected)
-        {
-            await _hub.StartAsync();
-        }
-        await SubscribeAndReconcileAsync(status.JobId);
-    }
-
-    /// <summary>A new connection is in no groups, and pushes sent while it was down are gone: subscribe,
-    /// then read the status once. That one read also covers a fast job finishing before Subscribe lands.</summary>
-    private async Task SubscribeAndReconcileAsync(string jobId)
-    {
-        await _hub!.InvokeAsync("Subscribe", jobId);
-        var current = await Analysis.GetStatusAsync(jobId);
-        if (current is not null)
-        {
-            await OnStatusChanged(current);
-        }
-    }
-
-    private async Task OnStatusChanged(JobStatusDto status)
-    {
-        if (_status?.JobId != status.JobId)
-        {
-            return;
-        }
-        _status = status;
-        // One announcement serves both browser stages; which one is waiting follows from whether
-        // separation has finished. Keyed by stage, so a job that delegates both runs both.
-        var separating = !status.CompletedStages.Contains(StageNames.Separating);
-        if (status.Stage == JobStage.AwaitingClient
-            && (separating ? _separation : _pitchWorker) is { } module
-            && _delegatedJobs.Add($"{status.JobId}:{(separating ? StageNames.Separating : StageNames.PitchTracking)}"))
-        {
-            // Fire and forget: the modules swallow their own failures, and the server's Tier2 timeout
-            // (or the module's decline) falls through to the next tier.
-            _ = module.InvokeVoidAsync("runDelegated", status.JobId);
-        }
-        // The fast first-look preview: worth one fetch per push until it appears, while running.
-        if (_preview is null && !_previewFetching && !status.Stage.IsTerminal() && status.Stage != JobStage.Uploaded)
-        {
-            _previewFetching = true;
-            try
-            {
-                _preview = await Analysis.GetPreviewAsync(status.JobId);
-            }
-            finally
-            {
-                _previewFetching = false;
-            }
-        }
-
-        if (status.Stage == JobStage.Complete && _visual is null)
-        {
-            _result = await Analysis.GetResultAsync(status.JobId);
-            _visual = await Analysis.GetVisualAsync(status.JobId);
-            if (MockDataState.PlanContainsFakeExecutor(status.Plan))
-            {
-                MockData.SetMock();
-            }
-            else
-            {
-                MockData.SetLive();
-            }
-            if (_result is not null)
-            {
-                // No "Song analyzed" toast: it fired on every finished job opened, not just one that
-                // finished while watched, covered the key badge on a phone, and said what that badge
-                // says. The result arriving is the notice, and a closed tab gets a Web Push.
-                // Tint the chrome with the detected key, then play its tonic (no third — the
-                // arpeggio stays mode-neutral, so no musical decision happens client-side).
-                _themeJs ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/theme.js");
-                await _themeJs.InvokeVoidAsync("setKeyHue", _result.TonicPitchClass * 30);
-                // And hand the interface its voice: from here the clicks and chimes are sounded from
-                // the mode's own scale. The pitches are derived here, from the shared ScaleModes
-                // table the server graded with, rather than in the browser — sfx.js is given notes
-                // to play and never a mode to interpret.
-                await PlaySfxAsync("setPalette", _result.EarconPitches());
-                await PlaySfxAsync("fanfare", 48 + _result.TonicPitchClass);
-            }
-        }
-        await InvokeAsync(StateHasChanged);
-    }
-
     public async ValueTask DisposeAsync()
     {
-        if (_hub is not null)
-        {
-            await _hub.DisposeAsync();
-        }
         if (_pitchWorker is not null)
         {
             await _pitchWorker.DisposeAsync();
-        }
-        if (_separation is not null)
-        {
-            await _separation.DisposeAsync();
-        }
-        if (_sfx is not null)
-        {
-            // Back to the keyless defaults on the way out. Leaving the palette set would have the
-            // Library and Practice pages clicking in the key of whatever was last analyzed, which
-            // is a claim about music that is not on screen.
-            try
-            {
-                await _sfx.InvokeVoidAsync("setPalette", (int[]?)null);
-            }
-            catch (JSException)
-            {
-                // Already torn down; nothing is listening either way.
-            }
-            await _sfx.DisposeAsync();
-        }
-        if (_themeJs is not null)
-        {
-            await _themeJs.DisposeAsync();
         }
     }
 }

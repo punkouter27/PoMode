@@ -61,7 +61,7 @@ reload (tus fingerprint in localStorage); a recording or shared Blob resumes wit
 A recording, a shared file or a converted `.m4a` is a Blob that exists only in the page, so the
 uploader keeps the one most recent unsent Blob in IndexedDB (`pm-uploads`) under a fingerprint of its
 content (a SHA-256 prefix: every recording is "recording.wav", and two takes of one length used to
-resume one onto the other's bytes). A beat left unsent is remembered as a beat. `Home.razor` asks for it once the page is idle (`unsentName` / `takeUnsent`, the same
+resume one onto the other's bytes). A beat left unsent is remembered as a beat. `IntakeCard` asks for it once the page is idle (`unsentName` / `takeUnsent`, the same
 reference hand-off as the share target) and the upload carries on from the byte the server last
 confirmed. It is dropped on success and on a 4xx, which no retry would change.
 
@@ -85,7 +85,7 @@ Push (`Features/Push`, `Lib.Net.Http.WebPush`) to its owner's opted-in browsers.
 `IJobOutcomeNotifier` once per run on Complete or Failed (not Cancelled), after the terminal state is
 saved, best-effort. `WebPushOutcomeNotifier` words the title and body server-side ("'song.mp3' is
 ready" / "D Dorian, 96 BPM. Tap to open the analysis.", omitting any figure the job lacks; a failure
-never puts exception text on a lock screen), links to `/?job={id}`, uses the job id as the push Topic,
+never puts exception text on a lock screen), links to `/song/{id}`, uses the job id as the push Topic,
 and deletes a subscription the push service answers 404/410 for.
 
 - Keys: `PoMode:Push:VapidPublicKey` (appsettings or Key Vault) plus `PoMode--Push--VapidPrivateKey`
@@ -124,7 +124,8 @@ pentatonic card no longer sounds the two notes its scale exists to omit.
 
 The page is a stack of strips, each its own component: the transport (sticky under the header, its
 offset measured by `js/shell/layout.js` as `--pm-header-height`), the backing settings with a
-"Describe it" box, `DrumStrip`, `ModeCards`, `GravityPanel` and the roll. A MIDI keyboard can play
+"Describe it" box, `DrumStrip`, `ModeCards`, then the roll with `GravityPanel` beside it (under it below
+1024px), so the lab is one screen on a desktop. A MIDI keyboard can play
 along (`js/player/midi-in.js`, Web MIDI, notes only, asked for on a click): each key sounds through the
 player's room and lights its body on the home-note view, and the readout counts notes outside the
 mode. The interface's own sounds are voiced in the lab's mode (`ModeNames.Pitches` → `sfx.setPalette`),
@@ -290,7 +291,7 @@ mentions sends the reader looking for an explanation that is not there - and `Vi
 gives the window inspector one line when a single window settles the headline question on its own. The
 client's "Why this mode?" disclosure sits beside the key badge and is the page's one answer to that
 question: `ModeWhyPanel` shows these sentences plus the mode-vote and scale-degree bars from `/stats`
-(one fetch in `BasicView`, shared with the stats panel), and opening it rings the cited notes on the
+(one fetch in `SongView`, shared with the stats panel), and opening it rings the cited notes on the
 canvas (`data-evidence-highlight`) and fades the rest.
 
 `SongSectionBuilder` (its own slice, `Features/SongStructure`) finds the verse/chorus shape from the
@@ -529,7 +530,9 @@ workers' blobs, and a wrong one fails silently in production.
   mixer, modal-player, click-track, take-plot, voices, section-map, wait-preview, mode-gravity,
   voice-map, drum-loop, loop-cut), `capture/` (the recorders, live-pitch, wav),
   `infer/` (the browser-tier pitch worker and its decoder), `upload/` (the vendored tus client and
-  the resumable uploader) and `shell/` (theme, pwa, push, prefs, sfx).
+  the resumable uploader), `shell/` (theme, pwa, push, prefs, sfx) and `fx/` (the GPU passes and
+  effects that draw a measured fact: gpu-surface, chroma-layer, spectral-glass, heat-haze,
+  metaball-field, key-caustics, vibrato-fluid, string-glow; see ui-rules.md, "Effects that carry data").
   Imports are relative, so a module that moves folders has to fix its own siblings.
 - Heavy UI lives in plain JS modules, not Blazor: `player/canvas.js` (dual-lane visualization, pan/zoom, virtualized drawing) and `player/mixer.js` (Web Audio stem playback, synth note overlays, metronome clicks, Space/comma transport keys). `mixer.js` owns the transport clock and drives the canvas playhead directly — no per-frame Blazor renders. Blazor components only issue commands and receive discrete events.
 - JS state is mirrored onto `data-*` attributes (`data-mixer-status`, `data-playhead`, …) precisely so Playwright tests can assert without reaching into module internals. Keep that contract when changing these modules.
@@ -541,7 +544,7 @@ workers' blobs, and a wrong one fails silently in production.
   `push` / `notificationclick` handlers only show a server-worded notification and focus or open
   its link, and every non-GET (all of tus included) still passes straight through. The share target
   POSTs to `/share-target`; the worker stashes the file in a cache and redirects to `/?shared=1`,
-  where `Home.razor` claims it via `shell/pwa.js`. The file stays a Blob and reaches the uploader as a
+  where the home page's `IntakeCard` claims it via `shell/pwa.js`. The file stays a Blob and reaches the uploader as a
   JS object reference (`takeSharedFile`), so a 40 MB memo never crosses into the WASM heap. `pwa.js`
   registers the worker immediately if `load` has already fired - it is reached through a dynamic
   import that can settle after it, and a late listener left the app with no worker at all.
@@ -559,9 +562,25 @@ workers' blobs, and a wrong one fails silently in production.
   and spatial-audio flags stay in `theme.js` / `prefs.js`, which stamp them before first paint. The
   Mode Lab is not remembered: its settings move each other.
 
-- The home page (`/`, and `/library` for old links) is the Library: the intake card, then
-  `LibraryList` with the caller's songs, filters and the one-tick preview / two-tick comparison. A
-  job being run or shown replaces both, as it replaced the intake card before.
+- **Routes.** `/` (and `/library` for old links) is the Library: the intake card, then `LibraryList`
+  with the caller's songs, filters and the one-tick preview / two-tick comparison. `/song/{id}` is one
+  song from upload to result: progress while it runs, `SongView` when it is done, a plain "not in your
+  library" for a stale link. It used to be the home page in another state (`/?job={id}`), which kept
+  the header calling a finished analysis "Library"; `/?job=` still forwards, because push notices
+  already sent and songs kept offline carry it. `/modes`, `/practice`, `/settings` and `/diagnostics`
+  are the rest. Every page but the home page titles its tab `PoMode · {page}` (a song: its file name).
+- **Links between pages.** Everything that makes a song opens `/song/{id}`. The song page sends its
+  answer on: "Explore D Dorian in the Mode Lab" and "Sing over D Dorian chords" open `/modes` and
+  `/practice` with `?tonic=&mode=` (`Services/ModeLink.cs`). The tonic in the link is the mode's own,
+  as the analysis names it; both pages are keyed by the parent key, so `ModeLink` converts it through
+  `ScaleModes.ParentTonic`. A link outranks Practice's remembered backing.
+- **Components are grouped by the page that owns them**: `Components/Shell` (palette, mock banner),
+  `Library`, `Song`, `ModeLab`, `Practice`, and `Common` for the ones two pages share (the canvas,
+  `BackingControls`, `SingerCard`, chord boxes, `TierBadge`, `DrawerContent`). `SongStatsPanel` holds
+  the measurements and the singer; the summary and questions are `SongConversation` inside it.
+  Practice's "Your takes" tab is `TakeHistory` (five takes a page) under the singer's voice card.
+  The song page, the Mode Lab and Practice link to each other with `ModeLink` (`QueryFromParent` from
+  the two pages keyed by the parent key): "Sing over it in Practice", "Hear D Dorian in the Mode Lab".
 
 ## Settings, the palette and the menu
 
@@ -619,7 +638,7 @@ so the page keeps its "No song matches" instead of claiming nothing sounds alike
 
 - **Chroma under the chords** (`GET /{id}/chroma`, cached as `chroma.json`): the DSP chord reader's own
   `ChromaExtractor` over the instrumental stem, quantised to a byte per pitch class per frame, rows
-  rotated so the tonic is at the bottom. `js/player/chroma-layer.js` renders the whole song once (WebGPU
+  rotated so the tonic is at the bottom. `js/fx/chroma-layer.js` renders the whole song once (WebGPU
   fragment shader where available, a 2D ramp otherwise) and `canvas.js` slices it to the view.
 - **Tension ribbon**: `VisualWindow.Tension` is the share of sung time on non-chord tones, from the
   roles the notes are coloured by; drawn along the foot of the note lane, glowing where the playhead is.

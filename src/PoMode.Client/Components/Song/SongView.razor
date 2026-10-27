@@ -6,85 +6,85 @@
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
 
-<div class="basic-container">
-    <RadzenCard class="basic-main-card">
+<div class="song-container">
+    <RadzenCard class="song-main-card">
         @* The page's heading for assistive tech: which song this is. Sighted readers get it from the
            link or upload that brought them here, and the key badge row stays the visible headline. *@
         <h1 class="pm-sr-only">@($"Analysis of {Status.FileName ?? "this recording"}")</h1>
         @* The one headline: key, mode, confidence, tempo, length. A second "HUD" card under the player
            used to repeat every one of these; now this row is the only place they are stated. *@
-        <div class="basic-header-row">
-            <div class="basic-meta-group">
-                <div class="basic-badge-key">
-                    <span class="pm-label basic-badge-label">Key & Mode</span>
-                    <span class="basic-badge-value pm-morph-key" data-morph-target>@PrimaryHeadline</span>
+        <div class="song-header-row">
+            <div class="song-meta-group">
+                <div class="song-badge-key">
+                    <span class="pm-label song-badge-label">Key & Mode</span>
+                    <span class="song-badge-value pm-morph-key" data-morph-target>@PrimaryHeadline</span>
                     @if (Result.PrimaryScaleNoteNames() is { } scale && HasContent)
                     {
                         @* The scale spelled out — server-decided tonic + mode, Shared lookup for names. *@
-                        <span class="basic-badge-scale">@string.Join(" · ", scale)</span>
+                        <span class="song-badge-scale">@string.Join(" · ", scale)</span>
                     }
                     @if (Result.PrimaryMode is not null)
                     {
-                        <span class="basic-badge-sub" data-count-up>@($"{Percents.Of(Result.PrimaryConfidence)} confidence")</span>
+                        <span class="song-badge-sub" data-count-up>@($"{Percents.Of(Result.PrimaryConfidence)} confidence")</span>
                     }
                     @if (HasContent && (Visual.Evidence is not null || _stats is not null))
                     {
                         @* No notes means no mode to argue for, so there is nothing to open. *@
-                        <button class="basic-why-toggle" type="button" @onclick="ToggleWhy"
+                        <button class="song-why-toggle" type="button" @onclick="ToggleWhy"
                                 aria-expanded="@(_whyOpen ? "true" : "false")" aria-haspopup="dialog">
                             Why this mode?
                         </button>
                     }
                 </div>
 
-                <div class="basic-badge-item">
-                    <span class="pm-label basic-badge-label">Tempo</span>
+                <div class="song-badge-item">
+                    <span class="pm-label song-badge-label">Tempo</span>
                     @if (HasContent)
                     {
-                        <span class="basic-badge-value" data-count-up>@($"{DisplayBpm:0} BPM")</span>
+                        <span class="song-badge-value" data-count-up>@($"{DisplayBpm:0} BPM")</span>
                     }
                     else
                     {
                         @* The stat reads as a dash rather than a figure the pipeline never measured. *@
-                        <span class="basic-badge-value basic-badge-unknown">—</span>
-                        <span class="basic-badge-sub">nothing to measure</span>
+                        <span class="song-badge-value song-badge-unknown">—</span>
+                        <span class="song-badge-sub">nothing to measure</span>
                     }
                     @if (_liveBpm > 0 && HasContent)
                     {
                         @* Only while a tempo map is driving it, so a steady song does not gain a
                            badge that says nothing. *@
-                        <span class="basic-badge-sub">live · this bar</span>
+                        <span class="song-badge-sub">live · this bar</span>
                     }
                     else if (Result.TempoEstimated && HasContent)
                     {
-                        <span class="basic-badge-sub">(estimated)</span>
+                        <span class="song-badge-sub">(estimated)</span>
                     }
                 </div>
 
-                <div class="basic-badge-item">
-                    <span class="pm-label basic-badge-label">Length</span>
+                <div class="song-badge-item">
+                    <span class="pm-label song-badge-label">Length</span>
                     @if (HasContent)
                     {
-                        <span class="basic-badge-value">@($"{Visual.DurationSec:0.0}s")</span>
-                        <span class="basic-badge-sub">@($"{Visual.Notes.Count} notes")</span>
+                        <span class="song-badge-value">@($"{Visual.DurationSec:0.0}s")</span>
+                        <span class="song-badge-sub">@($"{Visual.Notes.Count} notes")</span>
                     }
                     else
                     {
                         @* The span the notes cover, not the file's length: on a file with no notes it
                            read "0.0s" beside the player saying "4.0s of audio", which is a
                            contradiction rather than a measurement. *@
-                        <span class="basic-badge-value">—</span>
-                        <span class="basic-badge-sub">no notes detected</span>
+                        <span class="song-badge-value">—</span>
+                        <span class="song-badge-sub">no notes detected</span>
                     }
                 </div>
             </div>
 
-            <div class="basic-actions-group">
+            <div class="song-actions-group">
                 @* One button for what is done with this song, rather than three in a row that wrapped
                    to a line of their own on a phone: the download is the press, keeping it offline and
                    starting another track are under the arrow. *@
                 <RadzenSplitButton Text="Download MIDI" Icon="download" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
-                                   Click="@OnSongActionAsync" class="basic-song-actions" data-offline="@(_offline ? "kept" : "no")"
+                                   Click="@OnSongActionAsync" class="song-actions" data-offline="@(_offline ? "kept" : "no")"
                                    ButtonAriaLabel="Download the melody as a MIDI file" OpenAriaLabel="More for this song">
                     @* Keeps this song's readings and stems on the device (js/shell/offline.js), so it
                        opens on a train. Saying "Kept offline" is the toggle's pressed state. *@
@@ -102,23 +102,38 @@
             </div>
         </div>
 
-        @* Where the audio came from and how it was tuned, as chips under the headline rather than two
-           full-width banners above it. Both sentences are the server's. *@
-        @if (Status.Origin is not null || Math.Abs(Result.TuningOffsetCents) >= 0.5)
+        @* One row under the headline: where the answer goes next, then where the audio came from and
+           how it was tuned. Two rows of their own pushed the player under the fold of a desktop. *@
+        @if ((HasContent && Result.PrimaryMode is not null) || Status.Origin is not null || Math.Abs(Result.TuningOffsetCents) >= 0.5)
         {
-            <div class="basic-chips">
-                @if (Status.Origin is { } take)
+            <div class="song-subrow">
+                @* The answer is a mode, and these are the two pages that do something with one. Without
+                   them every page led to a song and a song led nowhere. *@
+                @if (HasContent && Result.PrimaryMode is { } mode)
                 {
-                    <span class="take-origin" role="note" data-take-origin="@take.Kind">
-                        <span aria-hidden="true">@(take.Kind == TakeOrigin.Demo ? "🎹" : "🎤")</span>
-                        @take.Description
-                    </span>
+                    <nav class="song-next" aria-label="Take this mode further">
+                        <a href="@($"modes?{ModeLink.Query(Result.TonicPitchClass, mode)}")" id="song-to-modes">Explore @PrimaryHeadline in the Mode Lab</a>
+                        <a href="@($"practice?{ModeLink.Query(Result.TonicPitchClass, mode)}")" id="song-to-practice">Sing over @PrimaryHeadline chords</a>
+                    </nav>
                 }
-                <TuningNotice Cents="Result.TuningOffsetCents" />
+                @* Both sentences are the server's. *@
+                @if (Status.Origin is not null || Math.Abs(Result.TuningOffsetCents) >= 0.5)
+                {
+                    <div class="song-chips">
+                        @if (Status.Origin is { } take)
+                        {
+                            <span class="take-origin" role="note" data-take-origin="@take.Kind">
+                                <span aria-hidden="true">@(take.Kind == TakeOrigin.Demo ? "🎹" : "🎤")</span>
+                                @take.Description
+                            </span>
+                        }
+                        <TuningNotice Cents="Result.TuningOffsetCents" />
+                    </div>
+                }
             </div>
         }
 
-        <div class="basic-canvas-section">
+        <div class="song-canvas-section">
             @* Played in on arrival. A hum take's colours are then inked on in a sweep: the melody is
                the singer's own, and the colours are the verdict on it. *@
             <AnalysisCanvas Model="Visual" SelectedWindowIndex="SelectedWindowIndex"
@@ -126,14 +141,14 @@
                             Reveal="true" Ink="@(Status.Origin?.Kind == TakeOrigin.HumTake)"
                             JobId="@Status.JobId" Describe="true"
                             OnReady="@(element => _canvasElement = element)" />
-            <div class="basic-canvas-foot">
+            <div class="song-canvas-foot">
                 @if (Flags.Tools.WindowInspector)
                 {
                     <WindowInspector Windows="Visual.Windows" SelectedWindowIndex="SelectedWindowIndex" />
                 }
                 @if (Visual.Sections.Count > 0)
                 {
-                    <button class="basic-why-toggle" type="button" @onclick="ToggleSections"
+                    <button class="song-why-toggle" type="button" @onclick="ToggleSections"
                             aria-expanded="@(_sectionsOpen ? "true" : "false")" aria-haspopup="dialog">
                         How were the sections found?
                     </button>
@@ -143,7 +158,7 @@
 
         @* The section is there from the start and the mixer mounts into it once the canvas it drives is
            ready: appearing a moment later, it used to push everything under it down the page. *@
-        <div class="basic-player-section">
+        <div class="song-player-section">
             @if (_canvasElement is { } canvasElement)
             {
                 <StemMixer JobId="@Status.JobId" CanvasElement="canvasElement" SeekToSec="PlayheadSec" KeyLabel="@PrimaryHeadline"
@@ -158,26 +173,11 @@
         {
             <div class="pm-skeleton stats-skeleton" aria-hidden="true"></div>
         }
-        <SongStatsPanel JobId="@Status.JobId" Stats="_stats" />
-
-        @* Which executor really did each stage, from StageHistory — rewritten after any fallback, so a
-           local model that failed and handed over to DSP is named here rather than hidden. The
-           progress card that used to carry this is gone by the time a result is on screen. *@
-        @if (Executors.Count > 0)
+        <SongStatsPanel JobId="@Status.JobId" Stats="_stats" SummaryFooter="AnalyzedWith" />
+        @if (_stats is null && !_statsLoading)
         {
-            <p class="basic-analyzed-with" data-analyzed-with="@string.Join(",", Executors.Select(e => e.Executor))">
-                Analyzed with
-                @* Each executor named once: the demo's written score did both the notes and the chords,
-                   and listing it twice read as two different things. The attribute keeps every stage. *@
-                @foreach (var (tier, executor) in Executors.DistinctBy(e => e.Executor))
-                {
-                    <span class="basic-executor"><TierBadge Tier="tier" /> @ExecutorNames.Display(executor)</span>
-                }
-                @if (TotalSeconds > 0)
-                {
-                    <span>@($"in {TotalSeconds:0.0}s")</span>
-                }
-            </p>
+            @* No statistics to sit under: the line stands on its own rather than going missing. *@
+            @AnalyzedWith
         }
     </RadzenCard>
 </div>
@@ -193,6 +193,30 @@
 
     /// <summary>A new run of this song was started from "Try another model"; the page follows it.</summary>
     [Parameter] public EventCallback<JobStatusDto> OnRerun { get; set; }
+
+    /// <summary>
+    /// Which executor really did each stage, from StageHistory — rewritten after any fallback, so a
+    /// local model that failed and handed over to DSP is named here rather than hidden. Shown under the
+    /// summary tab; the progress card that used to carry it is gone by the time a result is on screen.
+    /// </summary>
+    private RenderFragment AnalyzedWith => @<text>
+        @if (Executors.Count > 0)
+        {
+            <p class="song-analyzed-with" data-analyzed-with="@string.Join(",", Executors.Select(e => e.Executor))">
+                Analyzed with
+                @* Each executor named once: the demo's written score did both the notes and the chords,
+                   and listing it twice read as two different things. The attribute keeps every stage. *@
+                @foreach (var (tier, executor) in Executors.DistinctBy(e => e.Executor))
+                {
+                    <span class="song-executor"><TierBadge Tier="tier" /> @ExecutorNames.Display(executor)</span>
+                }
+                @if (TotalSeconds > 0)
+                {
+                    <span>@($"in {TotalSeconds:0.0}s")</span>
+                }
+            </p>
+        }
+    </text>;
 
     private IJSObjectReference? _offlineJs;
     private bool _offline;

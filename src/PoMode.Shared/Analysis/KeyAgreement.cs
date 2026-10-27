@@ -16,7 +16,7 @@ public static class KeyAgreement
         {
             return $"{reading}. The modal analysis named no mode to compare it with.";
         }
-        var parent = (((result.TonicPitchClass - ScaleModes.ModeDegreeOffset(mode)) % 12) + 12) % 12;
+        var parent = ScaleModes.ParentTonic(result.TonicPitchClass, mode);
         var relativeMinor = (parent + 9) % 12;
         var modeName = ScaleModes.DisplayName(mode.ToString());
         if (pitchClass == result.TonicPitchClass)

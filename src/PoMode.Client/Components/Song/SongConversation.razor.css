@@ -1,0 +1,125 @@
+.stats-pending {
+    margin: 0;
+    color: var(--pm-fg-muted);
+}
+
+/* ---- The conversation ----
+   Styled as a transcript rather than a chat window: this is one reader interrogating one set of
+   measurements, not two people talking. */
+
+.ask {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pm-space-2);
+}
+
+/* The transcript's own scroll box: the ask row under it stays put however long the conversation
+   gets. column-reverse anchors the scroll at the foot, where each new turn lands, so the newest
+   answer is in view without a script. */
+.ask-transcript {
+    display: flex;
+    flex-direction: column-reverse;
+    max-height: 13rem;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.ask-transcript-inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pm-space-2);
+}
+
+.ask-question {
+    margin: 0 0 0.25rem;
+    font-weight: 700;
+}
+
+.ask-answer {
+    margin: 0;
+    line-height: 1.6;
+    max-width: 72ch;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--pm-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+/* An answer the measurements could not support. Marked, never hidden: a writer declining to
+   speculate is behaving correctly, and burying that would make a refusal look like a failure. */
+.ask-answer.ungrounded {
+    border-left-color: var(--pm-note-characteristic);
+    color: var(--pm-fg-muted);
+    font-style: italic;
+}
+
+.interpretation-source {
+    margin: 0;
+    font-size: var(--pm-text-xs);
+    color: var(--pm-fg-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.interpretation-tag {
+    font-size: var(--pm-text-xs);
+    padding: 0.05rem 0.45rem;
+    border-radius: 10px;
+    background: var(--pm-lane-bg);
+    border: 1px solid var(--pm-border);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.tag-local {
+    background: var(--pm-ok-bg);
+    color: var(--pm-ok);
+    border-color: transparent;
+}
+
+.summary-label {
+    font-weight: 700;
+    color: var(--pm-accent);
+    margin-top: 0.25rem;
+}
+
+.interpretation-text {
+    margin: 0;
+    color: var(--pm-fg);
+}
+
+.interpretation-error {
+    margin: 0;
+    font-size: var(--pm-text-sm);
+    color: var(--pm-danger);
+}
+
+.ask-starters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+/* The transcript wrapper exists for the live region only; its turns lay out as before. */
+.ask-log {
+    display: contents;
+}
+
+.ask-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* A Radzen autocomplete, so its input carries the theme's own border and focus ring. */
+.ask-row ::deep .ask-input {
+    flex: 1 1 10rem;
+    min-width: 0;
+}
+
+.ask-row ::deep .ask-input .rz-inputtext {
+    width: 100%;
+}

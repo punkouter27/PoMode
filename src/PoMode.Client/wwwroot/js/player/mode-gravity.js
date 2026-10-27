@@ -18,7 +18,7 @@
 
 import * as prefs from '../shell/prefs.js';
 import { soundingPitches, audition } from './modal-player.js';
-import { consonance, createField, toRgb } from './metaball-field.js';
+import { consonance, createField, toRgb } from '../fx/metaball-field.js';
 
 const states = new Map();
 

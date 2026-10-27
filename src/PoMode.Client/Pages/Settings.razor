@@ -10,7 +10,7 @@
 @inject NotificationService Notifications
 @implements IAsyncDisposable
 
-<PageTitle>PoMode</PageTitle>
+<PageTitle>PoMode · Settings</PageTitle>
 
 @* Every optional choice in one place, each already at the value that works best, so the pages
    people actually use (the library, the lab, Practice) carry only what they act on. Nothing here is
@@ -18,164 +18,171 @@
 <RadzenCard class="settings">
     <RadzenText TextStyle="TextStyle.H5" TagName="TagName.H1" Text="Settings" />
 
-    <section class="settings-section" aria-labelledby="settings-look">
-        <h2 class="pm-label" id="settings-look">Look and sound</h2>
-        <div class="settings-row">
-            <span class="settings-name" id="theme-label">Theme</span>
-            <RadzenSelectBar TValue="string" Value="@Theme.Mode" Change="@(value => Theme.SetAsync(value))"
-                             Size="ButtonSize.Small" aria-labelledby="theme-label" class="settings-control">
-                <Items>
-                    <RadzenSelectBarItem Text="Auto" Value="@("system")" />
-                    <RadzenSelectBarItem Text="Light" Value="@("light")" />
-                    <RadzenSelectBarItem Text="Dark" Value="@("dark")" />
-                </Items>
-            </RadzenSelectBar>
-        </div>
-        <div class="settings-row">
-            <span class="settings-name" id="fx-label">Effects</span>
-            <RadzenSelectBar TValue="string" Value="@_fxLevel" Change="@(value => SetFxLevelAsync(value))"
-                             Size="ButtonSize.Small" aria-labelledby="fx-label" class="settings-control">
-                <Items>
-                    <RadzenSelectBarItem Text="Full" Value="@("full")" />
-                    <RadzenSelectBarItem Text="Subtle" Value="@("subtle")" />
-                    <RadzenSelectBarItem Text="Off" Value="@("off")" />
-                </Items>
-            </RadzenSelectBar>
-            <span class="settings-hint">
-                @if (_fxFollowsSystem)
+    @* Two columns on a desktop so every setting is on one screen at 1440×900, none behind a tab:
+       what changes how the app looks and reads on the left, the extras and your data on the right. *@
+    <div class="settings-columns">
+        <div class="settings-col">
+            <section class="settings-section" aria-labelledby="settings-look">
+                <h2 class="pm-label" id="settings-look">Look and sound</h2>
+                <div class="settings-row">
+                    <span class="settings-name" id="theme-label">Theme</span>
+                    <RadzenSelectBar TValue="string" Value="@Theme.Mode" Change="@(value => Theme.SetAsync(value))"
+                                     Size="ButtonSize.Small" aria-labelledby="theme-label" class="settings-control">
+                        <Items>
+                            <RadzenSelectBarItem Text="Auto" Value="@("system")" />
+                            <RadzenSelectBarItem Text="Light" Value="@("light")" />
+                            <RadzenSelectBarItem Text="Dark" Value="@("dark")" />
+                        </Items>
+                    </RadzenSelectBar>
+                </div>
+                <div class="settings-row">
+                    <span class="settings-name" id="fx-label">Effects</span>
+                    <RadzenSelectBar TValue="string" Value="@_fxLevel" Change="@(value => SetFxLevelAsync(value))"
+                                     Size="ButtonSize.Small" aria-labelledby="fx-label" class="settings-control">
+                        <Items>
+                            <RadzenSelectBarItem Text="Full" Value="@("full")" />
+                            <RadzenSelectBarItem Text="Subtle" Value="@("subtle")" />
+                            <RadzenSelectBarItem Text="Off" Value="@("off")" />
+                        </Items>
+                    </RadzenSelectBar>
+                    <span class="settings-hint">
+                        @if (_fxFollowsSystem)
+                        {
+                            <text>Following your system's motion setting.</text>
+                        }
+                        else
+                        {
+                            <button type="button" class="settings-text-button" @onclick="@(() => SetFxLevelAsync("system"))">Follow my system instead</button>
+                        }
+                    </span>
+                </div>
+                <div class="settings-row">
+                    <label class="settings-name" for="fx-sound">Interface sounds</label>
+                    <RadzenSwitch @bind-Value="_soundOn" Change="@(on => SetSoundAsync(on))" id="fx-sound-toggle" Name="fx-sound" />
+                    <span class="settings-hint">Chimes tuned to the song's key, and a tap on each downbeat.</span>
+                </div>
+                <div class="settings-row">
+                    <label class="settings-name" for="spatial">Spatial audio</label>
+                    <RadzenSwitch @bind-Value="_spatialOn" Change="@(on => SetSpatialAsync(on))" Name="spatial" />
+                    <span class="settings-hint">For headphones: the voice ahead of you and the band spread either side.</span>
+                </div>
+            </section>
+
+            <section class="settings-section" aria-labelledby="settings-models">
+                <h2 class="pm-label" id="settings-models">Analysis models</h2>
+                <p class="settings-hint">Auto lets the server pick the best model it has for each step. Pin one to use it for every song you add from this browser.</p>
+                @if (_stages is null)
                 {
-                    <text>Following your system's motion setting.</text>
+                    <div class="pm-skeleton settings-skeleton" aria-hidden="true"></div>
                 }
                 else
                 {
-                    <button type="button" class="settings-text-button" @onclick="@(() => SetFxLevelAsync("system"))">Follow my system instead</button>
+                    @foreach (var (stage, choices) in _stages)
+                    {
+                        <div class="settings-row">
+                            <span class="settings-name" id="@($"stage-{stage}")">@ExecutorChoices.StageLabel(stage)</span>
+                            @if (choices.Count <= 2)
+                            {
+                                @* One real option: nothing to pick, so say it plainly. *@
+                                <span class="settings-value">@(choices.Count == 2 ? choices[1].Label : "Auto (server picks best)")</span>
+                            }
+                            else
+                            {
+                                <RadzenDropDown TValue="string" Data="@choices" TextProperty="Label" ValueProperty="Value"
+                                                Value="@(_pins.TryGetValue(stage, out var pinned) ? pinned : "")"
+                                                Change="@(value => PinAsync(stage, value as string))"
+                                                class="settings-control settings-select" aria-labelledby="@($"stage-{stage}")" />
+                            }
+                        </div>
+                    }
                 }
-            </span>
-        </div>
-        <div class="settings-row">
-            <label class="settings-name" for="fx-sound">Interface sounds</label>
-            <RadzenSwitch @bind-Value="_soundOn" Change="@(on => SetSoundAsync(on))" id="fx-sound-toggle" Name="fx-sound" />
-            <span class="settings-hint">Chimes tuned to the song's key, and a tap on each downbeat.</span>
-        </div>
-        <div class="settings-row">
-            <label class="settings-name" for="spatial">Spatial audio</label>
-            <RadzenSwitch @bind-Value="_spatialOn" Change="@(on => SetSpatialAsync(on))" Name="spatial" />
-            <span class="settings-hint">For headphones: the voice ahead of you and the band spread either side.</span>
-        </div>
-    </section>
+            </section>
 
-    <section class="settings-section" aria-labelledby="settings-models">
-        <h2 class="pm-label" id="settings-models">Analysis models</h2>
-        <p class="settings-hint">Auto lets the server pick the best model it has for each step. Pin one to use it for every song you add from this browser.</p>
-        @if (_stages is null)
-        {
-            <div class="pm-skeleton settings-skeleton" aria-hidden="true"></div>
-        }
-        else
-        {
-            @foreach (var (stage, choices) in _stages)
+            @if (_interpreters is { Count: > 1 })
             {
+                <section class="settings-section" aria-labelledby="settings-writer">
+                    <h2 class="pm-label" id="settings-writer">Written interpretation</h2>
+                    <div class="settings-row">
+                        <span class="settings-name" id="writer-label">Writer</span>
+                        <RadzenDropDown TValue="string" Data="@_interpreters" TextProperty="Label" ValueProperty="Name"
+                                        Value="@(_interpreter ?? "")" Change="@(value => SetInterpreterAsync(value as string))"
+                                        class="settings-control settings-select" aria-labelledby="writer-label" />
+                    </div>
+                    <p class="settings-hint">Auto uses the best writer the server has. Every writer is checked against the measurements, so none can invent a figure.</p>
+                </section>
+            }
+
+            @if (_pushState is "on" or "off" or "blocked")
+            {
+                <section class="settings-section" aria-labelledby="settings-notify">
+                    <h2 class="pm-label" id="settings-notify">Notifications</h2>
+                    <div class="settings-row">
+                        <label class="settings-name" for="push-toggle">Notify me when an analysis finishes</label>
+                        <RadzenSwitch Value="@(_pushState == "on")" Change="@(_ => TogglePushAsync())" Name="push-toggle"
+                                      Disabled="@(_pushState == "blocked" || _pushBusy)" data-push-state="@_pushState" />
+                    </div>
+                    @if (_pushState == "blocked")
+                    {
+                        <p class="settings-hint">Notifications are blocked for this site in your browser's settings.</p>
+                    }
+                </section>
+            }
+        </div>
+        <div class="settings-col">
+            <section class="settings-section" aria-labelledby="settings-tools" id="more-tools">
+                <h2 class="pm-label" id="settings-tools">More tools</h2>
+                <p class="settings-hint">Off to start with, so each page shows what most people use. Switch one on and it appears where it belongs.</p>
                 <div class="settings-row">
-                    <span class="settings-name" id="@($"stage-{stage}")">@ExecutorChoices.StageLabel(stage)</span>
-                    @if (choices.Count <= 2)
-                    {
-                        @* One real option: nothing to pick, so say it plainly. *@
-                        <span class="settings-value">@(choices.Count == 2 ? choices[1].Label : "Auto (server picks best)")</span>
-                    }
-                    else
-                    {
-                        <RadzenDropDown TValue="string" Data="@choices" TextProperty="Label" ValueProperty="Value"
-                                        Value="@(_pins.TryGetValue(stage, out var pinned) ? pinned : "")"
-                                        Change="@(value => PinAsync(stage, value as string))"
-                                        class="settings-control settings-select" aria-labelledby="@($"stage-{stage}")" />
-                    }
+                    <label class="settings-name" for="tool-inspector">Window inspector</label>
+                    <RadzenSwitch Value="@Flags.Tools.WindowInspector" Change="@(on => Flags.SetAsync(Flags.Tools with { WindowInspector = on }))" Name="tool-inspector" />
+                    <span class="settings-hint">Under a song's timeline: the notes and mode scores of the moment you click.</span>
                 </div>
-            }
-        }
-    </section>
+                <div class="settings-row">
+                    <label class="settings-name" for="tool-rerun">Rerun with another model</label>
+                    <RadzenSwitch Value="@Flags.Tools.Rerun" Change="@(on => Flags.SetAsync(Flags.Tools with { Rerun = on }))" Name="tool-rerun" />
+                    <span class="settings-hint">Beside a song's headline: read it again with a different analysis model.</span>
+                </div>
+                <div class="settings-row">
+                    <label class="settings-name" for="tool-midi">MIDI keyboard</label>
+                    <RadzenSwitch Value="@Flags.Tools.Midi" Change="@(on => Flags.SetAsync(Flags.Tools with { Midi = on }))" Name="tool-midi" />
+                    <span class="settings-hint">In the Mode Lab: play the sounding mode from a connected keyboard.</span>
+                </div>
+                <div class="settings-row">
+                    <label class="settings-name" for="tool-diagnostics">Diagnostics</label>
+                    <RadzenSwitch Value="@Flags.Tools.Diagnostics" Change="@(on => Flags.SetAsync(Flags.Tools with { Diagnostics = on }))" Name="tool-diagnostics" />
+                    <span class="settings-hint">In the ⋯ menu and Ctrl+K: the server's models, queue and hardware.</span>
+                </div>
+            </section>
 
-    @if (_interpreters is { Count: > 1 })
-    {
-        <section class="settings-section" aria-labelledby="settings-writer">
-            <h2 class="pm-label" id="settings-writer">Written interpretation</h2>
-            <div class="settings-row">
-                <span class="settings-name" id="writer-label">Writer</span>
-                <RadzenDropDown TValue="string" Data="@_interpreters" TextProperty="Label" ValueProperty="Name"
-                                Value="@(_interpreter ?? "")" Change="@(value => SetInterpreterAsync(value as string))"
-                                class="settings-control settings-select" aria-labelledby="writer-label" />
-            </div>
-            <p class="settings-hint">Auto uses the best writer the server has. Every writer is checked against the measurements, so none can invent a figure.</p>
-        </section>
-    }
+            <section class="settings-section" aria-labelledby="settings-keys" id="shortcuts">
+                <h2 class="pm-label" id="settings-keys">Keyboard shortcuts</h2>
+                <dl class="settings-keys">
+                    <dt><kbd>Ctrl</kbd> <kbd>K</kbd></dt><dd>Jump anywhere: a page, a song, a setting</dd>
+                    <dt><kbd>Space</kbd></dt><dd>Play / pause the stems</dd>
+                    <dt><kbd>,</kbd></dt><dd>Restart playback from the beginning</dd>
+                    <dt><kbd>L</kbd></dt><dd>Loop the section under the playhead, or stop looping</dd>
+                    <dt>Mouse wheel</dt><dd>Zoom the timeline</dd>
+                    <dt>Click and drag</dt><dd>Pan the timeline</dd>
+                    <dt>Click</dt><dd>Seek there and inspect that window</dd>
+                    @if (Flags.Tools.Midi)
+                    {
+                        <dt>MIDI keyboard</dt><dd>Play the Mode Lab's sounding mode</dd>
+                    }
+                </dl>
+            </section>
 
-    @if (_pushState is "on" or "off" or "blocked")
-    {
-        <section class="settings-section" aria-labelledby="settings-notify">
-            <h2 class="pm-label" id="settings-notify">Notifications</h2>
-            <div class="settings-row">
-                <label class="settings-name" for="push-toggle">Notify me when an analysis finishes</label>
-                <RadzenSwitch Value="@(_pushState == "on")" Change="@(_ => TogglePushAsync())" Name="push-toggle"
-                              Disabled="@(_pushState == "blocked" || _pushBusy)" data-push-state="@_pushState" />
-            </div>
-            @if (_pushState == "blocked")
-            {
-                <p class="settings-hint">Notifications are blocked for this site in your browser's settings.</p>
-            }
-        </section>
-    }
-
-    <section class="settings-section" aria-labelledby="settings-tools" id="more-tools">
-        <h2 class="pm-label" id="settings-tools">More tools</h2>
-        <p class="settings-hint">Off to start with, so each page shows what most people use. Switch one on and it appears where it belongs.</p>
-        <div class="settings-row">
-            <label class="settings-name" for="tool-inspector">Window inspector</label>
-            <RadzenSwitch Value="@Flags.Tools.WindowInspector" Change="@(on => Flags.SetAsync(Flags.Tools with { WindowInspector = on }))" Name="tool-inspector" />
-            <span class="settings-hint">Under a song's timeline: the notes and mode scores of the moment you click.</span>
+            <section class="settings-section" aria-labelledby="settings-data">
+                <h2 class="pm-label" id="settings-data">Your data</h2>
+                <p class="settings-hint">Everything you added is stored under your name: the audio, its stems and every reading of it.</p>
+                <div class="settings-actions">
+                    <RadzenButton Text="Download everything" Icon="download" ButtonStyle="ButtonStyle.Light"
+                                  Click="@Export" id="export-data" />
+                    <RadzenButton Text="Delete everything" Icon="delete_forever" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Outlined"
+                                  Click="@DeleteAsync" Disabled="@_deleting" id="delete-data" />
+                </div>
+            </section>
         </div>
-        <div class="settings-row">
-            <label class="settings-name" for="tool-rerun">Rerun with another model</label>
-            <RadzenSwitch Value="@Flags.Tools.Rerun" Change="@(on => Flags.SetAsync(Flags.Tools with { Rerun = on }))" Name="tool-rerun" />
-            <span class="settings-hint">Beside a song's headline: read it again with a different analysis model.</span>
-        </div>
-        <div class="settings-row">
-            <label class="settings-name" for="tool-midi">MIDI keyboard</label>
-            <RadzenSwitch Value="@Flags.Tools.Midi" Change="@(on => Flags.SetAsync(Flags.Tools with { Midi = on }))" Name="tool-midi" />
-            <span class="settings-hint">In the Mode Lab: play the sounding mode from a connected keyboard.</span>
-        </div>
-        <div class="settings-row">
-            <label class="settings-name" for="tool-diagnostics">Diagnostics</label>
-            <RadzenSwitch Value="@Flags.Tools.Diagnostics" Change="@(on => Flags.SetAsync(Flags.Tools with { Diagnostics = on }))" Name="tool-diagnostics" />
-            <span class="settings-hint">In the ⋯ menu and Ctrl+K: the server's models, queue and hardware.</span>
-        </div>
-    </section>
-
-    <section class="settings-section" aria-labelledby="settings-keys" id="shortcuts">
-        <h2 class="pm-label" id="settings-keys">Keyboard shortcuts</h2>
-        <dl class="settings-keys">
-            <dt><kbd>Ctrl</kbd> <kbd>K</kbd></dt><dd>Jump anywhere: a page, a song, a setting</dd>
-            <dt><kbd>Space</kbd></dt><dd>Play / pause the stems</dd>
-            <dt><kbd>,</kbd></dt><dd>Restart playback from the beginning</dd>
-            <dt><kbd>L</kbd></dt><dd>Loop the section under the playhead, or stop looping</dd>
-            <dt>Mouse wheel</dt><dd>Zoom the timeline</dd>
-            <dt>Click and drag</dt><dd>Pan the timeline</dd>
-            <dt>Click</dt><dd>Seek there and inspect that window</dd>
-            @if (Flags.Tools.Midi)
-            {
-                <dt>MIDI keyboard</dt><dd>Play the Mode Lab's sounding mode</dd>
-            }
-        </dl>
-    </section>
-
-    <section class="settings-section" aria-labelledby="settings-data">
-        <h2 class="pm-label" id="settings-data">Your data</h2>
-        <p class="settings-hint">Everything you added is stored under your name: the audio, its stems and every reading of it.</p>
-        <div class="settings-actions">
-            <RadzenButton Text="Download everything" Icon="download" ButtonStyle="ButtonStyle.Light"
-                          Click="@Export" id="export-data" />
-            <RadzenButton Text="Delete everything" Icon="delete_forever" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Outlined"
-                          Click="@DeleteAsync" Disabled="@_deleting" id="delete-data" />
-        </div>
-    </section>
+    </div>
 </RadzenCard>
 
 @code {

@@ -21,7 +21,7 @@
 
 import * as prefs from '../shell/prefs.js';
 import { bus, lead } from './voices.js';
-import { createCaustics } from './key-caustics.js';
+import { createCaustics } from '../fx/key-caustics.js';
 
 const states = new Map();
 

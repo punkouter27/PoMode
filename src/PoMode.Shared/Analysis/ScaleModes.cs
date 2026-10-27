@@ -149,6 +149,12 @@ public static class ScaleModes
     };
 
     /// <summary>
+    /// The parent key a mode on <paramref name="tonicPitchClass"/> borrows its notes from: D Dorian is C.
+    /// An analysis names the mode's own tonic; the Mode Lab and Practice are keyed by the parent.
+    /// </summary>
+    public static int ParentTonic(int tonicPitchClass, ScaleMode mode) => Mod(tonicPitchClass - ModeDegreeOffset(mode));
+
+    /// <summary>
     /// Returns the notes of the parent key, ordered starting from the mode's root note.
     /// In C Major:
     /// C Ionian: C D E F G A B

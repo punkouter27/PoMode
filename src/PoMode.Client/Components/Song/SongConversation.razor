@@ -1,0 +1,537 @@
+@using System.Text.Json.Nodes
+@using PoMode.Shared.Analysis
+@using PoMode.Client.Services
+@inject AnalysisClient Client
+@inject IJSRuntime JS
+@inject BrowserPrefs Prefs
+@implements IAsyncDisposable
+
+@* ---- One conversation ----
+   The written summary and follow-up questions used to be two blocks with two headings and two
+   sets of controls over one ISongInterpreter. Now the summary is the first thing you can ask
+   for, and it lands as the first turn. Grounded in the measurements and nowhere else: the
+   interpreter is never given the audio, the title or the artist. An answer it could not find
+   in the data is labelled as such rather than hidden. *@
+<section class="ask" aria-labelledby="ask-heading">
+    @* Which writer answers is a setting (Settings, "Written interpretation"), at the best
+       one available by default; the source of every answer is named on it. *@
+    <h2 class="pm-sr-only" id="ask-heading">Ask about this song</h2>
+
+    @* The transcript scrolls in its own box and the ask row stays under it, so a long conversation
+       does not push the page past one screen. column-reverse keeps the newest turn in view without
+       a script: the box is anchored at its foot, where every new answer lands. *@
+    <div class="ask-transcript" tabindex="0" aria-label="The conversation so far">
+        <div class="ask-transcript-inner">
+            @* The summary turn, shown as it is written and replaced by the checked result when it lands. *@
+            @if (_interpretation is not null || (_busy && (_draft.Count > 0 || _quickRead is not null)))
+            {
+                @* While a model writes, the rule-based read stands in for it, so the answer is never
+                   a blank box; the model's first words replace it. *@
+                var provisional = _interpretation is null && _draft.Count == 0 ? _quickRead : null;
+                var plain = _interpretation?.Text ?? provisional?.Text ?? _draft.GetValueOrDefault(InterpretationPrompt.PlainField) ?? "";
+                var theory = _interpretation is { } done ? done.TheoryText
+                    : provisional is not null ? provisional.TheoryText
+                    : _draft.GetValueOrDefault(InterpretationPrompt.TheoryField);
+                <div class="ask-turn">
+                    <p class="ask-question">@SummaryStarter</p>
+                    <div class="ask-answer" aria-busy="@(_interpretation is null ? "true" : "false")" data-quick-read="@(provisional is not null ? "shown" : "")">
+                        @if (provisional is not null)
+                        {
+                            <p class="interpretation-source">
+                                Quick read <span class="interpretation-tag">rule-based · the model's version is being written</span>
+                            </p>
+                        }
+                        @if (_interpretation is { } interpretation)
+                        {
+                            <p class="interpretation-source">
+                                @($"Written by {ExecutorNames.Display(interpretation.Interpreter)}")
+                                @* Not a model, when it is not one. Saying so beats letting the prose imply one. *@
+                                <span class="interpretation-tag @(interpretation.UsedLlm ? "tag-local" : "")">
+                                    @Kind(interpretation.UsedLlm, interpretation.Tier)
+                                </span>
+                            </p>
+                        }
+                        <span class="pm-label summary-label">In plain English</span>
+                        @foreach (var paragraph in Paragraphs(plain))
+                        {
+                            <p class="interpretation-text">@paragraph</p>
+                        }
+                        @* Only when a second half was actually written — a heading over nothing would
+                           read as a failure rather than as an absence. *@
+                        @if (!string.IsNullOrWhiteSpace(theory))
+                        {
+                            <span class="pm-label summary-label">For musicians</span>
+                            @foreach (var paragraph in Paragraphs(theory))
+                            {
+                                <p class="interpretation-text">@paragraph</p>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+
+            @* Finished answers are announced as they land; the draft being streamed is not, or a
+               screen reader would read every fragment. *@
+            <div class="ask-log" role="log" aria-live="polite">
+                @foreach (var turn in _conversation)
+                {
+                    <div class="ask-turn">
+                        <p class="ask-question">@turn.Question</p>
+                        <p class="ask-answer @(_ungrounded.Contains(turn.Question) ? "ungrounded" : "")">
+                            @turn.Answer
+                        </p>
+                    </div>
+                }
+            </div>
+
+            @if (_asking && _pendingQuestion is { } pending)
+            {
+                <div class="ask-turn">
+                    <p class="ask-question">@pending</p>
+                    <p class="ask-answer" aria-busy="true">@(_draft.GetValueOrDefault(QuestionPrompt.AnswerField) ?? "…")</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (_interpretation is null)
+    {
+        <div class="ask-starters">
+            <RadzenButton class="ask-starter ask-starter-summary" Size="ButtonSize.Small"
+                          ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined"
+                          Disabled="@(_busy || _asking)" Click="@InterpretAsync"
+                          Text="@(_busy ? "Writing…" : SummaryStarter)" />
+        </div>
+    }
+
+    <div class="ask-row">
+        @* The openers are the box's own suggestions, offered the moment it is focused, rather
+           than a row of chips above it: one place to ask, and four lines back on a phone.
+           Picking one asks it; typing filters them or asks anything else. The placeholder
+           is not one of them, so it never reads as a question already typed in. *@
+        <RadzenAutoComplete class="ask-input" Data="@OpenStarters" @bind-Value="_question"
+                            OpenOnFocus="true" MinLength="0" FilterOperator="StringFilterOperator.Contains"
+                            Placeholder="Ask a question, or pick one…" Disabled="@_asking"
+                            SelectedItemChanged="@(item => item is string picked ? AskAsync(picked) : Task.CompletedTask)"
+                            @onkeydown="OnAskKeyDown" InputAttributes="@AskInputAttributes" />
+        <RadzenButton Text="@(_asking ? "Thinking…" : "Ask")" Size="ButtonSize.Small"
+                      ButtonStyle="ButtonStyle.Primary"
+                      Disabled="@(_asking || string.IsNullOrWhiteSpace(_question))"
+                      Click="@(() => AskAsync(_question!))" id="ask-send" />
+    </div>
+
+    @if (_browserDownload is { } downloaded)
+    {
+        <p class="stats-pending" role="status" data-browser-model-download="@downloaded">
+            Downloading this browser's model: @downloaded%
+        </p>
+    }
+
+    @if ((_error ?? _askError) is { } error)
+    {
+        <p class="interpretation-error" role="alert">@error</p>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public required string JobId { get; set; }
+
+    /// <summary>What every answer is grounded in; a browser model is handed the same prompt the server builds from it.</summary>
+    [Parameter] public SongStats? Stats { get; set; }
+
+    /// <summary>The summary, offered as the first question rather than as a separate button.</summary>
+    private const string SummaryStarter = "Summarize this song";
+
+    private List<InterpreterOptionDto>? _interpreters;
+    private SongInterpretationDto? _interpretation;
+
+    /// <summary>The rule-based summary, shown while a model writes its own.</summary>
+    private SongInterpretationDto? _quickRead;
+    private string? _chosen;
+    private string? _error;
+    private bool _busy;
+
+    /// <summary>The job the loaded state belongs to, so a re-render for a new job starts over.</summary>
+    private string? _loadedJobId;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedJobId == JobId)
+        {
+            return;
+        }
+
+        _loadedJobId = JobId;
+        _interpretation = null;
+        _quickRead = null;
+        _error = null;
+        // A different song is a different conversation; carrying the transcript over would put
+        // answers about one recording under another.
+        _conversation.Clear();
+        _ungrounded.Clear();
+        _question = null;
+        _askError = null;
+
+        // The interpreter list describes the server, not the song, so it is fetched once per
+        // component instance and reused across jobs.
+        if (_interpreters is null)
+        {
+            try
+            {
+                _interpreters = await Client.GetInterpretersAsync();
+                _chosen = _interpreters?.FirstOrDefault(option => option.IsDefault)?.Name;
+                await OfferBrowserModelsAsync();
+                // A writer picked on the Settings page wins, when it can run here.
+                if (await Prefs.GetAsync(BrowserPrefs.InterpreterKey, PrefsJsonContext.Default.String) is { } picked
+                    && _interpreters?.FirstOrDefault(option => option.Name == picked) is { Available: true })
+                {
+                    _chosen = picked;
+                }
+            }
+            catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException or TaskCanceledException)
+            {
+                // Same filter as the sibling fetches: a missing chooser must not take the page down.
+            }
+        }
+    }
+
+    private async Task InterpretAsync()
+    {
+            if (_busy)
+            {
+                return;
+            }
+            _busy = true;
+        _error = null;
+            // The quick read stops as soon as the rule-based summary arrives, which used to be done by
+            // walking away from the stream: the request showed as a failed ERR_ABORTED in devtools and
+            // the server went on generating a summary nobody would read. Cancelling says the same thing
+            // and actually stops it.
+            using var quickRead = new CancellationTokenSource();
+            try
+            {
+                await ReadQuicklyAsync(quickRead.Token);
+                // The rule-based summary is on screen and nothing more is needed from this request.
+                await quickRead.CancelAsync();
+                var result = BrowserInterpreters.IsBrowser(_chosen) && Stats is { } stats
+                ? await BrowserAsync(InterpretationPrompt.For(stats), null)
+                : null;
+            // The browser model failing or inventing a figure falls back to the server's default, as
+            // a failing Ollama falls back to the template there.
+            result ??= await ConsumeAsync(Client.StreamInterpretationAsync(JobId, ServerInterpreter));
+            _interpretation = result?.Summary;
+            if (_interpretation is null)
+            {
+                _error = "No summary came back. Try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            // A local model server can be stopped between the availability probe and the request.
+            _error = $"Could not write a summary: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+            _draft.Clear();
+        }
+    }
+
+    /// <summary>
+    /// When a model is about to write, the rule-based summary first: it takes a moment, and it means
+    /// the reader has something true to read for the tens of seconds a local model takes.
+    /// </summary>
+    private async Task ReadQuicklyAsync(CancellationToken ct)
+    {
+        _quickRead = null;
+        if (_interpreters?.FirstOrDefault(option => !option.UsesLlm) is not { } template
+            || _interpreters.FirstOrDefault(option => option.Name == _chosen) is not { UsesLlm: true })
+        {
+            return;
+        }
+            try
+        {
+                await foreach (var item in Client.StreamInterpretationAsync(JobId, template.Name, ct))
+            {
+                    if (item.Summary is { } summary)
+                    {
+                        _quickRead = summary;
+                        await InvokeAsync(StateHasChanged);
+                        return;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Our own cancel: the summary is already shown.
+            }
+        }
+
+    /// <summary>The reply being written, field by field, until the checked result replaces it.</summary>
+    private readonly Dictionary<string, string> _draft = [];
+
+    /// <summary>Shows each piece of a streamed reply as it arrives; returns the finished result.</summary>
+    private async Task<InterpretationEvent?> ConsumeAsync(IAsyncEnumerable<InterpretationEvent> events)
+    {
+        _draft.Clear();
+        await foreach (var item in events)
+        {
+            if (item.Summary is not null || item.Answer is not null)
+            {
+                return item;
+            }
+            if (item.Restart)
+            {
+                _draft.Clear();
+            }
+            else if (item.Field is { } field)
+            {
+                _draft[field] = _draft.GetValueOrDefault(field) + item.Text;
+            }
+            StateHasChanged();
+        }
+        return null;
+    }
+
+    // ---- The browser's own model ----
+    // Ranks where the planner puts a browser tier: after a real local model, before the template.
+    // The page builds the same prompt the server sends Ollama (both live in Shared) and runs the same
+    // GroundingCheck on the reply, so a figure it invents is caught here exactly as it is there.
+
+    /// <summary>Each browser model's answer: available, downloadable, downloading or unavailable.</summary>
+    private readonly Dictionary<string, string> _browserLlm = [];
+
+    private readonly Dictionary<string, IJSObjectReference> _llmModules = [];
+    private DotNetObjectReference<SongConversation>? _self;
+    private ReplyReader? _browserReply;
+
+    /// <summary>The server-side interpreter to ask: the one picked, unless the pick runs in the page.</summary>
+    private string? ServerInterpreter => BrowserInterpreters.IsBrowser(_chosen) ? null : _chosen;
+
+    private async Task<IJSObjectReference> ModuleAsync(string name)
+    {
+        if (!_llmModules.TryGetValue(name, out var module))
+        {
+            _llmModules[name] = module = await JS.InvokeAsync<IJSObjectReference>("import", BrowserInterpreters.ModuleFor(name));
+        }
+        return module;
+    }
+
+    /// <summary>
+    /// Offers the models that run in the page, ranked where the planner puts a browser tier: after a
+    /// real server model, before the template. Ready to run while the server has no model, the
+    /// browser's beats the template; one that still has to download waits to be picked in Settings.
+    /// </summary>
+    private async Task OfferBrowserModelsAsync()
+    {
+        foreach (var name in new[] { BrowserInterpreters.PromptApi, BrowserInterpreters.WebLlm })
+        {
+            try
+            {
+                _browserLlm[name] = await (await ModuleAsync(name)).InvokeAsync<string>("availability");
+            }
+            catch (JSException)
+            {
+                _browserLlm[name] = "unavailable";
+            }
+            if (_interpreters is null || _browserLlm[name] == "unavailable")
+            {
+                continue;
+            }
+            var template = _interpreters.FindIndex(option => !option.UsesLlm);
+            _interpreters.Insert(template < 0 ? _interpreters.Count : template, new InterpreterOptionDto(
+                name, ExecutionTier.ClientDelegated, Available: true, IsDefault: false, UsesLlm: true));
+            if (_browserLlm[name] == "available" && _interpreters.FirstOrDefault(option => option.Name == _chosen) is { UsesLlm: false })
+            {
+                _chosen = name;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Runs a prompt on the browser's own model, showing the reply as it is written. Null — and the
+    /// caller asks the server instead — when it fails, leaves a field empty, or writes a figure the
+    /// measurements do not contain.
+    /// </summary>
+    private async Task<InterpretationEvent?> BrowserAsync(ChatPrompt prompt, string? question)
+    {
+        _draft.Clear();
+        var reply = _browserReply = new ReplyReader();
+        var name = _chosen!;
+        try
+        {
+            var module = await ModuleAsync(name);
+            _self ??= DotNetObjectReference.Create(this);
+            var messages = new JsonArray([.. prompt.Messages.Select(message =>
+                (JsonNode)new JsonObject { ["role"] = message.Role, ["content"] = message.Content })]);
+            await module.InvokeVoidAsync("reply", prompt.System, messages.ToJsonString(), prompt.Schema, _self);
+        }
+        catch (JSException)
+        {
+            return null;
+        }
+        finally
+        {
+            _browserReply = null;
+        }
+
+        var written = question is null ? reply[InterpretationPrompt.PlainField] : reply[QuestionPrompt.AnswerField];
+        var theory = question is null ? reply[InterpretationPrompt.TheoryField] : null;
+        if (string.IsNullOrWhiteSpace(written)
+            || GroundingCheck.Unsupported($"{written}\n{theory}", prompt.Shown).Count > 0)
+        {
+            return null;
+        }
+
+        return question is null
+            ? new InterpretationEvent(Summary: new SongInterpretationDto(
+                name, ExecutionTier.ClientDelegated, true, written.Trim(),
+                string.IsNullOrWhiteSpace(theory) ? null : theory.Trim()))
+            : new InterpretationEvent(Answer: new SongAnswerDto(
+                question, written.Trim(), name, ExecutionTier.ClientDelegated, true,
+                Grounded: !bool.TryParse(reply[QuestionPrompt.InDataField], out var inData) || inData));
+    }
+
+    /// <summary>Percent of the browser's model fetched, while its first use downloads it; null otherwise.</summary>
+    private int? _browserDownload;
+
+    [JSInvokable]
+    public void OnBrowserDownload(int percent)
+    {
+        _browserDownload = percent < 100 ? percent : null;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnBrowserChunk(string chunk)
+    {
+        if (_browserReply is null)
+        {
+            return;
+        }
+        foreach (var (field, text) in _browserReply.Push(chunk))
+        {
+            _draft[field] = _draft.GetValueOrDefault(field) + text;
+        }
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _self?.Dispose();
+        foreach (var module in _llmModules.Values)
+        {
+            try
+            {
+                await module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The page is going away; nothing left to release.
+            }
+        }
+    }
+
+    /// <summary>
+    /// The conversation, held here and nowhere else. The server keeps no transcript — the whole
+    /// answer is derivable from artifacts that already exist, and a stored one would be the only part
+    /// of this feature able to go stale — so the client is what makes it a conversation at all.
+    /// </summary>
+    private readonly List<InterpretationTurn> _conversation = [];
+
+    /// <summary>Questions the data could not answer, so those turns can be marked in the transcript.
+    /// Keyed by question text, which is unique enough for a handful of turns.</summary>
+    private readonly HashSet<string> _ungrounded = [];
+
+    private string? _question;
+    private string? _pendingQuestion;
+    private string? _askError;
+    private bool _asking;
+
+    /// <summary>
+    /// Openers, offered only before the first question. Each one is answerable from the measurements
+    /// on purpose — an empty text box beside a wall of statistics invites questions about lyrics and
+    /// artists, which is the one thing this interpreter is built never to answer.
+    /// </summary>
+    private static readonly string[] Starters =
+    [
+        "Why this mode and not its relative minor?",
+        "What makes this hard to sing?",
+        "How does the melody sit against the chords?",
+    ];
+
+    /// <summary>The openers not yet asked: one already answered above would only be asked again.</summary>
+    private IEnumerable<string> OpenStarters => Starters.Where(s => !_conversation.Any(turn => turn.Question == s));
+
+    private static readonly Dictionary<string, object> AskInputAttributes = new()
+    {
+        ["aria-label"] = "Ask a question about this song",
+    };
+
+    private async Task AskAsync(string question)
+    {
+        var asked = question.Trim();
+        if (_asking || asked.Length == 0)
+        {
+            return;
+        }
+
+        _asking = true;
+        _askError = null;
+        _question = null;
+        _pendingQuestion = asked;
+        try
+        {
+            // The history goes with the question because the server holds none; it is trimmed there,
+            // so a long conversation costs the prompt rather than the measurements.
+            var result = BrowserInterpreters.IsBrowser(_chosen) && Stats is { } stats
+                ? await BrowserAsync(QuestionPrompt.For(stats, _conversation, asked), asked)
+                : null;
+            result ??= await ConsumeAsync(Client.StreamAnswerAsync(JobId, asked, _conversation, ServerInterpreter));
+            if (result?.Answer is not { } answer)
+            {
+                _askError = "No answer came back. Try asking again.";
+                return;
+            }
+
+            _conversation.Add(new InterpretationTurn(asked, answer.Answer));
+            if (!answer.Grounded)
+            {
+                _ungrounded.Add(asked);
+            }
+        }
+        catch (Exception ex)
+        {
+            _askError = $"Could not answer that: {ex.Message}";
+        }
+        finally
+        {
+            _asking = false;
+            _pendingQuestion = null;
+            _draft.Clear();
+        }
+    }
+
+    private async Task OnAskKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter" && !string.IsNullOrWhiteSpace(_question))
+        {
+            await AskAsync(_question);
+        }
+    }
+
+    private static string Kind(bool usedLlm, ExecutionTier tier) => (usedLlm, tier) switch
+    {
+        (false, _) => "rule-based, no model",
+        (_, ExecutionTier.ClientDelegated) => "model in this browser",
+        (_, ExecutionTier.Cloud) => "cloud model",
+        _ => "local model",
+    };
+
+    /// <summary>
+    /// Splits model prose on blank lines. The prompt asks for plain paragraphs, but a model may
+    /// still emit single newlines, so only a blank line starts a new one.
+    /// </summary>
+    private static IEnumerable<string> Paragraphs(string text)
+        => text.Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+}

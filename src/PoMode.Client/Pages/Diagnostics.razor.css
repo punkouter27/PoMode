@@ -96,3 +96,17 @@
         overflow-wrap: anywhere;
     }
 }
+
+/* --- Two columns on a desktop, one under it --- */
+.diag-col {
+    min-width: 0;
+}
+
+@media (min-width: 1024px) {
+    .diag-columns {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: var(--pm-space-4);
+        align-items: start;
+    }
+}

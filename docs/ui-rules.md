@@ -130,11 +130,24 @@ onto `data-*` for Playwright.
   page then starts under the header instead of centring the card.
 - **Phone dock**: Play/Pause and the key dock at the foot of a phone's screen once the mixer's own
   transport has scrolled away, and only then.
-- **Sticky transport**: the Mode Lab's transport sticks under the header (`--pm-header-height`).
+- **Sticky transport**: the Mode Lab's transport sticks under the header (`--pm-header-height`), which
+  matters on a phone, where the lab still scrolls.
 
-Two documents are deliberately taller than a phone: the finished analysis page and the Mode Lab.
-Both are content that exists to be read and compared, and the alternative to scrolling them is
-hiding part of them. Practice's Guitar jam tab joins them on a phone only: its length is the
-generated progression's (four to six boxes and a sentence of one to five lines), so no fixed layout
-fits every one without hiding a chord. Practice's default tab fits.
-Every other route fits 390×844 and 1440×900 with no scrolling in either axis.
+**One screen on a desktop.** Every route fits 1440×900 with no scrolling in either axis: the
+library (a page of eight songs, with a preview or a comparison open), a finished song, the Mode Lab,
+all three Practice tabs, Settings and Diagnostics. `scripts/layout-audit.cs` fails a desktop page
+that scrolls. What made the tall pages fit was splitting them by job, never clipping:
+
+- The song page keeps the headline, the canvas and the player in view and puts what is read about
+  the song under three tabs (Summary, The singer, Ask about this song). The summary sets in two
+  columns, the singer card lays its sentences beside the keyboard, and the conversation scrolls in
+  its own box over a fixed ask row, anchored at the newest turn.
+- The Mode Lab sets the home-note view beside the roll instead of in a row of its own.
+- Settings and Diagnostics are two columns; nothing is behind a tab, so `#more-tools` and
+  `#shortcuts` still land.
+- Practice's "Your takes" tab carries the singer's voice card (it is a reading of those takes), and
+  pages its takes five at a time.
+
+A phone is allowed to scroll the finished song and the Mode Lab, both content that exists to be read
+and compared, and Practice's Guitar jam tab (its length is the generated progression's). Every other
+route fits 390×844 too.

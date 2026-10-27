@@ -88,8 +88,8 @@ public class AnalysisPageTests(AppFixture app)
         await Assertions.Expect(page.GetByText("Key & Mode")).ToBeVisibleAsync(Visible);
         // Tonic C with a C-Am-F-G progression; the engine names Ionian from the sung material —
         // real melody notes in the fixture, really transcribed (YIN in this no-model host).
-        await Assertions.Expect(page.Locator(".basic-badge-value").First).ToContainTextAsync("C");
-        await Assertions.Expect(page.Locator(".basic-badge-value").First).ToContainTextAsync("Ionian");
+        await Assertions.Expect(page.Locator(".song-badge-value").First).ToContainTextAsync("C");
+        await Assertions.Expect(page.Locator(".song-badge-value").First).ToContainTextAsync("Ionian");
         await Assertions.Expect(page.GetByText("confidence")).ToBeVisibleAsync(Visible);
     }
 
@@ -152,10 +152,10 @@ public class AnalysisPageTests(AppFixture app)
         var page = await AnalysedPageAsync(browser, app.BaseUrl, TestAudio.MakeWav(seconds: 0.5));
 
         await Assertions.Expect(page.GetByText("Key & Mode")).ToBeVisibleAsync(Visible);
-        await Assertions.Expect(page.Locator(".basic-badge-value").First).ToContainTextAsync("nothing detected");
+        await Assertions.Expect(page.Locator(".song-badge-value").First).ToContainTextAsync("nothing detected");
         await Assertions.Expect(page.GetByText("nothing to measure")).ToBeVisibleAsync(Visible);
         // The one export left: the press of the song's split button, with the rest under its arrow.
-        await Assertions.Expect(page.Locator(".basic-song-actions")).ToContainTextAsync("Download MIDI");
+        await Assertions.Expect(page.Locator(".song-actions")).ToContainTextAsync("Download MIDI");
     }
 
 }

@@ -1,11 +1,11 @@
-.basic-container {
+.song-container {
     display: flex;
     flex-direction: column;
     width: 100%;
     margin-top: 0.25rem;
 }
 
-.basic-main-card {
+.song-main-card {
     background: var(--pm-surface);
     border: 1px solid var(--pm-border);
     border-radius: 8px;
@@ -15,7 +15,7 @@
     gap: 0.6rem;
 }
 
-.basic-header-row {
+.song-header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -25,45 +25,45 @@
     border-bottom: 1px solid var(--pm-border);
 }
 
-.basic-meta-group {
+.song-meta-group {
     display: flex;
     align-items: center;
     gap: 1.25rem;
     flex-wrap: wrap;
 }
 
-.basic-badge-key {
+.song-badge-key {
     display: flex;
     align-items: baseline;
     gap: 0.4rem;
 }
 
-.basic-badge-item {
+.song-badge-item {
     display: flex;
     align-items: baseline;
     gap: 0.35rem;
 }
 
-.basic-badge-value {
+.song-badge-value {
     font-size: 1.15rem;
     font-weight: 700;
     color: var(--pm-fg);
 }
 
-.basic-badge-sub {
+.song-badge-sub {
     font-size: 0.75rem;
     color: var(--pm-accent);
     font-weight: 600;
 }
 
-.basic-badge-scale {
+.song-badge-scale {
     font-size: 0.75rem;
     color: var(--pm-fg-muted);
     white-space: nowrap;
 }
 
 /* Text-sized, but with a target a finger can hit: 24px tall at the least. */
-.basic-why-toggle {
+.song-why-toggle {
     min-height: 1.5rem;
     background: transparent;
     border: 0;
@@ -75,12 +75,40 @@
     cursor: pointer;
 }
 
-.basic-why-toggle:hover { text-decoration: underline; }
-.basic-why-toggle:focus-visible { outline: 2px solid var(--pm-accent); outline-offset: 2px; border-radius: 0.2rem; }
+.song-why-toggle:hover { text-decoration: underline; }
+.song-why-toggle:focus-visible { outline: 2px solid var(--pm-accent); outline-offset: 2px; border-radius: 0.2rem; }
 
 /* Provenance and tuning, as chips under the headline. A hum take names the progression it was sung
    over, so the mode reported reads as an answer about that melody rather than a bare fact. */
-.basic-chips {
+.song-subrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pm-space-1) var(--pm-space-4);
+    min-width: 0;
+}
+
+.song-next {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--pm-space-1) var(--pm-space-3);
+    font-size: var(--pm-text-sm);
+}
+
+.song-next a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--pm-accent);
+}
+
+@media (pointer: coarse) {
+    .song-next a {
+        min-height: 2.75rem;
+    }
+}
+
+.song-chips {
     display: flex;
     flex-wrap: wrap;
     gap: var(--pm-space-1) var(--pm-space-2);
@@ -100,17 +128,17 @@
     min-width: 0;
 }
 
-.basic-actions-group {
+.song-actions-group {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.basic-canvas-section ::deep .canvas-wrap {
+.song-canvas-section ::deep .canvas-wrap {
     margin: 0.2rem 0;
 }
 
-.basic-canvas-section ::deep .analysis-canvas {
+.song-canvas-section ::deep .analysis-canvas {
     height: 240px;
 }
 
@@ -119,33 +147,33 @@
     min-height: 14rem;
 }
 
-.basic-canvas-section ::deep .canvas-legend {
+.song-canvas-section ::deep .canvas-legend {
     margin-top: 0.25rem;
     font-size: 0.75rem;
 }
 
 /* Held at the mixer's own height until it mounts. */
-.basic-player-section {
+.song-player-section {
     margin-top: -0.25rem;
     min-height: 5.3rem;
 }
 
-.basic-player-section ::deep .mixer {
+.song-player-section ::deep .mixer {
     padding-top: 0;
 }
 
 @media (max-width: 640px) {
-    .basic-container {
+    .song-container {
         margin-top: 0;
     }
 
-    .basic-main-card {
+    .song-main-card {
         padding: 0.45rem 0.55rem;
         gap: 0.35rem;
         border-radius: 6px;
     }
 
-    .basic-header-row {
+    .song-header-row {
         flex-direction: column;
         align-items: stretch;
         gap: 0.35rem;
@@ -154,41 +182,41 @@
 
     /* The key and mode get a row of their own: squeezed into a third of the width, the scale wrapped
        a note per line and the mode name ran under the actions. Tempo and length share the next row. */
-    .basic-meta-group {
+    .song-meta-group {
         display: grid;
         grid-template-columns: 1fr 1fr;
         align-items: center;
         gap: 0.35rem 0.75rem;
     }
 
-    .basic-badge-key {
+    .song-badge-key {
         grid-column: 1 / -1;
         flex-wrap: wrap;
         gap: 0 0.5rem;
     }
 
-    .basic-badge-item {
+    .song-badge-item {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
         gap: 0;
     }
 
-    .basic-badge-label {
+    .song-badge-label {
         line-height: 1;
     }
 
-    .basic-badge-value {
+    .song-badge-value {
         font-size: 0.88rem;
         line-height: 1.2;
     }
 
-    .basic-badge-sub {
+    .song-badge-sub {
         font-size: var(--pm-text-xs);
         line-height: 1;
     }
 
-    .basic-actions-group {
+    .song-actions-group {
         display: flex;
         gap: 0.3rem;
     }
@@ -198,33 +226,33 @@
     }
 
     /* Tall enough that the section ribbon and tempo strip still leave the notes a readable lane. */
-    .basic-canvas-section ::deep .analysis-canvas {
+    .song-canvas-section ::deep .analysis-canvas {
         height: 170px;
     }
 
-    .basic-canvas-section ::deep .canvas-wrap {
+    .song-canvas-section ::deep .canvas-wrap {
         margin: 0;
     }
 
-    .basic-canvas-section ::deep .canvas-legend {
+    .song-canvas-section ::deep .canvas-legend {
         margin-top: 0.15rem;
         font-size: var(--pm-text-xs);
         gap: 0.2rem;
         justify-content: center;
     }
 
-    .basic-canvas-section ::deep .swatch {
+    .song-canvas-section ::deep .swatch {
         width: 0.5rem;
         height: 0.5rem;
         margin-left: 0.25rem;
     }
 
-    .basic-player-section {
+    .song-player-section {
         margin-top: 0;
         min-height: 11.7rem;
     }
 
-    .basic-player-section ::deep .mixer-note {
+    .song-player-section ::deep .mixer-note {
         font-size: var(--pm-text-xs);
         margin-top: 0.1rem;
         text-align: center;
@@ -232,7 +260,7 @@
 }
 
 /* Under the canvas: the selected window's readout, then the sections disclosure. */
-.basic-canvas-foot {
+.song-canvas-foot {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -240,12 +268,12 @@
     margin-top: var(--pm-space-1);
 }
 
-.basic-canvas-foot ::deep .inspect {
+.song-canvas-foot ::deep .inspect {
     width: 100%;
     box-sizing: border-box;
 }
 
-.basic-analyzed-with {
+.song-analyzed-with {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -257,7 +285,7 @@
     color: var(--pm-fg-muted);
 }
 
-.basic-executor {
+.song-executor {
     display: inline-flex;
     align-items: center;
     gap: 0.2rem;
