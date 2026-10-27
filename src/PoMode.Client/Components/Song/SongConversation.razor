@@ -113,7 +113,7 @@
                             OpenOnFocus="true" MinLength="0" FilterOperator="StringFilterOperator.Contains"
                             Placeholder="Ask a question, or pick one…" Disabled="@_asking"
                             SelectedItemChanged="@(item => item is string picked ? AskAsync(picked) : Task.CompletedTask)"
-                            @onkeydown="OnAskKeyDown" InputAttributes="@AskInputAttributes" />
+                            @oninput="OnAskInput" @onkeydown="OnAskKeyDown" InputAttributes="@AskInputAttributes" />
         <RadzenButton Text="@(_asking ? "Thinking…" : "Ask")" Size="ButtonSize.Small"
                       ButtonStyle="ButtonStyle.Primary"
                       Disabled="@(_asking || string.IsNullOrWhiteSpace(_question))"
@@ -511,6 +511,10 @@
             _draft.Clear();
         }
     }
+
+    // The autocomplete's bound value only moves on change (blur), so Enter and the Ask button would
+    // see nothing typed yet; the bubbled input event keeps the question current per keystroke.
+    private void OnAskInput(ChangeEventArgs args) => _question = args.Value?.ToString();
 
     private async Task OnAskKeyDown(KeyboardEventArgs args)
     {

@@ -36,14 +36,20 @@ public sealed class DemoTemplateService(
             var existing = store.TryFindInputPath(DemoSong.TemplateJobId) is null
                 ? null
                 : await store.LoadAsync(DemoSong.TemplateJobId, stoppingToken);
-            // Finished: ready to copy. Interrupted mid-run: recovery has already re-enqueued it.
-            if (existing is not null && existing.Stage is not (JobStage.Failed or JobStage.Cancelled))
+            // Finished and read right: ready to copy. Interrupted mid-run: recovery has already
+            // re-enqueued it. Finished but read as another mode (built by an analyzer since fixed):
+            // rebuilt, since a first-run example whose answer is wrong teaches the wrong lesson.
+            var misread = existing is { Stage: JobStage.Complete }
+                && !string.Equals(existing.PrimaryMode, DemoSong.Mode.ToString(), StringComparison.Ordinal);
+            if (existing is not null && !misread && existing.Stage is not (JobStage.Failed or JobStage.Cancelled))
             {
                 return;
             }
 
             logger.LogInformation("Building the demo template ({Reason}).",
-                existing is null ? "none on disk" : $"the last build ended {existing.Stage}");
+                existing is null ? "none on disk"
+                : misread ? $"it was read as {existing.PrimaryMode}, not {DemoSong.Mode}"
+                : $"the last build ended {existing.Stage}");
             if (Directory.Exists(store.JobDir(DemoSong.TemplateJobId)) && !store.TryDelete(DemoSong.TemplateJobId))
             {
                 logger.LogWarning("The old demo template is still in use; leaving it until the next start.");

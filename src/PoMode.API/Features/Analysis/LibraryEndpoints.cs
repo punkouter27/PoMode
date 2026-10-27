@@ -44,6 +44,23 @@ public static class LibraryEndpoints
             return TypedResults.Ok(entries.OrderByDescending(e => e.CreatedAt).ToList());
         }).RequireAuthorization();
 
+        // Removes one of the caller's songs, cancelling it first if it is still running. Someone else's
+        // answers exactly like a missing one, as everywhere else. 409 when a file in it is still open
+        // (a stem mid-stream); trying again a moment later works.
+        app.MapDelete("/api/library/{jobId}", async Task<Results<NoContent, NotFound, Conflict>> (
+            string jobId, HttpContext context, JobStore store, JobCancellationRegistry cancellations,
+            CancellationToken ct) =>
+        {
+            var owner = PoUser.IdOf(context.User);
+            if (owner is null || !JobId.IsValid(jobId)
+                || await store.LoadAsync(jobId, ct) is not { } state || state.OwnerId != owner)
+            {
+                return TypedResults.NotFound();
+            }
+            cancellations.TryCancel(jobId);
+            return store.TryDelete(jobId) ? TypedResults.NoContent() : TypedResults.Conflict();
+        }).RequireAuthorization();
+
         // The caller's other analysed songs, most alike first (SongSimilarity). Only their own library
         // is searched, the same rule as the listing above.
         app.MapGet("/api/library/{jobId}/similar", async Task<Results<Ok<List<SimilarSongDto>>, NotFound>> (

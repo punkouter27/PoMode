@@ -9,7 +9,7 @@
 const CACHE = 'pomode-v1-saved';
 
 const READINGS = ['', '/result', '/visual', '/stats', '/notes', '/notes-backing', '/notes-chords', '/chords',
-    '/beats', '/tempo-map', '/voice', '/structure', '/peaks', '/lyrics'];
+    '/beats', '/tempo-map', '/voice', '/structure', '/peaks', '/lyrics', '/stems'];
 const STEMS = ['/stems/mix', '/stems/vocals', '/stems/instrumental'];
 
 function urlsFor(jobId) {

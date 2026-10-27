@@ -107,7 +107,10 @@ public sealed partial class LibraryQuery
     private void AddMode(ScaleMode mode, string token)
     {
         _chips.Add(new LibraryChip(ScaleModes.DisplayName(mode.ToString()), token));
-        _tests.Add(entry => string.Equals(entry.PrimaryMode, mode.ToString(), StringComparison.OrdinalIgnoreCase));
+        // Or the word is in the file name: "dorian" hid a take named "dorian-vamp.wav" that the
+        // analyzer happened to read as something else, which looked like a broken search.
+        _tests.Add(entry => string.Equals(entry.PrimaryMode, mode.ToString(), StringComparison.OrdinalIgnoreCase)
+            || entry.FileName.Contains(token, StringComparison.OrdinalIgnoreCase));
     }
 
     private static ScaleMode? ModeOf(string word)

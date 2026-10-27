@@ -19,6 +19,9 @@ public static class DemoSong
     /// <summary>Server-owned, so the template is in nobody's library and survives the purge sweeps.</summary>
     public const string TemplateOwner = JobState.ServerOwnerPrefix + "demo-template";
 
+    /// <summary>The mode the demo is written in, which a finished template has to have read back.</summary>
+    public static ScaleMode Mode => Request.Mode;
+
     /// <summary>
     /// F Lydian over its own signature vamp (C's seven notes, F as home, the raised fourth sounding in
     /// the II chord). A mode that is plainly not major or minor, so the example shows what the app is

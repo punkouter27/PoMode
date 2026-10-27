@@ -8,7 +8,7 @@ namespace PoMode.E2EUI;
 public class UploadFlowTests(AppFixture app)
 {
     [Fact]
-    public async Task Upload_runs_pipeline_shows_results_and_keeps_mock_banner_while_any_stage_is_fake()
+    public async Task Upload_runs_pipeline_shows_results_keeps_mock_banner_and_deletes_from_library()
     {
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
@@ -42,6 +42,20 @@ public class UploadFlowTests(AppFixture app)
             // separator is also available (a real model download, exercised elsewhere, not by
             // this fast in-memory-model browser suite).
             await Assertions.Expect(page.GetByText("USING MOCK DATA")).ToBeVisibleAsync(visible);
+
+            // And out again: the song's row in the library deletes it, after a confirm, for good.
+            var songUrl = page.Url;
+            var fileName = Path.GetFileName(wavPath);
+            await page.GotoAsync(app.BaseUrl);
+            var row = page.Locator("tbody tr", new() { HasText = fileName });
+            await Assertions.Expect(row).ToBeVisibleAsync(visible);
+            await row.GetByRole(AriaRole.Button, new() { Name = $"Delete {fileName}" }).ClickAsync();
+            await page.Locator(".rz-dialog").GetByRole(AriaRole.Button, new() { Name = "Delete", Exact = true }).ClickAsync();
+            await Assertions.Expect(row).ToBeHiddenAsync(hidden);
+            await page.ReloadAsync();
+            await Assertions.Expect(page.GetByText(fileName)).ToBeHiddenAsync(hidden);
+            await page.GotoAsync(songUrl);
+            await Assertions.Expect(page.GetByText("This song isn't in your library.")).ToBeVisibleAsync(visible);
         }
         finally
         {

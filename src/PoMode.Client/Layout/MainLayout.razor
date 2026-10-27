@@ -135,6 +135,8 @@
     </ErrorBoundary>
 </main>
 
+<div class="build-watermark" title="Build date" aria-hidden="true">@BuildDate</div>
+
 @code {
     private IJSObjectReference? _pwa;
     private IJSObjectReference? _palette;
@@ -150,6 +152,12 @@
     private bool _pushSubscribed;
 
     private ErrorBoundary? _boundary;
+
+    /// <summary>YYMMDD, stamped into the assembly by the csproj when it was built.</summary>
+    private static readonly string BuildDate = typeof(MainLayout).Assembly
+        .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
+        .Cast<System.Reflection.AssemblyMetadataAttribute>()
+        .FirstOrDefault(a => a.Key == "BuildDate")?.Value ?? "";
 
     /// <summary>The layout outlives navigation, so a tripped boundary would otherwise keep showing its
     /// error panel on every page until a reload. A new page (a new Body) gets a clean start.</summary>

@@ -62,7 +62,7 @@
                 </div>
 
                 <div class="song-badge-item">
-                    <span class="pm-label song-badge-label">Length</span>
+                    <span class="pm-label song-badge-label">Melody</span>
                     @if (HasContent)
                     {
                         <span class="song-badge-value">@($"{Visual.DurationSec:0.0}s")</span>
@@ -70,9 +70,9 @@
                     }
                     else
                     {
-                        @* The span the notes cover, not the file's length: on a file with no notes it
-                           read "0.0s" beside the player saying "4.0s of audio", which is a
-                           contradiction rather than a measurement. *@
+                        @* The span the notes cover, not the file's length, so it is labelled Melody
+                           (the player gives the audio's own). On a file with no notes it read "0.0s"
+                           beside the player saying "4.0s of audio", a contradiction, not a measurement. *@
                         <span class="song-badge-value">—</span>
                         <span class="song-badge-sub">no notes detected</span>
                     }

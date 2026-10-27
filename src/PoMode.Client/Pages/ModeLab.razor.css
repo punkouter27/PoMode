@@ -310,3 +310,13 @@
         min-height: 2.75rem;
     }
 }
+
+/* The longest label in the backing row: on a phone it shares a line with the key and pushed the
+   toggle 10px past the edge, so this one may wrap and the toggle keeps its width. */
+.match-field .backing-label {
+    white-space: normal;
+}
+
+.match-toggle {
+    flex-shrink: 0;
+}

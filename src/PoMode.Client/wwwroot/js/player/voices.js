@@ -227,7 +227,9 @@ export function epiano(ctx, out, midi, when, duration, level = 0.4, onEnded = nu
     index.connect(carrier.frequency);
 
     const tine = ctx.createOscillator();
-    tine.frequency.value = freq * 14;
+    // 14x the carrier, held under Nyquist: above about A6 the plain ratio leaves the audible range and
+    // Web Audio clamps it with a warning.
+    tine.frequency.value = Math.min(freq * 14, ctx.sampleRate * 0.45);
     const tineGain = ctx.createGain();
     tineGain.gain.setValueAtTime(level * 0.12, when);
     tineGain.gain.exponentialRampToValueAtTime(0.0001, when + 0.08);

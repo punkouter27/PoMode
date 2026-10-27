@@ -27,15 +27,43 @@ public static class ModalAnalysisEngine
 
         var sortedNotes = notes.OrderBy(note => note.StartSec).ToArray();
 
-        var windows = new List<ModalWindow>(chords.Count);
-        for (var index = 0; index < chords.Count; index++)
+        // Two passes. A window that never sounds the note telling two modes apart scores them the same
+        // (F Lydian's vamp without its B is equally F Ionian), and broken by enum order alone those
+        // ties all voted Ionian and outvoted the windows that did sing the ♯4. So every mode is scored
+        // in every window first, and a tie inside a window goes to the mode the whole song fits best.
+        var scoredWindows = new List<(ChordSpan Chord, int[] Intervals, int Mask, List<Scored>? Scores)>(chords.Count);
+        var songFit = new double[Enum.GetValues<ScaleMode>().Length];
+        foreach (var chord in chords)
         {
-            var chord = chords[index];
             var intervals = SungIntervals(sortedNotes, chord, tonic.PitchClass);
-
             var vocalMask = intervals.Aggregate(0, (mask, interval) => mask | (1 << interval));
-            var insufficient = intervals.Length < MinimumDistinctPitchClasses;
-            var matches = insufficient ? [] : ScoreModes(vocalMask, intervals);
+            var scores = intervals.Length < MinimumDistinctPitchClasses ? null : ScoreModes(vocalMask, intervals);
+            if (scores is not null)
+            {
+                var weight = Math.Max(chord.EndSec - chord.StartSec, 0.0001);
+                foreach (var score in scores)
+                {
+                    songFit[(int)score.Match.Mode] += score.Match.Confidence * weight;
+                }
+            }
+            scoredWindows.Add((chord, intervals, vocalMask, scores));
+        }
+
+        var windows = new List<ModalWindow>(chords.Count);
+        for (var index = 0; index < scoredWindows.Count; index++)
+        {
+            var (chord, intervals, vocalMask, scores) = scoredWindows[index];
+            var insufficient = scores is null;
+            IReadOnlyList<ModalMatch> matches = scores is null
+                ? []
+                : scores
+                    .OrderByDescending(entry => entry.Match.Confidence)
+                    .ThenByDescending(entry => songFit[(int)entry.Match.Mode])
+                    .ThenBy(entry => entry.ModeSize)
+                    .ThenBy(entry => (int)entry.Match.Mode)
+                    .Take(MaxMatchesPerWindow)
+                    .Select(entry => entry.Match)
+                    .ToArray();
 
             windows.Add(new ModalWindow(
                 Index: index,
@@ -107,10 +135,13 @@ public static class ModalAnalysisEngine
         return [.. intervals];
     }
 
-    private static IReadOnlyList<ModalMatch> ScoreModes(int vocalMask, int[] intervals)
+    private readonly record struct Scored(ModalMatch Match, int ModeSize);
+
+    /// <summary>Every mode's fit to one window, unordered.</summary>
+    private static List<Scored> ScoreModes(int vocalMask, int[] intervals)
     {
         var sungCount = BitOperations.PopCount((uint)vocalMask);
-        var scored = new List<(ModalMatch Match, int ModeSize)>();
+        var scored = new List<Scored>();
 
         foreach (var mode in ModeDefinitions.All)
         {
@@ -124,16 +155,9 @@ public static class ModalAnalysisEngine
             var bonus = characteristic.Count == 0 ? 0 : CharacteristicBonus * present / characteristic.Count;
 
             var confidence = Math.Clamp(coverage + bonus, 0.0, coverage < 1.0 ? 0.99 : 1.0);
-            scored.Add((new ModalMatch(mode, confidence, matched, outside), ModeDefinitions.Intervals(mode).Count));
+            scored.Add(new Scored(new ModalMatch(mode, confidence, matched, outside), ModeDefinitions.Intervals(mode).Count));
         }
-
-        return scored
-            .OrderByDescending(entry => entry.Match.Confidence)
-            .ThenBy(entry => entry.ModeSize)
-            .ThenBy(entry => (int)entry.Match.Mode)
-            .Take(MaxMatchesPerWindow)
-            .Select(entry => entry.Match)
-            .ToArray();
+        return scored;
     }
 
     private static (ScaleMode? Mode, double Confidence) PickPrimary(List<ModalWindow> windows)
@@ -145,16 +169,34 @@ public static class ModalAnalysisEngine
         }
 
         var totals = new Dictionary<ScaleMode, double>();
-        var weights = new Dictionary<ScaleMode, double>();
+        var allWeight = 0.0;
         foreach (var window in usable)
         {
             var top = window.Matches[0];
             var weight = Math.Max(window.EndSec - window.StartSec, 0.0001);
             totals[top.Mode] = totals.GetValueOrDefault(top.Mode) + top.Confidence * weight;
-            weights[top.Mode] = weights.GetValueOrDefault(top.Mode) + weight;
+            allWeight += weight;
         }
 
-        var winner = totals.OrderByDescending(pair => pair.Value).ThenBy(pair => (int)pair.Key).First();
-        return (winner.Key, totals[winner.Key] / weights[winner.Key]);
+        var winner = totals.OrderByDescending(pair => pair.Value).ThenBy(pair => (int)pair.Key).First().Key;
+
+        // How much of the song the pick explains: each window where it is a best fit (a tie counts —
+        // a window with no B is as much F Lydian as F Ionian) adds its fit, weighted by its length;
+        // a window some other scale wins adds nothing. The mean fit inside only the windows it won
+        // read 100% for a song whose windows split three ways.
+        // Coverage is read off the masks, since a window keeps only its top four matches and five
+        // scales can tie on three sung notes.
+        var winnerMask = ModeDefinitions.Mask(winner);
+        var explained = 0.0;
+        foreach (var window in usable)
+        {
+            var top = window.Matches[0];
+            var covered = BitOperations.PopCount((uint)(window.VocalMask & winnerMask));
+            if (covered >= top.MatchedIntervals.Count)
+            {
+                explained += top.Confidence * Math.Max(window.EndSec - window.StartSec, 0.0001);
+            }
+        }
+        return (winner, explained / allWeight);
     }
 }

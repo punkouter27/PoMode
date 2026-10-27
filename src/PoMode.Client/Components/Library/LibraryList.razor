@@ -2,6 +2,8 @@
 @inject AnalysisClient Analysis
 @inject BrowserPrefs Prefs
 @inject IJSRuntime JS
+@inject DialogService Dialogs
+@inject NotificationService Notifications
 @implements IAsyncDisposable
 
 @* The songs already here, under the ways to add one. This was a page of its own beside Analyze; both
@@ -73,11 +75,24 @@
                                 {
                                     <text>Listening for songs that sound like <strong>@_query.Description</strong>…</text>
                                 }
+                                else if (_soundEmpty == _query.Description)
+                                {
+                                    <text>Nothing in your library sounds like <strong>@_query.Description</strong>.</text>
+                                }
                                 else
                                 {
                                     <text>No song matches <strong>@(_query.Text)</strong>.</text>
                                 }
                             </p>
+                            @* Asked for, never guessed: run unprompted, the sound search answered every
+                               typo ("zzzz") with its nearest song, since CLAP scores any words against any
+                               audio and gibberish can outscore a real description. *@
+                            @if (CanSearchBySound && !_soundPending && _soundEmpty != _query.Description)
+                            {
+                                <RadzenButton Text="@($"Search by sound: “{_query.Description}”")" Icon="graphic_eq"
+                                              ButtonStyle="ButtonStyle.Primary" id="search-by-sound"
+                                              Click="@SearchBySoundAsync" />
+                            }
                             <RadzenButton Text="Clear the search" Icon="close" ButtonStyle="ButtonStyle.Light"
                                           Click="@(() => SetQueryAsync(string.Empty))" />
                         </div>
@@ -197,6 +212,13 @@
                     {
                         <RadzenDataGridColumn TItem="LibraryEntryDto" Property="Stage" Title="Status" Width="110px" />
                     }
+                    <RadzenDataGridColumn TItem="LibraryEntryDto" Title="" Sortable="false" Width="52px" CssClass="col-delete" HeaderCssClass="col-delete">
+                        <Template Context="entry">
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Base" Variant="Variant.Text" Size="ButtonSize.Small"
+                                          Click="@(() => DeleteAsync(entry))" Disabled="@(_deleting == entry.JobId)"
+                                          title="Delete this song" aria-label="@($"Delete {entry.FileName}")" />
+                        </Template>
+                    </RadzenDataGridColumn>
                 </Columns>
             </RadzenDataGrid>
                             }
@@ -228,13 +250,13 @@
                             var mode = window is { InsufficientEvidence: false, Matches.Count: > 0 }
                                 ? window.Matches[0].Mode.ToString() : null;
                             <span class="mode-segment @SegmentClass(mode)"
-                                  style="--pm-grow: @SegmentGrow(window)" title="@(mode ?? "unclear")"></span>
+                                  style="--pm-grow: @SegmentGrow(window)" title="@(mode is null ? "unclear" : ScaleModes.DisplayName(mode))"></span>
                         }
                     </div>
                     <div class="mode-legend">
                         @foreach (var mode in ModesUsed(result))
                         {
-                            <span class="legend-item"><span class="mode-segment @SegmentClass(mode)"></span>@mode</span>
+                            <span class="legend-item"><span class="mode-segment @SegmentClass(mode)"></span>@ScaleModes.DisplayName(mode)</span>
                         }
                     </div>
                                     </div>
@@ -264,6 +286,7 @@
     private List<LibraryEntryDto>? _entries;
     private string? _loadError;
     private readonly HashSet<string> _compare = [];
+    private string? _deleting;
 
     /// <summary>Bumped by every comparison change so a slower earlier fetch does not answer for a
     /// selection the user has already moved on from.</summary>
@@ -364,9 +387,11 @@
     private (string Words, List<SoundMatchDto> Matches)? _sound;
     private bool _soundPending;
 
-    /// <summary>Set once the server says it cannot search by sound, so typing stops asking.</summary>
+    /// <summary>Set once the server says it cannot search by sound, so the button stops being offered.</summary>
     private bool _soundUnavailable;
-    private CancellationTokenSource? _soundDelay;
+
+    /// <summary>Words the sound search was asked about and found nothing for.</summary>
+    private string? _soundEmpty;
 
     /// <summary>The sound matches when they answer the words in the box now and name some song.</summary>
     private List<SoundMatchDto>? SoundMatches
@@ -391,7 +416,6 @@
             if (await Prefs.GetAsync(BrowserPrefs.LibraryFiltersKey, PrefsJsonContext.Default.LibraryFilters) is { } saved)
             {
                 _query = LibraryQuery.Parse(saved.Search);
-                _ = SearchBySoundAsync();
             }
         }
 
@@ -489,47 +513,74 @@
         _query = LibraryQuery.Parse(text);
         await Prefs.SetAsync(BrowserPrefs.LibraryFiltersKey, new LibraryFilters(text),
             PrefsJsonContext.Default.LibraryFilters);
-        await SearchBySoundAsync();
     }
 
+    /// <summary>Words that matched no file name, long enough to describe a sound, on a server that can listen.</summary>
+    private bool CanSearchBySound
+        => !_soundUnavailable && _query.Description.Length >= 3 && _entries is not null
+           && !_entries.Any(_query.Matches) && _sound?.Words != _query.Description;
+
     /// <summary>
-    /// Asks the server which songs sound like the words no file name had, once typing pauses. The
-    /// text tower takes a second or so on a CPU, so this waits for the person rather than the keys.
+    /// Asks the server which songs sound like the words no file name had — only when the person
+    /// presses "Search by sound". The text tower takes a second or so on a CPU.
     /// </summary>
     private async Task SearchBySoundAsync()
     {
-        _soundDelay?.Cancel();
-        var words = _query.Description;
-        if (_soundUnavailable || words.Length < 3 || _entries is null
-            || _entries.Any(_query.Matches) || _sound?.Words == words)
+        if (!CanSearchBySound)
         {
-            _soundPending = false;
             return;
         }
-        var delay = _soundDelay = new CancellationTokenSource();
+        var words = _query.Description;
         _soundPending = true;
+        _soundEmpty = null;
         try
         {
-            await Task.Delay(600, delay.Token);
             var matches = await Analysis.SearchBySoundAsync(words);
-            if (delay.IsCancellationRequested)
-            {
-                return;
-            }
             _soundUnavailable = matches is null;
-            // An empty answer is not kept: a song still being indexed may answer the same words in a moment.
+            // An empty answer is not kept as a result: a song still being indexed may answer the same
+            // words in a moment. It is remembered only to say so instead of offering the button again.
             _sound = matches is { Count: > 0 } ? (words, matches) : null;
-        }
-        catch (TaskCanceledException)
-        {
-            return;
+            _soundEmpty = matches is { Count: 0 } ? words : null;
         }
         catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException)
         {
             _sound = null; // the name search's empty state stands
         }
         _soundPending = false;
-        StateHasChanged();
+    }
+
+    private async Task DeleteAsync(LibraryEntryDto entry)
+    {
+        var confirmed = await Dialogs.Confirm(
+            $"{entry.FileName} and everything read from it are deleted from the server. This cannot be undone.",
+            "Delete this song?",
+            new ConfirmOptions { OkButtonText = "Delete", CancelButtonText = "Keep it" });
+        if (confirmed != true)
+        {
+            return;
+        }
+        _deleting = entry.JobId;
+        try
+        {
+            if (!await Analysis.DeleteSongAsync(entry.JobId))
+            {
+                Notifications.Notify(NotificationSeverity.Warning, "Not deleted", "The song is busy; try again in a moment.");
+                return;
+            }
+            _entries?.Remove(entry);
+            if (_compare.Remove(entry.JobId))
+            {
+                _compareResults.RemoveAll(c => c.Entry.JobId == entry.JobId);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            Notifications.Notify(NotificationSeverity.Error, "Not deleted", "The server could not be reached.");
+        }
+        finally
+        {
+            _deleting = null;
+        }
     }
 
     private async Task ToggleCompareAsync(LibraryEntryDto entry)

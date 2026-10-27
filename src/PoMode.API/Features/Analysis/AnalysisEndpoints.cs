@@ -276,6 +276,26 @@ public static class AnalysisEndpoints
             registry.TryDecline(jobId, reason ?? "no reason given") ? TypedResults.Ok() : TypedResults.NotFound())
             .RequireAuthorization();
 
+        // Which separated stems this job has, so the mixer asks only for those: a short clip or a hum
+        // take skips separation and would otherwise 404 on vocals and instrumental every load.
+        group.MapGet("/{jobId}/stems", async Task<Results<Ok<string[]>, NotFound>> (
+            string jobId, JobStore store, CancellationToken ct) =>
+        {
+            if (await store.LoadAsync(jobId, ct) is null)
+            {
+                return TypedResults.NotFound();
+            }
+            var present = new List<string>();
+            foreach (var name in new[] { "vocals", "instrumental" })
+            {
+                if (await store.GetArtifactPathAsync(jobId, $"{name}.wav", ct) is not null)
+                {
+                    present.Add(name);
+                }
+            }
+            return TypedResults.Ok(present.ToArray());
+        });
+
         // Stem audio for the Web Audio mixer (spec §7). The caller's {name} selects from a fixed
         // allow-list and never becomes part of a path, so there is no traversal surface here at all.
         // Served from disk with range support: stems are ~40MB and written once before the job

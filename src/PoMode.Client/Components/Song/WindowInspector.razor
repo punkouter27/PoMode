@@ -42,7 +42,7 @@ else
             }
             else
             {
-                <span class="inspect-mode">@($"{Selected.ModeTag} ({Percents.Of(Selected.ModeConfidence)})")</span>
+                <span class="inspect-mode">@($"{ScaleModes.DisplayName(Selected.ModeTag)} ({Percents.Of(Selected.ModeConfidence)})")</span>
                 @if (Selected.Evidence is { } evidence)
                 {
                     @* Present only when this window settles the question on its own. *@

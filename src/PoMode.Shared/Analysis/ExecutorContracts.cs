@@ -39,6 +39,7 @@ public static class ExecutorNames
         ["MdxStemSeparator"] = "UVR MDX-Net",
         ["FakeStemSeparator"] = "Placeholder separation",
         ["SkippedDryVocal"] = "Skipped (solo voice)",
+        ["SkippedShortClip"] = "Skipped (short clip)",
         ["RmvpePitchTracker"] = "RMVPE",
         ["OnnxPitchTracker"] = "Basic Pitch",
         ["ClientDelegatedPitchTracker"] = "Basic Pitch (your browser)",

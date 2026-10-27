@@ -24,6 +24,21 @@ public class ModalAnalysisEngineTests
         Assert.Equal(ScaleMode.Dorian, result.Windows[0].Matches[0].Mode);
         Assert.Equal(ScaleMode.Dorian, result.PrimaryMode);
         Assert.False(result.Windows[0].InsufficientEvidence);
+
+        // F Lydian's I–II vamp: the F bars never sound the B, so alone they read Ionian as well as
+        // Lydian. The G bars' B decides the song, and the tied F bars must follow it, not enum order.
+        List<NoteEvent> lydian =
+        [
+            At(65, 0.0), At(69, 0.5), At(72, 1.0), At(65, 1.5),
+            At(67, 2.0), At(71, 2.5), At(74, 3.0), At(71, 3.5),
+            At(65, 4.0), At(69, 4.5), At(72, 5.0), At(65, 5.5),
+        ];
+        List<ChordSpan> vamp = [new("F", "F", "maj", 0, 2), new("G", "G", "maj", 2, 4), new("F", "F", "maj", 4, 6)];
+        var vampResult = ModalAnalysisEngine.Analyze(lydian, vamp);
+        Assert.Equal("F", vampResult.TonicName);
+        Assert.Equal(ScaleMode.Lydian, vampResult.PrimaryMode);
+        Assert.Equal(ScaleMode.Lydian, vampResult.Windows[0].Matches[0].Mode);
+        Assert.Equal(1.0, vampResult.PrimaryConfidence, 3);
     }
 
     [Fact]

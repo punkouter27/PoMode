@@ -986,7 +986,7 @@ function drawChords(state, ctx, width, laneTop, laneHeight, reveal) {
         ctx.fillText(chord.symbol, x + 5, laneTop + 6);
         if (blockWidth >= 90) {
             ctx.fillStyle = selected ? state.colours.lane : state.colours.muted;
-            const tag = chord.modeTag ? `m${chord.measureNumber} · ${chord.modeTag}` : `m${chord.measureNumber}`;
+            const tag = chord.modeTag ? `m${chord.measureNumber} · ${chord.modeTag.replace(/([a-z])([A-Z])/g, '$1 $2')}` : `m${chord.measureNumber}`;
             ctx.fillText(tag, x + 5, laneTop + 22);
         }
     }

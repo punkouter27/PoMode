@@ -151,3 +151,9 @@ that scrolls. What made the tall pages fit was splitting them by job, never clip
 A phone is allowed to scroll the finished song and the Mode Lab, both content that exists to be read
 and compared, and Practice's Guitar jam tab (its length is the generated progression's). Every other
 route fits 390×844 too.
+
+## The build watermark
+
+`MainLayout` shows the build date as `YYMMDD`, fixed bottom-right, muted and click-through
+(`.build-watermark`). The client csproj stamps it as `AssemblyMetadata("BuildDate")` at build time. It
+stays through every layout pass.

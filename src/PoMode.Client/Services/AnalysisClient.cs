@@ -25,6 +25,10 @@ public sealed class AnalysisClient(HttpClient http)
     public Task<ModalResult?> GetResultAsync(string jobId)
         => http.GetFromJsonAsync<ModalResult>($"api/analysis/{jobId}/result");
 
+    /// <summary>The separated stems this job has ("vocals", "instrumental"); empty when separation was skipped.</summary>
+    public async Task<string[]> GetStemsAsync(string jobId)
+        => await http.GetFromJsonAsync<string[]>($"api/analysis/{jobId}/stems") ?? [];
+
     /// <summary>The fast first-look estimate, or null while it hasn't been written yet.</summary>
     public async Task<AnalysisPreviewDto?> GetPreviewAsync(string jobId)
     {
@@ -186,6 +190,13 @@ public sealed class AnalysisClient(HttpClient http)
         using var response = await http.DeleteAsync("api/account/data");
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<int>();
+    }
+
+    /// <summary>Deletes one of the caller's songs; false when the server could not (gone already, or busy).</summary>
+    public async Task<bool> DeleteSongAsync(string jobId)
+    {
+        using var response = await http.DeleteAsync($"api/library/{jobId}");
+        return response.IsSuccessStatusCode;
     }
 
     public Task<List<StageExecutorsDto>?> GetExecutorsAsync()

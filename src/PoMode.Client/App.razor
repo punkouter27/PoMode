@@ -5,7 +5,9 @@
     </Found>
     <NotFound>
         <LayoutView Layout="@typeof(MainLayout)">
-            <RadzenText Text="Page not found." />
+            <PageTitle>PoMode · Not found</PageTitle>
+            <RadzenText TextStyle="TextStyle.H5" TagName="TagName.H1" Text="Page not found" />
+            <RadzenText>Nothing lives at this address. <a href="">Back to the library</a></RadzenText>
         </LayoutView>
     </NotFound>
 </Router>

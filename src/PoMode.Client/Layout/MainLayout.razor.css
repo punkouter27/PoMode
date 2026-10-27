@@ -333,3 +333,16 @@
     color: var(--pm-fg-muted);
     font-size: var(--pm-text-xs);
 }
+
+/* The build date, YYMMDD: which build is on screen, at a glance. Never in the way of a click. */
+.build-watermark {
+    position: fixed;
+    right: var(--pm-space-2);
+    bottom: var(--pm-space-1);
+    color: var(--pm-fg-muted);
+    font-size: var(--pm-text-xs);
+    font-variant-numeric: tabular-nums;
+    opacity: 0.6;
+    pointer-events: none;
+    z-index: 1;
+}

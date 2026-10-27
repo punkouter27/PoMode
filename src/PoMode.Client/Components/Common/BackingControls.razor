@@ -19,10 +19,12 @@
                                     class="backing-dd backing-mode" id="mode-select" aria-labelledby="mode-label" />
         </div>
     }
-    @* "Key" rather than "Tonic": the value is the parent key, and the chords are rooted on the mode's
-       own note inside it (Dorian in D is E Dorian). *@
+    @* "Parent key" rather than "Key" or "Tonic": the value is the parent key, and the chords are rooted
+       on the mode's own note inside it (Dorian in D is E Dorian). "Key D" beside "Mode Dorian" read as
+       D Dorian while E Dorian played. *@
     <div class="backing-field">
-        <span class="pm-label backing-label" id="key-label">Key</span>
+        <span class="pm-label backing-label" id="key-label"
+              title="The major key whose notes the mode uses; the mode starts on its own degree of it">Parent key</span>
         <RadzenDropDown TValue="int" Data="@TonicOptions" TextProperty="Name" ValueProperty="PitchClass"
                         Value="@Tonic" Disabled="@Disabled"
                         Change="@(value => TonicChanged.InvokeAsync((int)value))"

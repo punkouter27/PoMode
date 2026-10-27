@@ -290,14 +290,14 @@ struct P {
     size: vec2f, dt: f32, velDecay: f32,
     dyeDecay: f32, radius2: f32, dye: f32, blend: f32,
     point: vec2f, push: vec2f,
-    curl: f32, active: f32, pad: vec2f,
+    curl: f32, live: f32, pad: vec2f,
 };
 @group(0) @binding(0) var<uniform> p: P;
 
 fn inside(id: vec3u) -> bool { return f32(id.x) < p.size.x && f32(id.y) < p.size.y; }
 fn splat(cell: vec2f) -> f32 {
     let d = cell - p.point;
-    return p.active * exp(-dot(d, d) / p.radius2);
+    return p.live * exp(-dot(d, d) / p.radius2);
 }`;
 
 const WGSL_ADVECT_VELOCITY = WGSL_PARAMS + /* wgsl */ `

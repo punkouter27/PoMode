@@ -1,5 +1,6 @@
 @implements IAsyncDisposable
 @inject IJSRuntime Js
+@inject AnalysisClient Analysis
 
 @* Transport and stem selector. The Web Audio clock lives in mixer.js, which drives the canvas
    playhead directly; this component only issues commands and shows status. State is mirrored onto
@@ -336,11 +337,22 @@
 
             try
             {
+                // Only the stems the job has: a skipped separation would 404 on both every load.
+                string[] separated;
+                try
+                {
+                    separated = await Analysis.GetStemsAsync(JobId);
+                }
+                catch (HttpRequestException)
+                {
+                    // A song kept offline before the listing existed: ask for both, as before.
+                    separated = ["vocals", "instrumental"];
+                }
                 _duration = await _module.InvokeAsync<double>("load", _root, new
                 {
                     mix = $"api/analysis/{JobId}/stems/mix",
-                    vocals = $"api/analysis/{JobId}/stems/vocals",
-                    instrumental = $"api/analysis/{JobId}/stems/instrumental",
+                    vocals = separated.Contains("vocals") ? $"api/analysis/{JobId}/stems/vocals" : null,
+                    instrumental = separated.Contains("instrumental") ? $"api/analysis/{JobId}/stems/instrumental" : null,
                 });
                 _status = _duration > 0 ? "ready" : "unavailable";
                 if (_duration <= 0)
@@ -381,14 +393,15 @@
                 {
                     // The transcriptions feed the synth layers; a missing artifact keeps its button
                     // disabled rather than failing the mixer. Same for the beat grid and the click.
-                                        // The two backing artifacts are only asked for when the backing stem actually
-                                        // arrived — a job that skipped separation would 404 on both of them every load.
+                                        // The backing transcription is only asked for when the backing stem actually
+                                        // arrived — a job that skipped separation would 404 on it every load. The chord
+                                        // pad comes from chords.json, which every finished job has, stem or not.
                                         var hasBacking = _stems.Contains("instrumental");
                                         var counts = await _module.InvokeAsync<int[]>("loadNotes", _root, new
                                         {
                                             vocal = $"api/analysis/{JobId}/notes",
                                             backing = hasBacking ? $"api/analysis/{JobId}/notes-backing" : null,
-                                            chords = hasBacking ? $"api/analysis/{JobId}/notes-chords" : null,
+                                            chords = $"api/analysis/{JobId}/notes-chords",
                                         });
                     // loadNotes always answers [vocal, backing, chords].
                     (_vocalNoteCount, _backingNoteCount, _chordNoteCount) = (counts[0], counts[1], counts[2]);

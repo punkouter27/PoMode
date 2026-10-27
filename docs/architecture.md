@@ -272,6 +272,16 @@ asks the model to drop the rules or write about something else is answered `inDa
 
 ## Why this mode, and where the sections are
 
+**Picking the primary mode** (`ModalAnalysisEngine`). Every mode is scored in every chord window, then
+each window votes for its best fit. A window that never sounds the note telling two modes apart scores
+them the same (F Lydian's vamp without its B is equally F Ionian), so a tie inside a window goes to the
+mode the whole song fits best, not to enum order - enum order made every such window vote Ionian and
+outvote the bars that sang the ♯4, and the demo read F Ionian. `PrimaryConfidence` is how much of the
+song the pick explains: each window where it is a best fit (ties count) adds its fit, weighted by
+length, over all scored time. It used to be the mean fit inside the windows it won, which read 100% for
+a song whose windows split three ways. `DemoTemplateService` rebuilds a finished template that does not
+read back as the mode it was written in.
+
 Both ride on `/visual`, derived on every request and never stored, same ruling as the rest of that
 payload: one fetch, and the canvas never has to join two responses on a time axis.
 
@@ -552,6 +562,9 @@ workers' blobs, and a wrong one fails silently in production.
   is ignored silently and the app simply stops being installable.
 - Musical decisions (note colours, labels, measure numbers) are made server-side in `VisualizationBuilder`; `canvas.js` only maps numbers to pixels. Keep music theory out of JS. Same rule for audio: the mixer's chord-pad layer plays notes voiced server-side by `ChordPadBuilder` (served as `/api/analysis/{id}/notes-chords`, derived from chords.json, not stored) — mixer.js treats them as just another note list ('vocal'/'backing'/'chords').
 
+- The mixer asks `GET /api/analysis/{id}/stems` which separated stems exist before loading any: a
+  clip under 30 s or a hum take skips separation, and asking blind put two 404s in every load. The
+  chord pad comes from `chords.json`, so it plays whether a backing stem exists or not.
 - `L` loops the section under the playhead (`mixer.js` `toggleLoop`, `data-loop-section`; the mixer's
   "Loop section" button is the same toggle). A seek out of the section ends the loop.
 - What the browser remembers, all in localStorage and all optional, all through one typed helper
@@ -603,7 +616,9 @@ settings and every finished song and beat in the library; each typed word must a
 **Your data** (`Features/Account`): `GET /api/account/export` zips every job folder the caller owns
 (written to a temp file, streamed with DeleteOnClose); `DELETE /api/account/data` cancels and deletes
 every job they own and forgets their push subscriptions. The demo ledger keeps their name, so an
-emptied library stays empty.
+emptied library stays empty. One song goes with `DELETE /api/library/{jobId}` (the bin on each library
+row, after a confirm): owner-checked like everything else, 404 for someone else's, 409 while a file in
+it is still open. `DELETE /api/analysis/{jobId}` stays what it was, a cancel.
 
 ## Library: one search box, tiles, likeness, offline
 
@@ -633,6 +648,11 @@ transformers.js on the same signal the features agree to 1e-5 dB and the embeddi
 Scores are low by nature (a real match is about 0.1 to 0.45), so the cut is relative: within 0.1 of the
 best, above 0.08, at most 8. The answer is 404 where the server cannot listen (Azure, models absent),
 so the page keeps its "No song matches" instead of claiming nothing sounds alike.
+
+It runs only when asked: a search with no name match offers a "Search by sound" button rather than
+listening on its own. Run unprompted it answered typos with a song, because CLAP scores any words
+against any audio and gibberish can outscore a description ("zzzz" 0.24, "synth" 0.19 on the demo), so
+no cut can tell a typo from a real ask. Only the person can.
 
 ## The analysis page, after the fact
 
