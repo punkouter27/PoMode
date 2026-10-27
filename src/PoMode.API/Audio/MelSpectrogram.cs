@@ -53,10 +53,26 @@ public static class MelSpectrogram
     /// filterbank RMVPE was trained on. Row-major <c>[nMels][nFft/2+1]</c>.
     /// </summary>
     public static float[][] HtkFilterbank(int sampleRate, int nFft, int nMels, double fMin, double fMax)
-    {
-        static double HzToMel(double hz) => 2595.0 * Math.Log10(1.0 + (hz / 700.0));
-        static double MelToHz(double mel) => 700.0 * (Math.Pow(10.0, mel / 2595.0) - 1.0);
+        => Filterbank(sampleRate, nFft, nMels, fMin, fMax,
+            hz => 2595.0 * Math.Log10(1.0 + (hz / 700.0)),
+            mel => 700.0 * (Math.Pow(10.0, mel / 2595.0) - 1.0));
 
+    /// <summary>
+    /// The same triangles on the Slaney mel scale (linear below 1 kHz, logarithmic above), with Slaney
+    /// area normalisation: <c>librosa.filters.mel(htk=False)</c>, and Hugging Face's
+    /// <c>mel_filter_bank(norm="slaney", mel_scale="slaney")</c> — the bank CLAP was trained on.
+    /// </summary>
+    public static float[][] SlaneyFilterbank(int sampleRate, int nFft, int nMels, double fMin, double fMax)
+    {
+        const double logStep = 27.0 / 2.0794415416798357; // 27 / ln(6.4)
+        return Filterbank(sampleRate, nFft, nMels, fMin, fMax,
+            hz => hz < 1000 ? 3.0 * hz / 200.0 : 15.0 + (Math.Log(hz / 1000.0) * logStep),
+            mel => mel < 15 ? 200.0 * mel / 3.0 : 1000.0 * Math.Exp((mel - 15.0) / logStep));
+    }
+
+    private static float[][] Filterbank(
+        int sampleRate, int nFft, int nMels, double fMin, double fMax, Func<double, double> hzToMel, Func<double, double> melToHz)
+    {
         var bins = (nFft / 2) + 1;
         var fftFreqs = new double[bins];
         for (var k = 0; k < bins; k++)
@@ -64,12 +80,12 @@ public static class MelSpectrogram
             fftFreqs[k] = k * (sampleRate / 2.0) / (bins - 1);
         }
 
-        var melMin = HzToMel(fMin);
-        var melMax = HzToMel(fMax);
+        var melMin = hzToMel(fMin);
+        var melMax = hzToMel(fMax);
         var melFreqs = new double[nMels + 2];
         for (var i = 0; i < melFreqs.Length; i++)
         {
-            melFreqs[i] = MelToHz(melMin + ((melMax - melMin) * i / (nMels + 1)));
+            melFreqs[i] = melToHz(melMin + ((melMax - melMin) * i / (nMels + 1)));
         }
 
         var filters = new float[nMels][];

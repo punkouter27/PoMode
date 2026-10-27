@@ -58,10 +58,10 @@ These override any default instinct. Where one contradicts a habit, the rule win
 ### Git
 
 - **Work on `master`.** Do not create, switch to, or work on another branch unless explicitly asked.
-- **Never push without being asked.** Committing locally is fine; `git push` happens only when the
-  user says so, or types **`git sync`**.
-- **`git sync` means: commit everything, then push.** Stage all outstanding changes first — a sync
-  that leaves work uncommitted is not a sync — then commit and push in one go.
+- **"commit" and `git sync` both mean: commit everything, then push.** Stage all outstanding changes
+  first (a commit that leaves work behind doesn't count), then commit and push in one go.
+- **Never push unprompted.** Don't commit or push on your own initiative; it happens only when the
+  user says commit, sync, or push.
 - **Commit messages are short and casual**, written the way a person actually types them. American
   English, plain and offhand, a little slang welcome ("fix the busted tempo math", "wire up practice
   page"), not a formal changelog entry. It should feel human. One line is usually right.

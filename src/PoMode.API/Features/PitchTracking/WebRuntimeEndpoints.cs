@@ -47,6 +47,7 @@ public static class WebRuntimeEndpoints
             {
                 ".mjs" => "text/javascript",
                 ".wasm" => "application/wasm",
+                ".json" => "application/json",
                 _ => "application/octet-stream",
             };
 

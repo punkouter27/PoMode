@@ -116,6 +116,60 @@ public static class ModelCatalog
         Url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en-q5_1.bin",
         Sha256: "4baf70dd0d7c4247ba2b81fafd9c01005ac77c2f9ef064e00dcf195d0e2fdd2f");
 
+    /// <summary>
+    /// LAION's CLAP "larger_clap_music_and_speech" audio tower (HTSAT, Apache-2.0), the int8 ONNX
+    /// export in <c>Xenova/larger_clap_music_and_speech</c> pinned to commit
+    /// <c>e9fd5ac1dbf3280936a7fc3ec8a020453ff184db</c>: <c>input_features [batch,1,1001,64]</c> log-mel
+    /// → <c>audio_embeds [batch,512]</c>. 78,155,433 bytes; the SHA-256 is the LFS object id and was
+    /// re-computed from a fresh download on 2026-10-26. For the library's search by sound
+    /// (<c>ClapEncoder</c>): the checkpoint LAION trained on music, rather than the general one.
+    /// </summary>
+    public static readonly ModelDescriptor ClapAudio = new(
+        Key: "clap-audio",
+        FileName: "clap_music_audio_q8.onnx",
+        Url: "https://huggingface.co/Xenova/larger_clap_music_and_speech/resolve/e9fd5ac1dbf3280936a7fc3ec8a020453ff184db/onnx/audio_model_quantized.onnx",
+        Sha256: "021dd4fb962b4ed20cc3a6730b09e0ccf9f9c49931047032118a3b64828513a6");
+
+    /// <summary>CLAP's text tower (RoBERTa, int8) from the same commit: <c>input_ids [batch,tokens]</c>
+    /// → <c>text_embeds [batch,512]</c>, in the audio tower's space. 126,603,262 bytes.</summary>
+    public static readonly ModelDescriptor ClapText = new(
+        Key: "clap-text",
+        FileName: "clap_music_text_q8.onnx",
+        Url: "https://huggingface.co/Xenova/larger_clap_music_and_speech/resolve/e9fd5ac1dbf3280936a7fc3ec8a020453ff184db/onnx/text_model_quantized.onnx",
+        Sha256: "8f9f29c5f6adee917553d4b3a70729c731c0d18b88efca0ae67c1a1fc278f3b6");
+
+    /// <summary>The text tower's RoBERTa byte-level BPE vocabulary, same commit. 798,293 bytes.</summary>
+    public static readonly ModelDescriptor ClapVocab = new(
+        Key: "clap-vocab",
+        FileName: "clap_vocab.json",
+        Url: "https://huggingface.co/Xenova/larger_clap_music_and_speech/resolve/e9fd5ac1dbf3280936a7fc3ec8a020453ff184db/vocab.json",
+        Sha256: "ed19656ea1707df69134c4af35c8ceda2cc9860bf2c3495026153a133670ab5e");
+
+    /// <summary>The BPE merges that go with <see cref="ClapVocab"/>, same commit. 456,318 bytes.</summary>
+    public static readonly ModelDescriptor ClapMerges = new(
+        Key: "clap-merges",
+        FileName: "clap_merges.txt",
+        Url: "https://huggingface.co/Xenova/larger_clap_music_and_speech/resolve/e9fd5ac1dbf3280936a7fc3ec8a020453ff184db/merges.txt",
+        Sha256: "1ce1664773c50f3e0cc8842619a93edc4624525b728b188a9e0be33b7726adc5");
+
+    /// <summary>
+    /// chords-db 0.5.1 (tombatossals, MIT): fingerings for 2,069 guitar chords, drawn by the analysis
+    /// page's chord shapes. Pinned to the immutable npm-versioned jsDelivr URL; 238,011 bytes, SHA-256
+    /// computed from a fresh download on 2026-10-26. Served from our own origin like the runtime below.
+    /// </summary>
+    public static readonly ModelDescriptor GuitarChords = new(
+        Key: "chords-guitar",
+        FileName: "guitar.json",
+        Url: "https://cdn.jsdelivr.net/npm/@tombatossals/chords-db@0.5.1/lib/guitar.json",
+        Sha256: "23731147b3d070fa59b30e79570818a9689f126f76e77b04899d73934ba54d4e");
+
+    /// <summary>The same package's ukulele fingerings (standard GCEA tuning). 215,226 bytes.</summary>
+    public static readonly ModelDescriptor UkuleleChords = new(
+        Key: "chords-ukulele",
+        FileName: "ukulele.json",
+        Url: "https://cdn.jsdelivr.net/npm/@tombatossals/chords-db@0.5.1/lib/ukulele.json",
+        Sha256: "634f63c560f21588d8b10266db04b82034ebaeb200077e91226c20c4ec6cfadf");
+
 
     /// <summary>
     /// onnxruntime-web 1.27.0, pinned to the immutable npm-versioned jsdelivr URLs (npm packages
@@ -195,12 +249,13 @@ public static class ModelCatalog
         Sha256: "534b2070fcc7df514b13ef660dc8cbb328679c2374d04354a5c42bb14ecce111");
 
     public static readonly IReadOnlyList<ModelDescriptor> WebRuntime =
-        [OrtBundle, OrtWasm, OrtWasmJsep, OrtWasmGlue, OrtWasmJsepGlue, BasicPitch, MdxVocals];
+        [OrtBundle, OrtWasm, OrtWasmJsep, OrtWasmGlue, OrtWasmJsepGlue, BasicPitch, MdxVocals, GuitarChords, UkuleleChords];
 
     /// <summary>Every model the server downloads at start-up and /diag reports. Declared last: static
     /// fields initialise in textual order, and this list names fields declared above it.</summary>
     /// <remarks><see cref="MdxVocals"/> is here as well as in <see cref="WebRuntime"/>: the server runs
     /// it too (MdxStemSeparator), so it downloads with the rest.</remarks>
     public static readonly IReadOnlyList<ModelDescriptor> All =
-        [BasicPitch, HtDemucs, BeatThis, BeatThisMelFilterbank, Rmvpe, ChordMini, ChordMiniCqtPlan, WhisperBaseEn, MdxVocals];
+        [BasicPitch, HtDemucs, BeatThis, BeatThisMelFilterbank, Rmvpe, ChordMini, ChordMiniCqtPlan, WhisperBaseEn, MdxVocals,
+         ClapAudio, ClapText, ClapVocab, ClapMerges];
 }

@@ -18,6 +18,7 @@
     <PackageReference Include="Microsoft.Identity.Web" />
     <PackageReference Include="Microsoft.Identity.Web.GraphServiceClient" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" />
+    <PackageReference Include="Microsoft.ML.Tokenizers" />
     <PackageReference Include="NAudio" />
     <PackageReference Include="NLayer.NAudioSupport" />
     <PackageReference Include="Scalar.AspNetCore" />
