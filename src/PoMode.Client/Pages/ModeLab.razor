@@ -74,8 +74,8 @@
         </div>
         <span class="studio-now" role="status">@ModeNames.OnRoot(_selectedTonic, _selectedMode) · @($"{_bpm:0} BPM")@MidiReadout</span>
         @* Hearing a mode and singing in it are the two halves of learning one. *@
-        <a class="studio-to-practice" id="modes-to-practice"
-           href="@($"practice?{ModeLink.QueryFromParent(_selectedTonic, _selectedMode)}")">Sing over it in Practice</a>
+        <ModeNextLinks From="modes" TonicPitchClass="ModeLink.HomeNote(_selectedTonic, _selectedMode)" Mode="_selectedMode"
+                       Name="@ModeNames.OnRoot(_selectedTonic, _selectedMode)" />
     </div>
 
     <div class="studio-top-bar pm-panel">

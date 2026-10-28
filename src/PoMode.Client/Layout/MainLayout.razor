@@ -11,20 +11,14 @@
 
 <header class="app-header">
     <div class="brand">PoMode</div>
-    @* Two labels per destination, one of which is display:none at any given width, so the row fits a
-       320px phone without a scroll strip hiding the last item. Only one span is ever rendered
-       visible, so assistive tech reads one name. Diagnostics is an operator's page, not a place a
-       listener goes, so it lives in the ⋯ menu rather than taking a slot here. *@
+    @* One name per destination, the same at every width, in the palette and on the page: on a phone
+       the row has a line of its own, and all three fit it at 320px. Songs stays lit on a song page,
+       which is where a listener spends most of their time. Diagnostics is an operator's page, not a
+       place a listener goes, so it lives in the ⋯ menu rather than taking a slot here. *@
     <nav class="actions" aria-label="Main navigation">
-        <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-            <span class="nav-wide">Library</span><span class="nav-narrow">Songs</span>
-        </NavLink>
-        <NavLink class="nav-link" href="modes">
-            <span class="nav-wide">Mode Lab</span><span class="nav-narrow">Modes</span>
-        </NavLink>
-        <NavLink class="nav-link" href="practice">
-            <span class="nav-wide">Practice</span><span class="nav-narrow">Play</span>
-        </NavLink>
+        <SongsNavLink class="nav-link" href="">Songs</SongsNavLink>
+        <NavLink class="nav-link" href="modes">Mode Lab</NavLink>
+        <NavLink class="nav-link" href="practice">Practice</NavLink>
     </nav>
     <div class="session">
         @if (Session.Current is { DisplayName: { } who })
@@ -82,12 +76,10 @@
                 }
                 @* Effects, sounds, notifications, models and shortcuts live on the Settings page, each
                    already at its best value; the menu keeps only places to go. *@
+                @* The palette is the header's Search button, so it is not here a second time. *@
                 <a class="overflow-item" role="menuitem" href="settings" @onclick="CloseOverflow">
                     Settings
                 </a>
-                <button class="overflow-item" type="button" role="menuitem" @onclick="OpenPalette">
-                    Go to… <kbd class="overflow-kbd">Ctrl K</kbd>
-                </button>
                 @if (Flags.Tools.Diagnostics)
                 {
                     <a class="overflow-item" role="menuitem" href="diagnostics" @onclick="CloseOverflow">

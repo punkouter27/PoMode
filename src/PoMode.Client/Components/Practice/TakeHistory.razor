@@ -3,39 +3,18 @@
 @* What the singer's earlier melodies over these chords turned out to be. A mirror, not a grade: the
    server tallies the readings without marking any as the expected one, so there is no best take, no
    run of matches and no percentage here — a take that came out Mixolydian over Dorian chords is a
-   finding about the melody, not a miss. *@
+   finding about the melody, not a miss. The takes themselves are the Songs page's list scoped to them,
+   so a take is previewed, compared and deleted the one way a song is. *@
 @if (History is { } history)
 {
     <RadzenCard class="practice-history" data-take-count="@history.Takes.Count">
         <h2 class="pm-sr-only">Your takes over these chords</h2>
         <p class="history-summary">@history.Summary</p>
-        @if (history.Takes.Count > 0)
-        {
-            <ul class="history-list">
-                @foreach (var take in history.Takes.Skip(_page * PageSize).Take(PageSize))
-                {
-                    <li class="history-row" data-job-id="@take.JobId" data-take-stage="@take.Stage">
-                        <time class="history-when" datetime="@take.CreatedAt.ToString("o")">@take.CreatedAt.ToLocalTime().ToString("MMM d, HH:mm")</time>
-                        <span class="history-reading">@take.Reading</span>
-                        <span class="history-over">@take.SungOver</span>
-                        <a class="history-open" href="@($"/song/{take.JobId}")">Open analysis</a>
-                    </li>
-                }
-            </ul>
-            @* Paged rather than listed whole, so the tab is one screen however many takes there are. *@
-            @if (history.Takes.Count > PageSize)
-            {
-                var pages = (history.Takes.Count + PageSize - 1) / PageSize;
-                <div class="history-pager" role="group" aria-label="More takes">
-                    <RadzenButton Text="Newer" Icon="chevron_left" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
-                                  Disabled="@(_page == 0)" Click="@(() => _page--)" />
-                    <span class="history-page">@($"{_page * PageSize + 1}–{Math.Min((_page + 1) * PageSize, history.Takes.Count)} of {history.Takes.Count}")</span>
-                    <RadzenButton Text="Older" Icon="chevron_right" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
-                                  Disabled="@(_page >= pages - 1)" Click="@(() => _page++)" />
-                </div>
-            }
-        }
     </RadzenCard>
+    @if (history.Takes.Count > 0)
+    {
+        <LibraryList Only="_ids" PageSize="5" Noun="take" OnDeleted="OnDeleted" />
+    }
 }
 else
 {
@@ -45,21 +24,23 @@ else
 }
 
 @code {
-    private const int PageSize = 5;
-
     /// <summary>The takes over the backing Practice has on, or null before the first read lands.</summary>
     [Parameter] public TakeHistoryDto? History { get; set; }
 
-    private int _page;
+    /// <summary>Raised with a take's job id once the list has deleted it.</summary>
+    [Parameter] public EventCallback<string> OnDeleted { get; set; }
+
+    private HashSet<string> _ids = [];
     private TakeHistoryDto? _shown;
 
-    /// <summary>A new backing is a new list: start it from its newest take.</summary>
+    /// <summary>A new history is a new set; the same one keeps its set, so the list is not re-scoped
+    /// on every render of the page.</summary>
     protected override void OnParametersSet()
     {
         if (!ReferenceEquals(_shown, History))
         {
             _shown = History;
-            _page = 0;
+            _ids = [.. History?.Takes.Select(take => take.JobId) ?? []];
         }
     }
 }

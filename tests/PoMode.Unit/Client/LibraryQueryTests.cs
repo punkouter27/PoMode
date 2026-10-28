@@ -30,6 +30,12 @@ public class LibraryQueryTests
         Assert.True(LibraryQuery.Parse("beats").Matches(beat));
         Assert.False(LibraryQuery.Parse("beats").Matches(dorian));
 
+        // A kind's toggle puts its word in, swaps it for another kind's, and takes it out again.
+        Assert.Equal("dorian beats", LibraryQuery.Parse("dorian").Toggle(TakeOrigin.Beat));
+        Assert.Equal("dorian takes", LibraryQuery.Parse("dorian beats").Toggle(TakeOrigin.HumTake));
+        Assert.Equal("dorian", LibraryQuery.Parse("dorian beats").Toggle(TakeOrigin.Beat));
+        Assert.True(LibraryQuery.Parse("beats").Keeps(TakeOrigin.Beat));
+
         // Removing a chip takes its word out of the text and leaves the rest.
         var chip = query.Chips.First(c => c.Label == "Dorian");
         Assert.Equal("120 summer", query.Without(chip));

@@ -1,0 +1,19 @@
+.mode-next {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--pm-space-1) var(--pm-space-3);
+    font-size: var(--pm-text-sm);
+}
+
+.mode-next a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--pm-accent);
+}
+
+@media (pointer: coarse) {
+    .mode-next a {
+        min-height: 2.75rem;
+    }
+}

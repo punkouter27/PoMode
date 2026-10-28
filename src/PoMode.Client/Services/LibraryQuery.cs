@@ -3,8 +3,9 @@ using PoMode.Shared.Analysis;
 
 namespace PoMode.Client.Services;
 
-/// <summary>One recognised part of a library search, shown as a chip the person can remove.</summary>
-public sealed record LibraryChip(string Label, string Token);
+/// <summary>One recognised part of a library search, shown as a chip the person can remove.
+/// <paramref name="Kind"/> is the <see cref="TakeOrigin"/> kind a kind chip keeps, null for the rest.</summary>
+public sealed record LibraryChip(string Label, string Token, string? Kind = null);
 
 /// <summary>
 /// The Library's one search box. It used to be a text box plus a key dropdown plus a mode dropdown;
@@ -85,7 +86,7 @@ public sealed partial class LibraryQuery
             }
             else if (KindOf(word) is { } kind)
             {
-                chips.Add(new LibraryChip(kind.Label, word));
+                chips.Add(new LibraryChip(kind.Label, word, kind.Kind));
                 query._tests.Add(entry => entry.Origin?.Kind == kind.Kind);
             }
             else
@@ -103,6 +104,26 @@ public sealed partial class LibraryQuery
         return index < 0 ? Text : string.Join(' ', (Text[..index] + Text[(index + chip.Token.Length)..])
             .Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
+
+    /// <summary>Whether the query keeps only this kind: its toggle beside the box is pressed.</summary>
+    public bool Keeps(string kind) => _chips.Any(chip => chip.Kind == kind);
+
+    /// <summary>
+    /// What pressing a kind's toggle leaves: its word taken out if it is in, otherwise put in in place
+    /// of any other kind's, since a row is only ever one kind and two would match nothing.
+    /// </summary>
+    public string Toggle(string kind)
+    {
+        var rest = Text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(word => KindOf(word) is null);
+        return string.Join(' ', Keeps(kind) ? rest : rest.Append(WordFor(kind)));
+    }
+
+    private static string WordFor(string kind) => kind switch
+    {
+        TakeOrigin.Beat => "beats",
+        TakeOrigin.HumTake => "takes",
+        _ => "demo",
+    };
 
     private void AddMode(ScaleMode mode, string token)
     {

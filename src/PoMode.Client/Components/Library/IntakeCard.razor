@@ -7,10 +7,10 @@
 @inject DialogService Dialogs
 @implements IAsyncDisposable
 
-@* Every way audio gets in: choose or record a song, choose or record a beat, a file shared from
-   another app, and an unsent recording a closed tab left behind. Each goes over tus
-   (js/upload/resumable-upload.js) and ends as a job the page then follows (OnStarted), or, for a
-   beat, opens in the Mode Lab. *@
+@* Every way a song gets in: choose or record one, a file shared from another app, and an unsent
+   recording a closed tab left behind. Each goes over tus (js/upload/resumable-upload.js) and ends as
+   a job the page then follows (OnStarted). Beats are added where they are used, in the Mode Lab's
+   drum strip; an unsent one picked up here still goes there. *@
 <RadzenCard class="intake-card">
     @* Compact once the library has songs of the person's own: one row of the same buttons over the list,
        rather than a centred invitation that pushed the songs half a screen down. *@
@@ -26,22 +26,6 @@
            dropped connection resumes instead of restarting. The input covers the button, so a click
            or a dropped file both land on it. *@
         <div class="intake-actions">
-            @* A beat is not a song: it is not here to be read for its mode but to be cut to a tempo, so
-               it is kept rather than analysed and opens in the Mode Lab, under its chords. *@
-            <label class="rz-button rz-button-md rz-variant-filled rz-light rz-shade-default upload-choose"
-                   title="A drum beat recorded without a click: it opens in the Mode Lab, cut to a loop at the lab's tempo and played with the chords">
-                <RadzenIcon Icon="album" />
-                <span>Choose a beat</span>
-                <input type="file" class="beat-input" accept="audio/*,.mp3,.wav,.m4a"
-                       aria-label="Choose a beat" disabled="@_uploading"
-                       @ref="_beatInput" @onchange="OnBeatChosenAsync" />
-            </label>
-            @if (!_recording)
-            {
-                <RadzenButton Text="Record a beat" Icon="graphic_eq" ButtonStyle="ButtonStyle.Light"
-                              Click="@(() => OnStartRecording(beat: true))" Disabled="@_uploading" id="record-beat"
-                              title="Tap or play a beat into the microphone, no click needed: it opens in the Mode Lab, cut to a loop at 120 BPM that you can change" />
-            }
             <label class="rz-button rz-button-md rz-variant-filled rz-primary rz-shade-default upload-choose"
                    data-upload-state="@(_uploading ? (_uploadResuming ? "resuming" : "uploading") : "idle")">
                 <RadzenIcon Icon="upload_file" />
@@ -53,7 +37,7 @@
             @if (!_recording)
             {
                 <RadzenButton Text="Record a song" Icon="mic" ButtonStyle="ButtonStyle.Light"
-                              Click="@(() => OnStartRecording(beat: false))" Disabled="@_uploading" id="record-song"
+                              Click="@OnStartRecording" Disabled="@_uploading" id="record-song"
                               title="Record from your microphone and analyze it" />
             }
             @* Two separate questions, two separate answers. This used to be one @if with an @else, so
@@ -69,12 +53,10 @@
             }
             @if (_recording)
             {
-                @* One microphone, so one Stop: it says where the take is going. *@
-                <RadzenButton Text="@(_recordingBeat ? "Stop and open in Mode Lab" : "Stop and analyze")" Icon="stop"
+                <RadzenButton Text="Stop and analyze" Icon="stop"
                               ButtonStyle="ButtonStyle.Danger" Click="@OnStopRecording" Disabled="@_stopping"
                               id="record-stop" />
-                <RadzenText class="recording-hint" role="status"
-                            Text="@(_recordingBeat ? "Recording a beat…" : "Recording a song…")" />
+                <RadzenText class="recording-hint" role="status" Text="Recording a song…" />
                 @* What the microphone is hearing, so a take that is too quiet or clipping shows before
                    it is uploaded (audio-recorder.js watchLevel). Red when it hits full scale. *@
                 <div class="record-meter" @ref="_meter" role="meter" aria-label="Microphone level"
@@ -151,7 +133,6 @@
     private bool _uploading;
     private bool _uploadResuming;
     private ElementReference _fileInput;
-    private ElementReference _beatInput;
     private IJSObjectReference? _uploader;
     private IJSObjectReference? _recorder;
     private IJSObjectReference? _sfx;
@@ -164,9 +145,6 @@
     private bool _stopping;
     private string? _recordError;
     private bool _pickedUp;
-
-    /// <summary>Which of the two recordings is running: a beat goes to the Mode Lab, a song is analysed.</summary>
-    private bool _recordingBeat;
 
     private ElementReference _meter;
 
@@ -212,14 +190,12 @@
 
     private Task OnFileChosenAsync() => UploadAsync(_fileInput, name: null);
 
-    private Task OnBeatChosenAsync() => UploadAsync(_beatInput, name: null, asBeat: true);
-
     /// <summary>
     /// Every intake path's one route to a job: the bytes go over tus, then the finished upload is
     /// handed to the analyzer with this browser's capability and model picks. <paramref name="source"/>
     /// is whatever resumable-upload.js accepts: the file input, a Blob reference, or a recording's
-    /// bytes. A beat takes the same route in, because the Mode Lab fetches it back out of the library,
-    /// but is only kept, never analysed, and goes straight there.
+    /// bytes. <paramref name="asBeat"/> is only ever an unsent beat a closed Mode Lab left behind: it is
+    /// kept, never analysed, and goes back there.
     /// </summary>
     private async Task UploadAsync(object source, string? name, bool asBeat = false)
     {
@@ -326,10 +302,9 @@
         }
     }
 
-    private async Task OnStartRecording(bool beat)
+    private async Task OnStartRecording()
     {
         _recordError = null;
-        _recordingBeat = beat;
         try
         {
             _recorder ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/capture/audio-recorder.js");
@@ -362,7 +337,7 @@
                 _recordError = "Nothing was recorded.";
                 return;
             }
-            await UploadAsync(wavBytes, _recordingBeat ? "beat.wav" : "recording.wav", asBeat: _recordingBeat);
+            await UploadAsync(wavBytes, "recording.wav");
         }
         finally
         {

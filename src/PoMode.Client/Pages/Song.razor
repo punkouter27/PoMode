@@ -20,11 +20,29 @@
     <h1 class="pm-sr-only">@($"Analysis of {_status?.FileName ?? "a song"}")</h1>
 }
 
+@* Where this song sits: the header lights Songs, and this names the way back. A hum take was sung on
+   the Practice page and is listed there as well, so it leads back to its takes. *@
+@if (_status is { } crumb)
+{
+    <nav class="song-crumbs" aria-label="Breadcrumb">
+        @if (crumb.Origin?.Kind == TakeOrigin.HumTake)
+        {
+            <a href="practice/takes" id="crumb-parent">Your takes</a>
+        }
+        else
+        {
+            <a href="" id="crumb-parent">Songs</a>
+        }
+        <span class="song-crumbs-sep" aria-hidden="true">›</span>
+        <span class="song-crumbs-here" aria-current="page">@crumb.FileName</span>
+    </nav>
+}
+
 @if (_missing)
 {
     <div class="song-missing" role="alert">
         <p>This song isn't in your library. It may have been deleted, or the link belongs to another account.</p>
-        <RadzenButton Text="Back to the library" Icon="library_music" ButtonStyle="ButtonStyle.Primary" Click="@BackToLibrary" />
+        <RadzenButton Text="Back to your songs" Icon="library_music" ButtonStyle="ButtonStyle.Primary" Click="@BackToLibrary" />
     </div>
 }
 

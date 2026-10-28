@@ -3,9 +3,9 @@
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
-@* A beat from the library, spliced to the lab's tempo and played under the chords and melody on the
-   same clock. The recording comes in through the Library like every other; this only picks one and
-   cuts it, in the browser (drum-loop.js, loop-cut.js). The WAV is the drums alone. *@
+@* A beat spliced to the lab's tempo and played under the chords and melody on the same clock. A beat
+   is added here, where it is used, and kept in the library like every upload, so it can be picked
+   again; it is cut in the browser (drum-loop.js, loop-cut.js). The WAV is the drums alone. *@
 <div class="studio-drums-panel pm-panel" data-drum-job="@_jobId">
     <div class="drums-row">
         <div class="drums-field drums-pick">
@@ -14,12 +14,39 @@
             {
                 <RadzenDropDown TValue="string" Data="@_choices" TextProperty="Label" ValueProperty="JobId"
                                 Value="@_jobId" Change="@(value => PickAsync((string?)value))"
-                                AllowClear="true" Placeholder="None" Disabled="@_busy"
+                                AllowClear="true" Placeholder="None" Disabled="@(_busy || _adding || _recording)"
                                 class="drums-dd" id="drums-select" aria-labelledby="drums-label" />
+            }
+            else if (!_recording)
+            {
+                <span class="drums-none">No beat yet. Tap or play one without a click; it is cut to this tempo.</span>
+            }
+        </div>
+        @* A beat is not a song: it is not read for its mode but cut to a tempo, so it is kept rather
+           than analysed. A plain file input dressed as a Radzen button, as on the Songs page. *@
+        <div class="drums-field drums-add">
+            @if (_recording)
+            {
+                <RadzenButton Text="Stop and use it" Icon="stop" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger"
+                              Click="@OnStopRecordingAsync" Disabled="@_stopping" id="drums-record-stop" />
+                @* What the microphone hears, so a take that is too quiet shows before it is kept. *@
+                <div class="drums-meter" @ref="_meter" role="meter" aria-label="Microphone level"
+                     aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-clip="0">
+                    <span class="drums-meter-fill"></span>
+                </div>
             }
             else
             {
-                <span class="drums-none">Use "Choose a beat" or "Record a beat" in the <a class="drums-link" href="">Library</a> and it appears here.</span>
+                <label class="rz-button rz-button-sm rz-variant-filled rz-light rz-shade-default drums-choose"
+                       title="A drum beat recorded without a click: it is cut to a loop at this tempo and played with the chords">
+                    <RadzenIcon Icon="album" />
+                    <span>@(_adding ? "Adding…" : "Choose a beat")</span>
+                    <input type="file" accept="audio/*,.mp3,.wav,.m4a" aria-label="Choose a beat" disabled="@_adding"
+                           @ref="_beatInput" @onchange="OnBeatChosenAsync" id="drums-choose" />
+                </label>
+                <RadzenButton Text="Record a beat" Icon="graphic_eq" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                              Click="@OnStartRecordingAsync" Disabled="@_adding" id="drums-record"
+                              title="Tap or play a beat into the microphone, no click needed" />
             }
         </div>
         @if (_ready)
@@ -67,7 +94,7 @@
     /// nearest this, so a take comes out between about 85 and 170 BPM.</summary>
     public const double StartBpm = 120;
 
-    /// <summary>The library job to open as the drums on arrival (the Library's "Choose a beat").</summary>
+    /// <summary>The library job to open as the drums on arrival (a beat row in Songs, or one resumed there).</summary>
     [Parameter] public string? InitialJobId { get; set; }
 
     /// <summary>The lab's tempo. A change recuts the loop to it.</summary>
@@ -77,8 +104,21 @@
     /// the slider's range): the lab moves there, so the hits move as little as they can.</summary>
     [Parameter] public EventCallback<double> OnBeatTempo { get; set; }
 
+    /// <summary>A beat carries no model picks: it is kept, never analysed.</summary>
+    private static readonly Dictionary<string, string> NoPins = [];
+
     private IReadOnlyList<DrumChoice> _choices = [];
     private IJSObjectReference? _module;
+    private IJSObjectReference? _uploader;
+    private IJSObjectReference? _recorder;
+    private ElementReference _beatInput;
+    private ElementReference _meter;
+    private bool _adding;
+    private bool _recording;
+    private bool _stopping;
+
+    /// <summary>Set when a recording starts, so the render that draws the meter hands it over once.</summary>
+    private bool _meterPending;
     private ElementReference _canvas;
     private string? _jobId;
 
@@ -115,7 +155,7 @@
             _choices = [.. (await Analysis.GetLibraryAsync() ?? [])
                 .Where(entry => entry.Origin?.Kind != TakeOrigin.Demo && entry.Stage == JobStage.Complete)
                 .OrderByDescending(entry => entry.Origin?.Kind == TakeOrigin.Beat)
-                .Select(entry => new DrumChoice(entry.JobId, $"{entry.FileName} · {entry.CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm}"))];
+                .Select(entry => new DrumChoice(entry.JobId, ChoiceLabel(entry.FileName, entry.CreatedAt)))];
         }
         catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException or TaskCanceledException)
         {
@@ -135,8 +175,101 @@
         }
     }
 
+    private static string ChoiceLabel(string? fileName, DateTimeOffset createdAt)
+        => $"{fileName} · {createdAt.ToLocalTime():yyyy-MM-dd HH:mm}";
+
+    private Task OnBeatChosenAsync() => AddBeatAsync(_beatInput, name: null);
+
+    /// <summary>
+    /// A new beat: over tus like every upload (resumable-upload.js remembers it as a beat if the tab
+    /// closes first), kept as a library job, then picked here at once.
+    /// </summary>
+    private async Task AddBeatAsync(object source, string? name)
+    {
+        if (_adding)
+        {
+            return;
+        }
+        _adding = true;
+        _error = null;
+        StateHasChanged();
+        try
+        {
+            _uploader ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/upload/resumable-upload.js");
+            var uploadId = await _uploader.InvokeAsync<string>("upload", source, name, null, true);
+            var (status, error) = await Analysis.StartFromUploadAsync(uploadId, false, NoPins, asBeat: true);
+            if (status is null)
+            {
+                _error = error ?? "The beat could not be kept.";
+                return;
+            }
+            _choices = [new DrumChoice(status.JobId, ChoiceLabel(status.FileName, DateTimeOffset.Now)), .. _choices];
+            _adding = false;
+            await PickAsync(status.JobId);
+        }
+        catch (JSException ex)
+        {
+            // resumable-upload.js rejects with a sentence written to be shown as it is.
+            _error = ex.Message.Split('\n')[0];
+        }
+        catch (HttpRequestException)
+        {
+            _error = "The server could not be reached. Please try again.";
+        }
+        finally
+        {
+            _adding = false;
+        }
+    }
+
+    private async Task OnStartRecordingAsync()
+    {
+        _error = null;
+        try
+        {
+            _recorder ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/capture/audio-recorder.js");
+            await _recorder.InvokeVoidAsync("startRecording");
+            _recording = true;
+            _meterPending = true;
+        }
+        catch (JSException)
+        {
+            _error = "Microphone access was denied or is unavailable.";
+        }
+    }
+
+    private async Task OnStopRecordingAsync()
+    {
+        if (_recorder is null || _stopping)
+        {
+            return;
+        }
+        _stopping = true;
+        try
+        {
+            _recording = false;
+            await _recorder.InvokeVoidAsync("stopRecording");
+            var wavBytes = await _recorder.InvokeAsync<byte[]>("getRecordedWavBytes");
+            if (wavBytes.Length <= 44) // header-only WAV: nothing was captured
+            {
+                _error = "Nothing was recorded.";
+                return;
+            }
+            await AddBeatAsync(wavBytes, "beat.wav");
+        }
+        finally
+        {
+            _stopping = false;
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_meterPending && _recording && _recorder is not null)
+        {
+            _meterPending = false;
+            await _recorder.InvokeVoidAsync("watchLevel", _meter);
+        }
         if (_cutPending)
         {
             // The render that just finished gave the loop's canvas its size.
@@ -264,6 +397,22 @@
             {
                 await module.InvokeVoidAsync("dispose");
                 await module.DisposeAsync();
+            }
+            if (_recorder is not null)
+            {
+                if (_recording)
+                {
+                    // Leaving mid-recording would otherwise leave the microphone live.
+                    _recording = false;
+                    await _recorder.InvokeVoidAsync("stopRecording");
+                }
+                await _recorder.DisposeAsync();
+                _recorder = null;
+            }
+            if (_uploader is not null)
+            {
+                await _uploader.DisposeAsync();
+                _uploader = null;
             }
         }
         catch (JSDisconnectedException)

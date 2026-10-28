@@ -8,14 +8,16 @@
 
 @* The songs already here, under the ways to add one. This was a page of its own beside Analyze; both
    were about getting audio in and finding it again, so they are one page (Home) and this is its list.
-   An empty library draws nothing: the intake card above is already the invitation to add a song. *@
+   An empty library draws nothing: the intake card above is already the invitation to add a song.
+   Practice's Your takes tab draws the same list scoped to its takes (Only), so a take is found,
+   previewed, compared and deleted the one way a song is. *@
 @if (_entries is { Count: 0 })
 {
     return;
 }
 
 <RadzenCard class="library-card">
-    <h2 class="pm-sr-only">Your songs</h2>
+    <h2 class="pm-sr-only">@($"Your {Noun}s")</h2>
     @if (_entries is null)
     {
         <div class="library-skeletons" aria-hidden="true">
@@ -36,15 +38,27 @@
         @* One box for everything a song can be found by: its name, key, mode, tempo or kind. What the
            box understood is shown back as chips, each removable, so "dorian 120" is visibly two filters. *@
         <div class="library-filters" role="search" aria-label="Filter songs">
-            <RadzenTextBox Value="@_query.Text" Placeholder="Find songs, e.g. “dorian 120”"
-                           aria-label="Find songs by name, key, mode, tempo or kind" class="library-search"
+            <RadzenTextBox Value="@_query.Text" Placeholder="@($"Find {Noun}s, e.g. “dorian 120”")"
+                           aria-label="@($"Find {Noun}s by name, key, mode, tempo or kind")" class="library-search"
                            @oninput="@(e => SetQueryAsync(e.Value?.ToString() ?? ""))" />
+            @* The kinds the box understands ("beats", "takes"), one press away, for the kinds the
+               library holds. Pressed is the filter's one statement: it gets no chip as well. *@
+            @if (KindToggles.Count > 0)
+            {
+                <div class="library-kinds" role="group" aria-label="Show only">
+                    @foreach (var (kind, label) in KindToggles)
+                    {
+                        <button type="button" class="library-kind" aria-pressed="@(_query.Keeps(kind) ? "true" : "false")"
+                                data-kind="@kind" @onclick="@(() => SetQueryAsync(_query.Toggle(kind)))">@label</button>
+                    }
+                </div>
+            }
                     <span class="library-count" role="status">@LibraryCount</span>
         </div>
-        @if (_query.Chips.Count > 0 || SoundMatches is not null)
+        @if (ShownChips.Any() || SoundMatches is not null)
         {
             <ul class="library-chips" aria-label="Filters in use">
-                @foreach (var chip in _query.Chips)
+                @foreach (var chip in ShownChips)
                 {
                     <li>
                         <button type="button" class="library-chip" @onclick="@(() => SetQueryAsync(_query.Without(chip)))"
@@ -117,7 +131,7 @@
                         </div>
                     }
                     <RadzenDataGrid Data="@Filtered" TItem="LibraryEntryDto" AllowSorting="true" Density="Density.Compact"
-                            AllowPaging="true" PageSize="8" PagerHorizontalAlign="HorizontalAlign.Center"
+                            AllowPaging="true" PageSize="@PageSize" PagerHorizontalAlign="HorizontalAlign.Center"
                             RowRender="@MarkRow">
                 <Columns>
                     @* A tick per row rather than a toggle button beside an Open button: two ticked rows
@@ -151,13 +165,13 @@
                                 @entry.FileName
                             }
                             @* Only the latest run of each song is listed; the badge lists the earlier ones. *@
-                            @if (IsLatest(entry) && RunCountOf(entry) is > 1 and var runs)
+                            @if (GroupsRuns && IsLatest(entry) && RunCountOf(entry) is > 1 and var runs)
                             {
                                 <button type="button" class="library-runs-badge" @onclick="@(() => ToggleRuns(entry.FileName))"
                                         aria-expanded="@_expanded.Contains(entry.FileName)"
                                         title="@(_expanded.Contains(entry.FileName) ? "Hide the earlier runs" : "Show the earlier runs of this song")">×@runs</button>
                             }
-                            else if (!IsLatest(entry))
+                            else if (GroupsRuns && !IsLatest(entry))
                             {
                                 <span class="library-earlier">earlier run</span>
                             }
@@ -283,6 +297,24 @@
 }
 
 @code {
+    /// <summary>
+    /// Scopes the list to these jobs (Practice's takes over its chords). A scoped list remembers no
+    /// search, offers no kind toggles, and lists every take as its own row: takes over one progression
+    /// share a file name, and grouped as runs of one song they were one row.
+    /// </summary>
+    [Parameter] public IReadOnlyCollection<string>? Only { get; set; }
+
+    [Parameter] public int PageSize { get; set; } = 8;
+
+    /// <summary>What a row is called in the box, the count and the heading.</summary>
+    [Parameter] public string Noun { get; set; } = "song";
+
+    /// <summary>Raised with the job id once a row is deleted, so a page holding its own list of the
+    /// same jobs can drop it too.</summary>
+    [Parameter] public EventCallback<string> OnDeleted { get; set; }
+
+    private bool GroupsRuns => Only is null;
+
     private List<LibraryEntryDto>? _entries;
     private string? _loadError;
     private readonly HashSet<string> _compare = [];
@@ -342,10 +374,9 @@
             {
                 return _filteredCache;
             }
-            var rows = (_entries ?? [])
-                .GroupBy(e => e.FileName)
-                .SelectMany(g => _expanded.Contains(g.Key) ? g : g.Take(1))
-                .ToList();
+            var rows = GroupsRuns
+                ? (_entries ?? []).GroupBy(e => e.FileName).SelectMany(g => _expanded.Contains(g.Key) ? g : g.Take(1)).ToList()
+                : _entries ?? [];
             _filteredCache = rows.Where(_query.Matches).ToList();
             // No file name has the words: the songs that sound like them, best first, under the chips.
             if (_filteredCache.Count == 0 && SoundMatches is { } sound)
@@ -367,6 +398,12 @@
     {
         get
         {
+                        if (!GroupsRuns)
+                        {
+                            var all = _entries?.Count ?? 0;
+                            var shown = Filtered.Count;
+                            return shown == all ? $"{all} {Noun}{(all == 1 ? "" : "s")}" : $"{shown} of {all} {Noun}s";
+                        }
                         var runs = _entries?.Count ?? 0;
                         // Distinct songs, not rows: the grid shows the latest run of each file, so comparing the
                         // filtered row count against the run count would report a difference whenever any song
@@ -374,8 +411,8 @@
                         var songs = Filtered.Select(entry => entry.FileName).Distinct().Count();
                         var allSongs = _entries?.Select(entry => entry.FileName).Distinct().Count() ?? 0;
                         var text = songs == allSongs
-                            ? allSongs == 1 ? "1 song" : $"{allSongs} songs"
-                            : $"{songs} of {allSongs} songs";
+                            ? allSongs == 1 ? $"1 {Noun}" : $"{allSongs} {Noun}s"
+                            : $"{songs} of {allSongs} {Noun}s";
                         return runs > allSongs ? $"{text} · {runs} analyses" : text;
         }
     }
@@ -397,11 +434,43 @@
     private List<SoundMatchDto>? SoundMatches
         => _sound is { } sound && sound.Words == _query.Description && sound.Matches.Count > 0 ? sound.Matches : null;
 
+    /// <summary>The kinds offered as toggles: the ones the library holds, on the unscoped list.</summary>
+    private List<(string Kind, string Label)> KindToggles
+        => Only is not null || _entries is null ? []
+            : [.. new[] { (TakeOrigin.Beat, "Beats"), (TakeOrigin.HumTake, "Sung takes") }
+                .Where(kind => _entries.Any(entry => entry.Origin?.Kind == kind.Item1))];
+
+    /// <summary>The chips, less the kinds a pressed toggle already states.</summary>
+    private IEnumerable<LibraryChip> ShownChips
+        => _query.Chips.Where(chip => chip.Kind is null || KindToggles.All(toggle => toggle.Kind != chip.Kind));
+
+    /// <summary>A scoped list follows its jobs: a take sung since the last read is fetched with the rest.</summary>
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Only is not null && _entries is not null && _loadError is null)
+        {
+            if (Only.Any(id => _entries.All(entry => entry.JobId != id)))
+            {
+                await LoadAsync();
+            }
+            else if (_entries.Any(entry => !Only.Contains(entry.JobId)))
+            {
+                _entries = [.. _entries.Where(entry => Only.Contains(entry.JobId))];
+            }
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        var library = await Analysis.GetLibraryAsync() ?? [];
+        _entries = Only is { } only ? [.. library.Where(entry => only.Contains(entry.JobId))] : library;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _entries = await Analysis.GetLibraryAsync() ?? [];
+            await LoadAsync();
         }
         catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException or TaskCanceledException)
         {
@@ -413,7 +482,7 @@
                 return;
             }
             // The search as it was left: "my Dorian songs" should not need typing again each visit.
-            if (await Prefs.GetAsync(BrowserPrefs.LibraryFiltersKey, PrefsJsonContext.Default.LibraryFilters) is { } saved)
+            if (Only is null && await Prefs.GetAsync(BrowserPrefs.LibraryFiltersKey, PrefsJsonContext.Default.LibraryFilters) is { } saved)
             {
                 _query = LibraryQuery.Parse(saved.Search);
             }
@@ -511,6 +580,10 @@
     private async Task SetQueryAsync(string text)
     {
         _query = LibraryQuery.Parse(text);
+        if (Only is not null)
+        {
+            return; // the Songs page's remembered search is its own
+        }
         await Prefs.SetAsync(BrowserPrefs.LibraryFiltersKey, new LibraryFilters(text),
             PrefsJsonContext.Default.LibraryFilters);
     }
@@ -572,6 +645,7 @@
             {
                 _compareResults.RemoveAll(c => c.Entry.JobId == entry.JobId);
             }
+            await OnDeleted.InvokeAsync(entry.JobId);
         }
         catch (HttpRequestException)
         {

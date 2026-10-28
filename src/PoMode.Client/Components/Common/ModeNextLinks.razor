@@ -1,0 +1,30 @@
+@using PoMode.Shared.Analysis
+
+@* Where a mode goes next: the two pages that do something with one, less the page it is already on.
+   The song page, the Mode Lab and Practice all draw it, so the three links read the same and sit the
+   same way on each, and the ids say where each one starts and ends (song-to-modes, modes-to-practice). *@
+<nav class="mode-next" aria-label="Take this mode further">
+    @if (From != "modes")
+    {
+        <a href="@($"modes?{Query}")" id="@($"{From}-to-modes")">Explore @Name in the Mode Lab</a>
+    }
+    @if (From != "practice")
+    {
+        <a href="@($"practice?{Query}")" id="@($"{From}-to-practice")">Sing over @Name in Practice</a>
+    }
+</nav>
+
+@code {
+    /// <summary>The page drawing the links: "song", "modes" or "practice".</summary>
+    [Parameter, EditorRequired] public required string From { get; set; }
+
+    /// <summary>The mode's own home note, as an analysis names it (<see cref="ModeLink"/>).</summary>
+    [Parameter] public int TonicPitchClass { get; set; }
+
+    [Parameter] public ScaleMode Mode { get; set; }
+
+    /// <summary>The mode as the page already shows it, "E Dorian".</summary>
+    [Parameter, EditorRequired] public required string Name { get; set; }
+
+    private string Query => ModeLink.Query(TonicPitchClass, Mode);
+}

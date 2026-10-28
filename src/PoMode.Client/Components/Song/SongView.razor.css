@@ -88,26 +88,6 @@
     min-width: 0;
 }
 
-.song-next {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--pm-space-1) var(--pm-space-3);
-    font-size: var(--pm-text-sm);
-}
-
-.song-next a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 24px;
-    color: var(--pm-accent);
-}
-
-@media (pointer: coarse) {
-    .song-next a {
-        min-height: 2.75rem;
-    }
-}
-
 .song-chips {
     display: flex;
     flex-wrap: wrap;

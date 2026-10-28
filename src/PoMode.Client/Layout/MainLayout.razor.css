@@ -53,12 +53,6 @@
     white-space: nowrap;
 }
 
-/* Long labels above the breakpoint, short ones below. Exactly one is in the box at any width, so
-   the accessible name is never doubled. */
-.actions ::deep .nav-narrow {
-    display: none;
-}
-
 .actions ::deep .nav-link:hover {
     color: var(--pm-fg);
     background: var(--pm-surface);
@@ -265,25 +259,17 @@
         font-size: 1.1rem;
     }
 
-    /* The three destinations share the row rather than queueing off the right edge. Short labels and
-       an even split put all three on one line at 320px, so nothing is reached by scrolling. */
+    /* The three destinations share the row rather than queueing off the right edge. An even split
+       puts all three on one line at 320px, so nothing is reached by scrolling. */
     .actions {
         grid-area: nav;
         justify-content: space-between;
         gap: 0.1rem;
     }
 
-    .actions ::deep .nav-wide {
-        display: none;
-    }
-
     /* The name is in the menu too; on a phone the header row needs the room for the brand. */
     .session-name {
         display: none;
-    }
-
-    .actions ::deep .nav-narrow {
-        display: inline;
     }
 
     .actions ::deep .nav-link {
@@ -326,12 +312,6 @@
         min-width: 2.75rem;
         min-height: 2.75rem;
     }
-}
-
-.overflow-kbd {
-    margin-left: var(--pm-space-2);
-    color: var(--pm-fg-muted);
-    font-size: var(--pm-text-xs);
 }
 
 /* The build date, YYMMDD: which build is on screen, at a glance. Never in the way of a click. */

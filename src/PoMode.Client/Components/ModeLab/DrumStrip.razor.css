@@ -34,10 +34,63 @@
     color: var(--pm-fg-muted);
 }
 
-.drums-none a {
-    display: inline-block;
-    padding-block: 0.25rem;
-    color: var(--pm-accent);
+.drums-add {
+    flex-wrap: wrap;
+}
+
+/* The file input covers its button, so a click or a dropped file lands on it; kept focusable rather
+   than display:none, so the keyboard reaches the picker through it. */
+.drums-choose {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pm-space-1);
+    cursor: pointer;
+}
+
+.drums-choose:focus-within {
+    outline: 2px solid var(--pm-accent);
+    outline-offset: 2px;
+}
+
+.drums-choose:has(input:disabled) {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.drums-choose input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: inherit;
+    /* The browser's own "Choose file" text is wider than a small button and is never seen; with no
+       size it has nothing to clip. */
+    font-size: 0;
+}
+
+/* -60 to 0 dBFS, filled from --level (0..1), which audio-recorder.js writes each frame. */
+.drums-meter {
+    width: 10rem;
+    max-width: 100%;
+    height: 0.6rem;
+    border: 1px solid var(--pm-border);
+    border-radius: 999px;
+    background: var(--pm-surface-alt);
+    overflow: hidden;
+}
+
+.drums-meter-fill {
+    display: block;
+    height: 100%;
+    width: calc(var(--level, 0) * 100%);
+    border-radius: inherit;
+    background: var(--pm-ok-edge);
+}
+
+.drums-meter[data-clip="1"] .drums-meter-fill {
+    background: var(--pm-danger-edge);
 }
 
 .drums-wave {

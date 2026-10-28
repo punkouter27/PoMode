@@ -217,6 +217,42 @@
     border-color: var(--pm-accent);
 }
 
+/* The kind toggles: the chip's shape, filled once pressed. */
+.library-kinds {
+    display: flex;
+    gap: var(--pm-space-1);
+}
+
+.library-kind {
+    min-height: 1.5rem;
+    padding: 0.1rem 0.6rem;
+    border: 1px solid var(--pm-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--pm-fg-muted);
+    font: inherit;
+    font-size: var(--pm-text-sm);
+    cursor: pointer;
+}
+
+.library-kind:hover,
+.library-kind:focus-visible {
+    border-color: var(--pm-accent);
+    color: var(--pm-fg);
+}
+
+.library-kind[aria-pressed="true"] {
+    border-color: var(--pm-accent);
+    background: var(--pm-accent-soft);
+    color: var(--pm-fg);
+}
+
+@media (pointer: coarse) {
+    .library-kind {
+        min-height: 2.75rem;
+    }
+}
+
 .library-offline {
     margin-left: 0.35rem;
     padding: 0.05rem 0.35rem;

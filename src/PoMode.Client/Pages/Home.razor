@@ -105,12 +105,17 @@
         _intakeReady = true;
     }
 
-    /// <summary>Also reached when an old link is followed from a page already on this route.</summary>
+    /// <summary>Also reached when an old link is followed from a page already on this route. /library
+    /// was this page's second address; it settles on / so the Songs tab and bookmarks agree.</summary>
     protected override void OnParametersSet()
     {
         if (Forwarding)
         {
             Navigation.NavigateTo($"/song/{Uri.EscapeDataString(Job!)}", replace: true);
+        }
+        else if (Navigation.ToBaseRelativePath(Navigation.Uri).StartsWith("library", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo("/", replace: true);
         }
     }
 

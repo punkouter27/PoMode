@@ -1,4 +1,5 @@
 @page "/practice"
+@page "/practice/{Tab}"
 @using PoMode.Shared.Analysis
 @using PoMode.Client.Services
 @inject AnalysisClient Analysis
@@ -28,9 +29,10 @@
 @* Three jobs, three tabs, so the page is one screen rather than a stack of cards: singing over the
    chords (with the backing it is sung over), what earlier takes over them turned out to be, and the
    guitar jam, which has its own key and needs none of the backing row. Client rendering keeps every
-   tab mounted, so a take, a plot or a jam survives a look at another tab. *@
+   tab mounted, so a take, a plot or a jam survives a look at another tab. Each tab is an address
+   too (/practice, /practice/takes, /practice/jam), and moving between them keeps this one page. *@
 <div class="practice">
-<RadzenTabs RenderMode="TabRenderMode.Client" class="practice-tabs" SelectedIndexChanged="@OnTabChangedAsync">
+<RadzenTabs RenderMode="TabRenderMode.Client" class="practice-tabs" SelectedIndex="@_tab" SelectedIndexChanged="@OnTabChangedAsync">
     <Tabs>
         <RadzenTabsItem Text="Sing">
             <RadzenCard class="practice-setup">
@@ -44,8 +46,8 @@
                                  Progressions="_progressions"
                                  Bpm="_bpm" BpmChanged="OnTempoPickedAsync"
                                  Disabled="@Busy" />
-                <a class="practice-to-modes" id="practice-to-modes"
-                   href="@($"modes?{ModeLink.QueryFromParent(_tonic, _mode)}")">Hear @ModeNames.OnRoot(_tonic, _mode) in the Mode Lab</a>
+                <ModeNextLinks From="practice" TonicPitchClass="ModeLink.HomeNote(_tonic, _mode)" Mode="_mode"
+                               Name="@ModeNames.OnRoot(_tonic, _mode)" />
 
                 @* The singer's range, pooled from their own finished takes, and a key that sits the chosen mode
                    inside it. Both sentences and the key are the server's: choosing where a mode's home note
@@ -182,7 +184,7 @@
                     <SingerCard Voice="singer" Id="practice-singer" />
                 </RadzenCard>
             }
-            <TakeHistory History="_history" />
+            <TakeHistory History="_history" OnDeleted="OnTakeDeletedAsync" />
         </RadzenTabsItem>
         <RadzenTabsItem Text="Guitar jam">
             @* Practice for the hands rather than the voice: open guitar chords that sound richer than they are to
@@ -198,6 +200,9 @@
     [SupplyParameterFromQuery] public int? Tonic { get; set; }
 
     [SupplyParameterFromQuery] public string? Mode { get; set; }
+
+    /// <summary>The tab's address: none for Sing, "takes" or "jam" (<see cref="TabPaths"/>).</summary>
+    [Parameter] public string? Tab { get; set; }
 
     /// <summary>Where a take is in its cycle — one answer to "what is happening" rather than four
     /// booleans that can disagree. Mirrors the Mode Lab's hum states, whose flow this reuses.</summary>
@@ -221,8 +226,29 @@
     /// <summary>The count is on the tab, so how many takes there are is known without opening it.</summary>
     private string TakesTabLabel => _history is { Takes.Count: > 0 } history ? $"Your takes ({history.Takes.Count})" : "Your takes";
 
-    /// <summary>A jam left behind on a hidden tab would keep strumming under whatever is shown.</summary>
+    /// <summary>Each tab's address under /practice, in tab order.</summary>
+    private static readonly string[] TabPaths = ["practice", "practice/takes", "practice/jam"];
+
+    /// <summary>The tab the address names.</summary>
+    private int TabFromAddress => Tab?.ToLowerInvariant() switch
+    {
+        "takes" => 1,
+        "jam" => JamTab,
+        _ => 0,
+    };
+
+    /// <summary>A link or the back button chose the tab: the same switch a click makes.</summary>
+    protected override Task OnParametersSetAsync() => SwitchTabAsync(TabFromAddress);
+
+    /// <summary>A click on a tab: it becomes the address, so it can be linked, bookmarked and gone back from.</summary>
     private async Task OnTabChangedAsync(int index)
+    {
+        await SwitchTabAsync(index);
+        Navigation.NavigateTo(TabPaths[index]);
+    }
+
+    /// <summary>A jam left behind on a hidden tab would keep strumming under whatever is shown.</summary>
+    private async Task SwitchTabAsync(int index)
     {
         if (_tab == JamTab && index != JamTab && _jam is not null)
         {
@@ -291,6 +317,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Before the first await: the page first renders while this loads, and the tabs take their
+        // starting tab from that render, before OnParametersSetAsync has run.
+        _tab = TabFromAddress;
         try
         {
             _progressions = await Analysis.GetModalProgressionsAsync() ?? [];
@@ -414,6 +443,15 @@
         {
             _voice = null;
         }
+    }
+
+    /// <summary>A take deleted from the list: the tally and the tab's count are read again without it,
+    /// and so is the range, which is pooled from the takes.</summary>
+    private async Task OnTakeDeletedAsync(string jobId)
+    {
+        _historyFor = null;
+        await LoadHistoryAsync();
+        await LoadVoiceAsync();
     }
 
     /// <summary>The earlier takes over the current mode and progression, fetched only when one of those

@@ -12,8 +12,10 @@ public static class ModeLink
     public static string Query(int tonicPitchClass, ScaleMode mode) => $"tonic={tonicPitchClass}&mode={mode}";
 
     /// <summary>The same link from a page keyed by the parent key: C and Dorian is D Dorian.</summary>
-    public static string QueryFromParent(int parentTonic, ScaleMode mode)
-        => Query((parentTonic + ScaleModes.ModeDegreeOffset(mode)) % 12, mode);
+    public static string QueryFromParent(int parentTonic, ScaleMode mode) => Query(HomeNote(parentTonic, mode), mode);
+
+    /// <summary>The mode's own home note on a parent key: C and Dorian is D.</summary>
+    public static int HomeNote(int parentTonic, ScaleMode mode) => (parentTonic + ScaleModes.ModeDegreeOffset(mode)) % 12;
 
     /// <summary>The parent key and mode a link asks for, or false when it carries none (or nonsense).</summary>
     public static bool TryRead(int? tonic, string? mode, out int parentTonic, out ScaleMode scaleMode)

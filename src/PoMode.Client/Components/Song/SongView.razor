@@ -111,10 +111,7 @@
                    them every page led to a song and a song led nowhere. *@
                 @if (HasContent && Result.PrimaryMode is { } mode)
                 {
-                    <nav class="song-next" aria-label="Take this mode further">
-                        <a href="@($"modes?{ModeLink.Query(Result.TonicPitchClass, mode)}")" id="song-to-modes">Explore @PrimaryHeadline in the Mode Lab</a>
-                        <a href="@($"practice?{ModeLink.Query(Result.TonicPitchClass, mode)}")" id="song-to-practice">Sing over @PrimaryHeadline chords</a>
-                    </nav>
+                    <ModeNextLinks From="song" TonicPitchClass="Result.TonicPitchClass" Mode="mode" Name="@PrimaryHeadline" />
                 }
                 @* Both sentences are the server's. *@
                 @if (Status.Origin is not null || Math.Abs(Result.TuningOffsetCents) >= 0.5)

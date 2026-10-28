@@ -51,21 +51,6 @@
 /* ---- Your voice ---- */
 
 /* Back to the Mode Lab with this backing's mode, under the row that chose it. */
-.practice-to-modes {
-    display: inline-flex;
-    align-items: center;
-    min-height: 24px;
-    margin-top: var(--pm-space-1);
-    font-size: var(--pm-text-sm);
-    color: var(--pm-accent);
-}
-
-@media (pointer: coarse) {
-    .practice-to-modes {
-        min-height: 2.75rem;
-    }
-}
-
 .practice-singer-label {
     margin: 0 0 var(--pm-space-1);
 }

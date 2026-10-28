@@ -43,3 +43,32 @@
 .take-origin-text {
     font-weight: 600;
 }
+
+/* One quiet line above the song: its name, and the list it was opened from. */
+.song-crumbs {
+    display: flex;
+    align-items: baseline;
+    gap: var(--pm-space-1);
+    min-width: 0;
+    margin-bottom: var(--pm-space-1);
+    font-size: var(--pm-text-sm);
+    color: var(--pm-fg-muted);
+}
+
+.song-crumbs a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--pm-accent);
+}
+
+.song-crumbs-here {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (pointer: coarse) {
+    .song-crumbs a {
+        min-height: 2.75rem;
+    }
+}

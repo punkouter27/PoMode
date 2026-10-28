@@ -297,20 +297,6 @@
     }
 }
 
-.studio-to-practice {
-    display: inline-flex;
-    align-items: center;
-    min-height: 24px;
-    font-size: var(--pm-text-sm);
-    color: var(--pm-accent);
-}
-
-@media (pointer: coarse) {
-    .studio-to-practice {
-        min-height: 2.75rem;
-    }
-}
-
 /* The longest label in the backing row: on a phone it shares a line with the key and pushed the
    toggle 10px past the edge, so this one may wrap and the toggle keeps its width. */
 .match-field .backing-label {

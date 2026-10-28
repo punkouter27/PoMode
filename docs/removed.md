@@ -52,8 +52,13 @@ Each of these existed and was removed, with the reason, so nobody rebuilds one b
 
 - **A Library page beside Analyze** - two destinations for one job: getting audio in and finding it
   again. The list is now `LibraryList.razor`, drawn under the intake card on the home page, which the
-  header calls Library. `/library` still routes there, and an empty library draws nothing because the
-  intake card is already the invitation. It pages at 8 rows, not 15, so the page stays short.
+  header calls Songs. `/library` still routes there (and settles on `/`), and an empty library draws
+  nothing because the intake card is already the invitation. It pages at 8 rows, not 15, so the page
+  stays short.
+- **The beat buttons on the Songs card, "Go to…" in the ⋯ menu, and the header's short labels** -
+  each a second door to one thing. A beat is added in the Mode Lab's drum strip, where it is used;
+  the palette is the header's Search button; and each page has one name ("Play" on a phone was
+  Practice, beside real Play buttons).
 
 - **The `/beat` page** - a beat cut to a tempo typed on its own page, auditioned on its own clock.
   The drum loop is a strip in the Mode Lab, cut to the lab's tempo and played in step with its chords

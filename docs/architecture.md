@@ -419,11 +419,13 @@ The Mode Lab's Drums strip takes a beat recorded without a click and plays it un
 melody as exactly whole 4/4 bars at the lab's tempo, and saves that loop as a WAV. It has been both
 places: a strip here, then a `/beat` page of its own with its own tempo and Play button, then back,
 because a beat cut to a tempo nothing else is playing at answers no question the lab asks. There is
-no importer and no recorder of its own for it. The Library's intake row is four buttons, "Choose a
-beat", "Record a beat", "Choose a song", "Record a song"; the two recordings share
-`audio-recorder.js` and one Stop button, and differ only in where the take goes. A beat goes up over
-the same tus upload as a song, is kept as a library job without being analysed (`KeepBeatAsync`, see
-Resumable uploads), and opens `/modes?beat={jobId}`. Picking a beat sets the lab's tempo: `drum-loop.js`
+no importer of its own for it. A beat is added where it is used: the strip itself carries "Choose a
+beat" and "Record a beat" (`DrumStrip.razor`, the same `audio-recorder.js` the Songs page records a
+song with). It used to be two of the Songs card's four buttons, and an empty strip sent you back there
+for one. A beat goes up over the same tus upload as a song, is kept as a library job without being
+analysed (`KeepBeatAsync`, see Resumable uploads), and is picked in the strip at once. A beat a closed
+tab left unsent is picked up by the Songs page's intake card like any unsent take, and opens
+`/modes?beat={jobId}`, as a beat row in the song list does. Picking a beat sets the lab's tempo: `drum-loop.js`
 `playedBpm` reads the take's own tempo (the pulse read as whichever note value lands nearest 120),
 the lab moves to the nearest whole BPM inside the slider's 50 to 180, the chords and melody are
 regenerated there and the drums are cut to the same figure. The slider still changes it afterwards. The strip's dropdown lists the
@@ -575,15 +577,19 @@ workers' blobs, and a wrong one fails silently in production.
   and spatial-audio flags stay in `theme.js` / `prefs.js`, which stamp them before first paint. The
   Mode Lab is not remembered: its settings move each other.
 
-- **Routes.** `/` (and `/library` for old links) is the Library: the intake card, then `LibraryList`
+- **Routes.** `/` is Songs (`/library`, its old second address, settles on `/`): the intake card, then `LibraryList`
   with the caller's songs, filters and the one-tick preview / two-tick comparison. `/song/{id}` is one
   song from upload to result: progress while it runs, `SongView` when it is done, a plain "not in your
   library" for a stale link. It used to be the home page in another state (`/?job={id}`), which kept
   the header calling a finished analysis "Library"; `/?job=` still forwards, because push notices
-  already sent and songs kept offline carry it. `/modes`, `/practice`, `/settings` and `/diagnostics`
-  are the rest. Every page but the home page titles its tab `PoMode · {page}` (a song: its file name).
+  already sent and songs kept offline carry it. `/modes`, `/practice` (its tabs at `/practice/takes`
+  and `/practice/jam`), `/settings` and `/diagnostics` are the rest. Every page but the home page
+  titles its tab `PoMode · {page}` (a song: its file name).
+- **The header names three places, one name each**: Songs, Mode Lab, Practice, the same at every
+  width and in the palette. Songs stays lit on `/song/{id}` (`Layout/SongsNavLink.cs`), and the song
+  page opens with a breadcrumb back to Songs, or to Your takes for a hum take.
 - **Links between pages.** Everything that makes a song opens `/song/{id}`. The song page sends its
-  answer on: "Explore D Dorian in the Mode Lab" and "Sing over D Dorian chords" open `/modes` and
+  answer on: "Explore D Dorian in the Mode Lab" and "Sing over D Dorian in Practice" open `/modes` and
   `/practice` with `?tonic=&mode=` (`Services/ModeLink.cs`). The tonic in the link is the mode's own,
   as the analysis names it; both pages are keyed by the parent key, so `ModeLink` converts it through
   `ScaleModes.ParentTonic`. A link outranks Practice's remembered backing.
@@ -591,9 +597,14 @@ workers' blobs, and a wrong one fails silently in production.
   `Library`, `Song`, `ModeLab`, `Practice`, and `Common` for the ones two pages share (the canvas,
   `BackingControls`, `SingerCard`, chord boxes, `TierBadge`, `DrawerContent`). `SongStatsPanel` holds
   the measurements and the singer; the summary and questions are `SongConversation` inside it.
-  Practice's "Your takes" tab is `TakeHistory` (five takes a page) under the singer's voice card.
-  The song page, the Mode Lab and Practice link to each other with `ModeLink` (`QueryFromParent` from
-  the two pages keyed by the parent key): "Sing over it in Practice", "Hear D Dorian in the Mode Lab".
+  Practice's "Your takes" tab is `TakeHistory` under the singer's voice card: the server's tally,
+  then the Songs page's own `LibraryList` scoped to those takes (`Only`, five a page, one row per
+  take rather than grouped as runs of one file name), so a take is previewed, compared and deleted
+  the way a song is. On the Songs page the list offers "Beats" and "Sung takes" toggles beside the
+  search box for the kinds it holds; each puts in or takes out the word the box already reads.
+  The song page, the Mode Lab and Practice link to each other through one `ModeNextLinks`, which
+  draws the links to the two of them a page is not (`ModeLink.HomeNote` from the two keyed by the
+  parent key), so all three word them alike.
 
 ## Settings, the palette and the menu
 
@@ -602,7 +613,8 @@ sounds, spatial audio, the analysis-model pins, the written-interpretation write
 the keyboard shortcuts and the person's data. The pages people use carry only what they act on: the
 home page names a pinned model in one line ("2 analysis models pinned · change") rather than showing
 the choosers, and the analysis page's ask box has no writer dropdown. The header's ⋯ menu keeps only
-places to go (account, Settings, "Go to…", Install, and Diagnostics once switched on). `ThemeState` is shared by the header's
+places to go (account, Settings, Install, and Diagnostics once switched on); the palette is the
+header's Search button. `ThemeState` is shared by the header's
 quick toggle and Settings so each shows what the other set.
 
 **More tools** (`FeatureFlags`, localStorage `pm-advanced-tools`): the window inspector, "Rerun with

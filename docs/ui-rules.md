@@ -14,11 +14,11 @@ theme* — which is exactly what one hardcoded hex cannot do. The seven modes ge
 `--pm-mode-{name}` for the same reason: those are card titles, not decoration.
 
 - **`--pm-text-xs` (12px) is the floor.** Nothing renders text smaller. A label that does not fit
-  gets shortened, wrapped or dropped — not shrunk. The header's nav does this literally: every
-  destination carries a long and a short label (`.nav-wide` / `.nav-narrow`), one of which is
-  `display: none` at any width, so the destinations fit a 320px phone on one line without a
-  horizontal scroll strip hiding the last of them. Diagnostics is not one of them: it is an
-  operator's page and lives in the ⋯ overflow menu.
+  gets shortened, wrapped or dropped — not shrunk. The header's nav is short by naming: Songs,
+  Mode Lab, Practice, one name each at every width (on a phone the row has a line of its own, and
+  the three fit it at 320px without a scroll strip). Two labels per destination meant two names for
+  one page, and the phone's "Play" read as a playback button. Diagnostics is not one of them: it is
+  an operator's page and lives in the ⋯ overflow menu.
 - **Never clip to make something fit.** `overflow: hidden` on a layout container, `white-space:
   nowrap` on a phrase, and a viewport-height box are all ways of hiding content while appearing to
   lay it out; the Mode Lab did all three and hid 885px of its own controls on a phone. Wrap, reflow,
@@ -40,7 +40,7 @@ theme* — which is exactly what one hardcoded hex cannot do. The seven modes ge
   Primary per group (the action); everything else `Light`; a toggle that is on is Primary +
   `Variant.Flat` + `Shade.Lighter`. An either-or choice is a `RadzenSelectBar`, not a row of buttons.
 - **Every page has an `<h1>`** — visible where the page has a title, `.pm-sr-only` where the page is
-  its own heading (Library, Mode Lab, Practice, the analysis page). Section labels are `<h2>`.
+  its own heading (Songs, Mode Lab, Practice, the analysis page). Section labels are `<h2>`.
 - **Targets are at least 24px tall**; text-sized toggles get padding, not a smaller font. Canvas labels
   hold the 12px floor too (`canvas.js` `LABEL_FONT`) and are dropped when they do not fit.
 - **Late content reserves its room.** The stats skeleton, the mixer's section and loading slot, and
@@ -57,7 +57,8 @@ theme* — which is exactly what one hardcoded hex cannot do. The seven modes ge
   list, offered on focus, not a row of chips above it.
 - **Tabs for separate jobs on one route.** Practice is three `RadzenTabs` (Sing, Your takes, Guitar
   jam) rendered client-side, so a take or a jam survives a look at another tab; leaving the jam tab
-  stops the jam.
+  stops the jam. Each tab is an address (`/practice`, `/practice/takes`, `/practice/jam`) on the
+  same page instance, so a tab can be linked and gone back from without losing a take.
 - **Accessibility is audited, not assumed.** `scripts/layout-audit.cs` runs axe-core (WCAG A/AA) on
   every route in both themes. The two library findings it reports today come from inside Radzen
   (the DataGrid's roles and `RadzenCheckBox`'s focusable inner input).

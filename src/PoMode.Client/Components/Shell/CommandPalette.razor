@@ -4,8 +4,8 @@
 @inject ThemeState Theme
 @inject FeatureFlags Flags
 
-@* One keyboard way to anywhere: a page, a song in the library, a setting. Opened with Ctrl+K or from
-   the ⋯ menu. A combobox over a listbox, so a screen reader hears the filter and the active row. *@
+@* One keyboard way to anywhere: a page, a song in the library, a setting. Opened with Ctrl+K or the
+   header's Search button. A combobox over a listbox, so a screen reader hears the filter and the active row. *@
 @if (Open)
 {
     <div class="palette-backdrop" @onclick="Close">
@@ -57,9 +57,11 @@
 
     private List<Command> Commands =>
     [
-        new("Page", "Library", () => GoAsync("")),
+        new("Page", "Songs", () => GoAsync("")),
         new("Page", "Mode Lab", () => GoAsync("modes")),
         new("Page", "Practice", () => GoAsync("practice")),
+        new("Page", "Practice · Your takes", () => GoAsync("practice/takes")),
+        new("Page", "Practice · Guitar jam", () => GoAsync("practice/jam")),
         new("Page", "Settings", () => GoAsync("settings")),
         .. Flags.Tools.Diagnostics ? (Command[])[new("Page", "Diagnostics", () => GoAsync("diagnostics"))] : [],
         new("Setting", "Theme: follow my system", () => Theme.SetAsync("system")),
