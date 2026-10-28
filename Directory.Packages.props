@@ -25,7 +25,7 @@
     <PackageVersion Include="Microsoft.Playwright" Version="1.62.0" />
     <PackageVersion Include="NAudio" Version="3.0.0" />
     <PackageVersion Include="NAudio.Wasapi" Version="3.0.0" />
-    <PackageVersion Include="NLayer.NAudioSupport" Version="2.0.1" />
+    <PackageVersion Include="NLayer.NAudioSupport" Version="3.0.0" />
     <PackageVersion Include="Radzen.Blazor" Version="11.2.5" />
     <!-- Pinned transitively: Microsoft.Identity.Web drags 10.0.7 of both, which have published advisories, into
          the non-web test projects (the web SDK prunes it from the API itself). -->
