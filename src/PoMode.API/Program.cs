@@ -208,8 +208,12 @@ app.UseAuthorization();
 // before that runs every authenticated caller would share their address's bucket.
 app.UseRateLimiter();
 
-app.MapOpenApi();
-app.MapScalarApiReference(); // serves /scalar
+// The API reference is a development aid; Production does not advertise its surface.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference(); // serves /scalar
+}
 app.MapHealthChecks("/health");
 // Liveness runs no checks (is the process serving requests at all); readiness runs them all.
 // Replaced this app's bespoke liveness payload with the shared one: three apps each

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,8 @@ public sealed class WriteEndpointAuthTests : IDisposable
     // Every route a signed-out caller may reach. There is no FallbackPolicy here, so an endpoint is
     // public unless it says RequireAuthorization; a new public route fails the test below until it
     // is added here on purpose. Static files and the Blazor host are public by design and not listed.
+    // Listed as Production maps them: OpenAPI and Scalar exist only in Development. /diag stays public
+    // on purpose: presence and health only (no secret values), read by the opt-in Diagnostics page.
     private static readonly string[] AnonymousAllowList =
     [
         "/api/analysis/executors",
@@ -60,11 +63,6 @@ public sealed class WriteEndpointAuthTests : IDisposable
         "/health/ready",
         "/hubs/analysis",
         "/hubs/analysis/negotiate",
-        "/openapi/{documentName}.json",
-        "/scalar/favicon.svg",
-        "/scalar/scalar.aspnetcore.js",
-        "/scalar/scalar.js",
-        "/scalar/{documentName?}",
         "/share-target",
         "/web-runtime/{asset}",
         "/{*path:nonfile}",
@@ -81,7 +79,9 @@ public sealed class WriteEndpointAuthTests : IDisposable
 
     private WebApplicationFactory<Program> Factory() => new WebApplicationFactory<Program>()
         .WithWebHostBuilder(b => b
+            .UseEnvironment("Production")
             .UseSetting("Jobs:RootPath", _root)
+            .UseSetting("Jobs:Storage:Mode", "FileSystem")
             .UseSetting("Models:RootPath", _modelsRoot)
             .UseSetting("Models:AutoDownload", "false"));
 
