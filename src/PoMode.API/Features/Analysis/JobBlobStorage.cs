@@ -1,6 +1,7 @@
 using Azure;
 using Azure.Identity;
 using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 
 namespace PoMode.API.Features.Analysis;
 
@@ -121,7 +122,7 @@ public sealed class JobBlobStorage(
         }
         try
         {
-            foreach (var blob in container.GetBlobs(prefix: $"{jobId}/"))
+            foreach (var blob in container.GetBlobs(BlobTraits.None, BlobStates.None, $"{jobId}/", CancellationToken.None))
             {
                 container.DeleteBlobIfExists(blob.Name);
             }
