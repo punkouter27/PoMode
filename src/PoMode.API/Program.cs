@@ -137,6 +137,15 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(
 
 var app = builder.Build();
 
+// Fail the deploy's health gate rather than the first job: without the account the blob mirror throws
+// on first use (JobBlobStorage), long after the slot has been swapped in. FileSystem mode needs none.
+if (app.Environment.IsProduction()
+    && !string.Equals(app.Configuration["Jobs:Storage:Mode"], "FileSystem", StringComparison.OrdinalIgnoreCase)
+    && string.IsNullOrEmpty(app.Configuration["Jobs:Storage:AccountUri"]))
+{
+    throw new InvalidOperationException("Missing required Production configuration: Jobs:Storage:AccountUri");
+}
+
 if (secretSource.FellBack)
 {
     app.Logger.LogWarning("Key Vault unreachable — secrets are coming from environment variables this run.");
@@ -153,9 +162,13 @@ if (!app.Environment.IsDevelopment())
 // On every response, static files included. The policy only forbids framing: a script-src would have
 // to allow the two inline scripts in index.html, the WASM runtime and the model workers' blobs, and a
 // wrong one fails silently in the one environment nobody is watching.
+// The commit this build came from (SDK-stamped as "<version>+<sha>"), so a deploy can prove which
+// build is answering: CI checks /health/live for X-Commit equal to the pushed sha.
+var commit = PoPlatform.Version.Split('+') is [_, var sha, ..] ? sha : "unknown";
 app.Use((context, next) =>
 {
     var headers = context.Response.Headers;
+    headers["X-Commit"] = commit;
     headers.XContentTypeOptions = "nosniff";
     headers.ContentSecurityPolicy = "frame-ancestors 'none'";
     headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
