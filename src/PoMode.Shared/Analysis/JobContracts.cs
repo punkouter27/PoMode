@@ -81,11 +81,21 @@ public static class JobStageExtensions
 /// <para><paramref name="Backing"/> is the request the loop was generated from, kept so a later take
 /// over the same chords can be found again (the Practice page's take history). Null on takes from
 /// before it was recorded, and on anything that is not a hum take.</para>
+///
+/// <para><paramref name="JamSong"/> is, on a jam take, the song's <see cref="JamSongs.Fingerprint"/>, so the
+/// takes sung over one song can be found again (the jam card's history).</para>
 /// </summary>
-public sealed record TakeOrigin(string Kind, string Description, ModalMelodyRequest? Backing = null)
+public sealed record TakeOrigin(string Kind, string Description, ModalMelodyRequest? Backing = null, string? JamSong = null)
 {
     /// <summary>Sung or hummed over a Mode Lab progression.</summary>
     public const string HumTake = "HumTake";
+
+    /// <summary>Sung over a Practice guitar jam song, the jam's own chords seeded as its harmony.</summary>
+    public const string JamTake = "JamTake";
+
+    /// <summary>The caller's own voice over chords this app played them: a hum take or a jam take.
+    /// Both are read against A=440 and pooled for the singer's range, and neither is a song to identify.</summary>
+    public static bool IsSung(string? kind) => kind is HumTake or JamTake;
 
     /// <summary>The first-run example: a piece the server synthesized in a known mode and analyzed
     /// once, copied into a new user's library so they see a finished result before uploading.</summary>
@@ -119,9 +129,17 @@ public sealed record JobStatusDto(
     DateTimeOffset CreatedAt,
     IReadOnlyList<StageRecord>? StageHistory = null,
     string? FileName = null,
-    TakeOrigin? Origin = null);
+    TakeOrigin? Origin = null,
+    SongIdentityDto? Identity = null);
 
-/// <summary>One row in the song library: a persisted job plus its headline analysis once complete.</summary>
+/// <summary>
+/// What a recording is, when something other than its file name says so: its own tags, else an
+/// AcoustID fingerprint match. <see cref="Source"/> names which ("tags" or "AcoustID"), and
+/// <see cref="LyricsSource"/> is "LRCLIB" when the timed lyrics came from there rather than from
+/// Whisper listening to the vocal.
+/// </summary>
+public sealed record SongIdentityDto(string Title, string? Artist, string? Album, string Source, string? LyricsSource = null);
+
 /// <summary>An audio file in the signed-in person's OneDrive, offered for import.</summary>
 public sealed record OneDriveFileDto(string Id, string Name, long Size, DateTimeOffset? Modified);
 
@@ -137,6 +155,7 @@ public sealed record SimilarSongDto(string JobId, string FileName, double Score,
 /// cosine (<c>GET /api/library/sound</c>). Ranked best first.</summary>
 public sealed record SoundMatchDto(string JobId, double Score);
 
+/// <summary>One row in the song library: a persisted job plus its headline analysis once complete.</summary>
 public sealed record LibraryEntryDto(
     string JobId,
     string FileName,
@@ -145,4 +164,5 @@ public sealed record LibraryEntryDto(
     string? TonicName,
     string? PrimaryMode,
     double? TempoBpm,
-    TakeOrigin? Origin = null);
+    TakeOrigin? Origin = null,
+    SongIdentityDto? Identity = null);

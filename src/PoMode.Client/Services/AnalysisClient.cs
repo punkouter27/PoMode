@@ -14,8 +14,11 @@ namespace PoMode.Client.Services;
 
 public sealed class AnalysisClient(HttpClient http)
 {
+    /// <summary>The source-generated contracts, so the trimmed client never serializes by reflection.</summary>
+    private static PoModeJsonContext Json => PoModeJsonContext.Default;
+
     public Task<JobStatusDto?> GetStatusAsync(string jobId)
-        => http.GetFromJsonAsync<JobStatusDto>($"api/analysis/{jobId}");
+        => http.GetFromJsonAsync($"api/analysis/{jobId}", Json.JobStatusDto);
 
 
     /// <summary>Requests cancellation of a running job; progress updates arrive over SignalR.</summary>
@@ -23,24 +26,24 @@ public sealed class AnalysisClient(HttpClient http)
         => http.DeleteAsync($"api/analysis/{jobId}");
 
     public Task<ModalResult?> GetResultAsync(string jobId)
-        => http.GetFromJsonAsync<ModalResult>($"api/analysis/{jobId}/result");
+        => http.GetFromJsonAsync($"api/analysis/{jobId}/result", Json.ModalResult);
 
     /// <summary>The separated stems this job has ("vocals", "instrumental"); empty when separation was skipped.</summary>
     public async Task<string[]> GetStemsAsync(string jobId)
-        => await http.GetFromJsonAsync<string[]>($"api/analysis/{jobId}/stems") ?? [];
+        => await http.GetFromJsonAsync($"api/analysis/{jobId}/stems", Json.StringArray) ?? [];
 
     /// <summary>The fast first-look estimate, or null while it hasn't been written yet.</summary>
     public async Task<AnalysisPreviewDto?> GetPreviewAsync(string jobId)
     {
         var response = await http.GetAsync($"api/analysis/{jobId}/preview");
         return response.IsSuccessStatusCode
-            ? await response.Content.ReadFromJsonAsync<AnalysisPreviewDto>()
+            ? await response.Content.ReadFromJsonAsync(Json.AnalysisPreviewDto)
             : null;
     }
 
     /// <summary>The canvas payload — note roles and labels already decided server-side.</summary>
     public Task<VisualizationPayload?> GetVisualAsync(string jobId)
-        => http.GetFromJsonAsync<VisualizationPayload>($"api/analysis/{jobId}/visual");
+        => http.GetFromJsonAsync($"api/analysis/{jobId}/visual", Json.VisualizationPayload);
 
     /// <summary>The similarity matrix and novelty curve the section ribbon was cut from, or null when
     /// the song did not divide into sections (the server answers 404, as the ribbon is absent then).</summary>
@@ -48,23 +51,23 @@ public sealed class AnalysisClient(HttpClient http)
     {
         var response = await http.GetAsync($"api/analysis/{jobId}/structure");
         return response.IsSuccessStatusCode
-            ? await response.Content.ReadFromJsonAsync<SongStructureDto>()
+            ? await response.Content.ReadFromJsonAsync(Json.SongStructureDto)
             : null;
     }
 
     /// <summary>The lead singer's voice type and strongest note. The first request for a song measures
     /// its vocal, so it can take a second or two; later ones are cached server-side.</summary>
     public Task<VoiceProfileDto?> GetVoiceProfileAsync(string jobId)
-        => http.GetFromJsonAsync<VoiceProfileDto>($"api/analysis/{jobId}/voice");
+        => http.GetFromJsonAsync($"api/analysis/{jobId}/voice", Json.VoiceProfileDto);
 
     /// <summary>Every derived song/melody statistic, plus the fingerprint paragraph.</summary>
     public Task<SongStats?> GetStatsAsync(string jobId)
-        => http.GetFromJsonAsync<SongStats>($"api/analysis/{jobId}/stats");
+        => http.GetFromJsonAsync($"api/analysis/{jobId}/stats", Json.SongStats);
 
 
     /// <summary>The interpreters this server can run, with live availability.</summary>
     public Task<List<InterpreterOptionDto>?> GetInterpretersAsync()
-        => http.GetFromJsonAsync<List<InterpreterOptionDto>>("api/analysis/interpreters");
+        => http.GetFromJsonAsync("api/analysis/interpreters", Json.ListInterpreterOptionDto);
 
     /// <summary>
     /// The written summary of the statistics, streamed as it is written. <paramref name="interpreter"/>
@@ -122,7 +125,7 @@ public sealed class AnalysisClient(HttpClient http)
     }
 
     public Task<DiagnosticsReport?> GetDiagnosticsAsync()
-        => http.GetFromJsonAsync<DiagnosticsReport>("diag");
+        => http.GetFromJsonAsync("diag", Json.DiagnosticsReport);
 
     /// <summary>The selectable executors per pipeline stage, in the planner's own order.</summary>
     /// <summary>A new run of a finished analysis from <paramref name="stage"/> on, with that stage
@@ -132,35 +135,61 @@ public sealed class AnalysisClient(HttpClient http)
         using var response = await http.PostAsync(
             $"api/analysis/{jobId}/rerun?stage={Uri.EscapeDataString(stage)}&executor={Uri.EscapeDataString(executor)}", content: null);
         return response.IsSuccessStatusCode
-            ? (await response.Content.ReadFromJsonAsync<JobStatusDto>(), null)
+            ? (await response.Content.ReadFromJsonAsync(Json.JobStatusDto), null)
             : (null, await ReasonAsync(response));
     }
 
     /// <summary>Seconds the job has left, or null when the server has no timing to base it on.</summary>
     public async Task<double?> GetEtaAsync(string jobId)
-        => (await http.GetFromJsonAsync<EtaDto>($"api/analysis/{jobId}/eta"))?.SecondsLeft;
+        => (await http.GetFromJsonAsync($"api/analysis/{jobId}/eta", Json.EtaDto))?.SecondsLeft;
 
     /// <summary>The caller's other songs most like this one, with the reason in words.</summary>
     public Task<List<SimilarSongDto>?> GetSimilarAsync(string jobId)
-        => http.GetFromJsonAsync<List<SimilarSongDto>>($"api/library/{jobId}/similar");
+        => http.GetFromJsonAsync($"api/library/{jobId}/similar", Json.ListSimilarSongDto);
 
     /// <summary>The caller's songs that sound like the words, best first; null when this server cannot
     /// search by sound at all (Azure, or the CLAP models not downloaded yet).</summary>
     public async Task<List<SoundMatchDto>?> SearchBySoundAsync(string words)
     {
         using var response = await http.GetAsync($"api/library/sound?q={Uri.EscapeDataString(words)}");
-        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<List<SoundMatchDto>>() : null;
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync(Json.ListSoundMatchDto) : null;
     }
 
-    /// <summary>A fresh open guitar chord jam; the same seed always brings back the same one.</summary>
-    public Task<ChordJamDto?> GetChordJamAsync(int seed)
-        => http.GetFromJsonAsync<ChordJamDto>($"api/chord-jams/random?seed={seed}");
+    /// <summary>A fresh open guitar chord jam; the same seed and settings always bring back the same one.</summary>
+    public Task<ChordJamDto?> GetChordJamAsync(int seed, ChordJamSettings settings)
+    {
+        (string Name, double Value)[] query =
+        [
+            ("seed", seed), ("open", settings.OpenChords), ("variety", settings.Variety), ("mood", settings.Mood),
+            ("keyChanges", settings.KeyChanges), ("difficulty", settings.Difficulty), ("colour", settings.Colour),
+            ("speed", settings.ChangeSpeed), ("busyness", settings.Busyness), ("tempo", settings.Tempo),
+            ("borrowed", settings.Borrowed), ("smoothness", settings.Smoothness), ("length", settings.Length),
+            ("position", settings.Position), ("capo", settings.Capo), ("strumVariety", settings.StrumVariety), ("slidChords", settings.SlidChords),
+        ];
+        // Invariant, so a comma-decimal browser locale still sends 0.5 rather than 0,5.
+        var values = query.Select(pair => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{pair.Name}={pair.Value}"));
+        return http.GetFromJsonAsync($"api/chord-jams/random?{string.Join('&', values)}", Json.ChordJamDto);
+    }
 
     /// <summary>The song's chords as a player fingers them, with the capo advice; null when it has none.</summary>
     public async Task<ChordShapesDto?> GetChordShapesAsync(string jobId)
     {
         using var response = await http.GetAsync($"api/analysis/{jobId}/shapes");
-        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<ChordShapesDto>() : null;
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync(Json.ChordShapesDto) : null;
+    }
+
+    /// <summary>The chord cycle the song repeats most; null when it never comes round twice.</summary>
+    public async Task<SongLoopDto?> GetSongLoopAsync(string jobId)
+    {
+        using var response = await http.GetAsync($"api/analysis/{jobId}/loop");
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync(Json.SongLoopDto) : null;
+    }
+
+    /// <summary>Published songs on the same chords (Hooktheory); null when it could not be asked.</summary>
+    public async Task<List<ProgressionSongDto>?> GetSongsOnLoopAsync(string jobId)
+    {
+        using var response = await http.GetAsync($"api/analysis/{jobId}/loop/songs");
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync(Json.ListProgressionSongDto) : null;
     }
 
     /// <summary>The audio in the signed-in person's OneDrive, or NeedsConsent when Microsoft has not
@@ -173,15 +202,15 @@ public sealed class AnalysisClient(HttpClient http)
             return (null, true);
         }
         return response.IsSuccessStatusCode
-            ? (await response.Content.ReadFromJsonAsync<List<OneDriveFileDto>>() ?? [], false)
+            ? (await response.Content.ReadFromJsonAsync(Json.ListOneDriveFileDto) ?? [], false)
             : ([], false);
     }
 
     /// <summary>The Mode Lab's settings from a description such as "darker and slower".</summary>
     public async Task<ModeLabDescriptionDto?> DescribeModeLabAsync(string text, ModalMelodyRequest current)
     {
-        using var response = await http.PostAsJsonAsync("api/modal-melodies/describe", new ModeLabDescriptionRequest(text, current));
-        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<ModeLabDescriptionDto>() : null;
+        using var response = await http.PostAsJsonAsync("api/modal-melodies/describe", new ModeLabDescriptionRequest(text, current), Json.ModeLabDescriptionRequest);
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync(Json.ModeLabDescriptionDto) : null;
     }
 
     /// <summary>Deletes every job the caller owns; answers how many went.</summary>
@@ -189,7 +218,7 @@ public sealed class AnalysisClient(HttpClient http)
     {
         using var response = await http.DeleteAsync("api/account/data");
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<int>();
+        return await response.Content.ReadFromJsonAsync(Json.Int32);
     }
 
     /// <summary>Deletes one of the caller's songs; false when the server could not (gone already, or busy).</summary>
@@ -200,11 +229,11 @@ public sealed class AnalysisClient(HttpClient http)
     }
 
     public Task<List<StageExecutorsDto>?> GetExecutorsAsync()
-        => http.GetFromJsonAsync<List<StageExecutorsDto>>("api/analysis/executors");
+        => http.GetFromJsonAsync("api/analysis/executors", Json.ListStageExecutorsDto);
 
     /// <summary>Every persisted job, newest first, with headline analysis for completed ones.</summary>
     public Task<List<LibraryEntryDto>?> GetLibraryAsync()
-        => http.GetFromJsonAsync<List<LibraryEntryDto>>("api/library");
+        => http.GetFromJsonAsync("api/library", Json.ListLibraryEntryDto);
 
     /// <summary>
     /// Starts analysing a finished resumable upload (js/upload/resumable-upload.js), with this
@@ -245,7 +274,7 @@ public sealed class AnalysisClient(HttpClient http)
                 using var response = await http.PostAsync(url, content: null);
                 if (response.IsSuccessStatusCode)
                 {
-                    return (await response.Content.ReadFromJsonAsync<JobStatusDto>(), null);
+                    return (await response.Content.ReadFromJsonAsync(Json.JobStatusDto), null);
                 }
                 return (null, await ReasonAsync(response));
             }
@@ -262,7 +291,7 @@ public sealed class AnalysisClient(HttpClient http)
     {
         try
         {
-            if (await response.Content.ReadFromJsonAsync<string>() is { Length: > 0 } reason)
+            if (await response.Content.ReadFromJsonAsync(Json.String) is { Length: > 0 } reason)
             {
                 return reason;
             }
@@ -278,14 +307,14 @@ public sealed class AnalysisClient(HttpClient http)
 
     /// <summary>Standard chord progression presets across genres and modes.</summary>
     public Task<List<ChordProgressionDefinition>?> GetModalProgressionsAsync()
-        => http.GetFromJsonAsync<List<ChordProgressionDefinition>>("api/modal-melodies/progressions");
+        => http.GetFromJsonAsync("api/modal-melodies/progressions", Json.ListChordProgressionDefinition);
 
     /// <summary>Generates an algorithmic melody and chord accompaniment for a scale mode and progression.</summary>
     public async Task<GeneratedMelodyDto?> GenerateModalMelodyAsync(ModalMelodyRequest request)
     {
-        var response = await http.PostAsJsonAsync("api/modal-melodies/generate", request);
+        var response = await http.PostAsJsonAsync("api/modal-melodies/generate", request, Json.ModalMelodyRequest);
         return response.IsSuccessStatusCode
-            ? await response.Content.ReadFromJsonAsync<GeneratedMelodyDto>()
+            ? await response.Content.ReadFromJsonAsync(Json.GeneratedMelodyDto)
             : null;
     }
 
@@ -314,23 +343,42 @@ public sealed class AnalysisClient(HttpClient http)
 
         var response = await http.PostAsync(url, content);
         return response.IsSuccessStatusCode
-            ? await response.Content.ReadFromJsonAsync<JobStatusDto>()
+            ? await response.Content.ReadFromJsonAsync(Json.JobStatusDto)
             : null;
     }
+
+    /// <summary>A take sung over a guitar jam song, with the song itself (so the server lays out the
+    /// chords that actually played) and the tempo it was played at. The reply says why when refused.</summary>
+    public async Task<(JobStatusDto? Job, string? Error)> UploadJamTakeAsync(byte[] wavBytes, ChordJamDto song, double bpm)
+    {
+        using var content = new MultipartFormDataContent();
+        var filePart = new ByteArrayContent(wavBytes);
+        filePart.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
+        content.Add(filePart, "file", "jam.wav");
+        content.Add(new StringContent(System.Text.Json.JsonSerializer.Serialize(song, Json.ChordJamDto)), "song");
+
+        var response = await http.PostAsync($"api/chord-jams/take?bpm={bpm.ToString(CultureInfo.InvariantCulture)}", content);
+        return response.IsSuccessStatusCode
+            ? (await response.Content.ReadFromJsonAsync(Json.JobStatusDto), null)
+            : (null, await response.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>The caller's earlier takes over one guitar jam song, by its fingerprint.</summary>
+    public Task<TakeHistoryDto?> GetJamTakesAsync(ChordJamDto song)
+        => http.GetFromJsonAsync($"api/chord-jams/takes?song={JamSongs.Fingerprint(song)}&title={Uri.EscapeDataString(song.Title ?? "")}", Json.TakeHistoryDto);
 
     /// <summary>The caller's earlier takes over this backing's mode and progression. Key and tempo are
     /// not sent: the server matches takes across them on purpose.</summary>
     public Task<TakeHistoryDto?> GetTakeHistoryAsync(ModalMelodyRequest backing)
-        => http.GetFromJsonAsync<TakeHistoryDto>(
-            "api/modal-melodies/takes"
+        => http.GetFromJsonAsync("api/modal-melodies/takes"
             + $"?mode={backing.Mode}"
             + $"&progressionId={Uri.EscapeDataString(backing.ProgressionId)}"
-            + $"&targetPurity={backing.TargetPurity.ToString(CultureInfo.InvariantCulture)}");
+            + $"&targetPurity={backing.TargetPurity.ToString(CultureInfo.InvariantCulture)}", Json.TakeHistoryDto);
 
     /// <summary>The caller's sung range, and the key that fits <paramref name="mode"/> to it once
     /// there are enough takes to say.</summary>
     public Task<VocalRangeDto?> GetVocalRangeAsync(ScaleMode mode)
-        => http.GetFromJsonAsync<VocalRangeDto>($"api/modal-melodies/voice?mode={mode}");
+        => http.GetFromJsonAsync($"api/modal-melodies/voice?mode={mode}", Json.VocalRangeDto);
 
     /// <summary>How an analysed song sits against the caller's own range, or null when the server has
     /// nothing to say (too few takes, or the job is itself a take).</summary>
@@ -338,16 +386,16 @@ public sealed class AnalysisClient(HttpClient http)
     {
         using var response = await http.GetAsync($"api/modal-melodies/voice/song/{jobId}");
         return response.StatusCode == System.Net.HttpStatusCode.OK
-            ? await response.Content.ReadFromJsonAsync<SongVoiceFitDto>()
+            ? await response.Content.ReadFromJsonAsync(Json.SongVoiceFitDto)
             : null;
     }
 
     /// <summary>Synthesizes the melody and chords into WAV audio and queues an end-to-end analysis job in the Song Analyzer.</summary>
     public async Task<JobStatusDto?> AnalyzeModalMelodyAsync(ModalMelodyRequest request)
     {
-        var response = await http.PostAsJsonAsync("api/modal-melodies/analyze", request);
+        var response = await http.PostAsJsonAsync("api/modal-melodies/analyze", request, Json.ModalMelodyRequest);
         return response.IsSuccessStatusCode
-            ? await response.Content.ReadFromJsonAsync<JobStatusDto>()
+            ? await response.Content.ReadFromJsonAsync(Json.JobStatusDto)
             : null;
     }
 }

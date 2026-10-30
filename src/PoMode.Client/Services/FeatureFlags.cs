@@ -34,4 +34,6 @@ public sealed class FeatureFlags(BrowserPrefs prefs)
 }
 
 /// <summary>Which extra tools are on. A flag added later reads as off from an older saved value.</summary>
-public sealed record AdvancedTools(bool WindowInspector = false, bool Rerun = false, bool Midi = false, bool Diagnostics = false);
+public sealed record AdvancedTools(
+    bool WindowInspector = false, bool Rerun = false, bool Midi = false, bool Diagnostics = false,
+    bool Purity = false, bool Describe = false);

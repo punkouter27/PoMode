@@ -1,0 +1,66 @@
+@using PoMode.Shared.Analysis
+@inject AnalysisClient Client
+
+@* Published songs on the same chords as this song's loop, from Hooktheory's TheoryTab. Asked only
+   when the drawer opens, and every song links back to its TheoryTab page. *@
+<div class="loop-songs" data-loop-songs="@(_songs?.Count.ToString() ?? (_loading ? "loading" : "none"))">
+    <p class="loop-songs-chords">
+        <span class="pm-label">This song's loop</span>
+        <span class="loop-songs-symbols">@string.Join(" – ", Loop.Symbols)</span>
+        <span class="loop-songs-numerals">@Loop.Numerals</span>
+    </p>
+    @if (_loading)
+    {
+        <div class="pm-skeleton loop-songs-skeleton" aria-hidden="true"></div>
+        <p role="status" class="pm-sr-only">Asking Hooktheory…</p>
+    }
+    else if (_songs is null)
+    {
+        <p role="status">Hooktheory could not be asked just now. Try again in a minute.</p>
+    }
+    else if (_songs.Count == 0)
+    {
+        <p role="status">Hooktheory knows no song on these chords yet.</p>
+    }
+    else
+    {
+        <ul class="loop-songs-list">
+            @foreach (var song in _songs)
+            {
+                <li>
+                    <a href="@song.Url" target="_blank" rel="noopener noreferrer">@song.Song</a>
+                    <span class="loop-songs-artist">@song.Artist</span>
+                    @if (song.Section is { Length: > 0 } section)
+                    {
+                        <span class="loop-songs-section">@section</span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+    <p class="loop-songs-credit">From Hooktheory's TheoryTab, matched on the chords alone, so the key and the rhythm may differ.</p>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public required string JobId { get; set; }
+    [Parameter, EditorRequired] public required SongLoopDto Loop { get; set; }
+
+    private List<ProgressionSongDto>? _songs;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _songs = await Client.GetSongsOnLoopAsync(JobId);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException or TaskCanceledException)
+        {
+            _songs = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

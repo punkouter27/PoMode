@@ -76,6 +76,16 @@ public sealed class HumTakeHistory(JobStore store, ModalMelodyGenerator generato
         return Summarise(progression, backing.Mode, matching);
     }
 
+    /// <summary>The caller's earlier takes over one guitar jam song, found by its fingerprint: the same
+    /// chords in the same order, whatever tempo it was sung at or however the song was brought back.</summary>
+    public async Task<TakeHistoryDto> ForJamSongAsync(string? ownerId, string song, string? title, CancellationToken ct)
+    {
+        var matching = (await OwnedTakesAsync(ownerId, ct))
+            .Where(state => state.Origin is { Kind: TakeOrigin.JamTake } origin && origin.JamSong == song)
+            .ToList();
+        return Summarise(string.IsNullOrWhiteSpace(title) ? "this song" : $"“{title.Trim()}”", matching);
+    }
+
     /// <summary>The caller's vocal range from their recent finished takes, over any backing — a voice
     /// does not change register with the chords — plus the key that fits <paramref name="mode"/> to it,
     /// and, once the range stands, the voice type and strongest note those same takes show.</summary>
@@ -188,7 +198,7 @@ public sealed class HumTakeHistory(JobStore store, ModalMelodyGenerator generato
             }
             if (await store.LoadAsync(jobId, ct) is { } state
                 && state.OwnerId == ownerId
-                && state.Origin?.Kind == TakeOrigin.HumTake)
+                && TakeOrigin.IsSung(state.Origin?.Kind))
             {
                 takes.Add(state);
             }
@@ -203,6 +213,12 @@ public sealed class HumTakeHistory(JobStore store, ModalMelodyGenerator generato
     /// </summary>
     public static TakeHistoryDto Summarise(
         ChordProgressionDefinition progression, ScaleMode mode, IReadOnlyList<JobState> takes)
+        // The roman numerals rather than the preset's display name, whose parenthetical spells the
+        // chords in C and would be wrong for every take sung in another key.
+        => Summarise($"{progression.Name.Split(" (")[0]} ({progression.RomanNumerals}) in {ModeName(mode)}", takes);
+
+    /// <summary>The same, over whatever <paramref name="over"/> names: a Mode Lab backing or a jam song.</summary>
+    public static TakeHistoryDto Summarise(string over, IReadOnlyList<JobState> takes)
     {
         var rows = takes
             .Where(state => state.Stage != JobStage.Cancelled)
@@ -210,9 +226,6 @@ public sealed class HumTakeHistory(JobStore store, ModalMelodyGenerator generato
             .Select(ToRow)
             .ToList();
 
-        // The roman numerals rather than the preset's display name, whose parenthetical spells the
-        // chords in C and would be wrong for every take sung in another key.
-        var over = $"{progression.Name.Split(" (")[0]} ({progression.RomanNumerals}) in {ModeName(mode)}";
         if (rows.Count == 0)
         {
             return new TakeHistoryDto($"No takes over {over} yet.", rows);

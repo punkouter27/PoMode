@@ -137,7 +137,7 @@ public static class VoiceProfiler
         var from = Math.Min(Types.Min(t => t.Low), low) - 2;
         var to = Math.Max(Types.Max(t => t.High), high) + 2;
         // Widened out to whole Cs, so the octave labels frame the drawing at both ends.
-        from -=((from % 12) + 12) % 12;
+        from -= ((from % 12) + 12) % 12;
         to += (12 - (to % 12)) % 12;
 
         var labels = new SortedDictionary<int, string>();

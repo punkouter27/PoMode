@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.API.Features.Library;
 
 /// <summary>
 /// "Songs like this" within one library: which other analysed songs share this one's modal colour.

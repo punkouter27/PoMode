@@ -148,6 +148,16 @@
                     <span class="settings-hint">In the Mode Lab: play the sounding mode from a connected keyboard.</span>
                 </div>
                 <div class="settings-row">
+                    <label class="settings-name" for="tool-purity">Purity slider</label>
+                    <RadzenSwitch Value="@Flags.Tools.Purity" Change="@(on => Flags.SetAsync(Flags.Tools with { Purity = on }))" Name="tool-purity" />
+                    <span class="settings-hint">In the Mode Lab: how strictly the example melody keeps to its mode (90% when hidden).</span>
+                </div>
+                <div class="settings-row">
+                    <label class="settings-name" for="tool-describe">Describe the loop</label>
+                    <RadzenSwitch Value="@Flags.Tools.Describe" Change="@(on => Flags.SetAsync(Flags.Tools with { Describe = on }))" Name="tool-describe" />
+                    <span class="settings-hint">In the Mode Lab: set the loop in words, "darker, slower, in D".</span>
+                </div>
+                <div class="settings-row">
                     <label class="settings-name" for="tool-diagnostics">Diagnostics</label>
                     <RadzenSwitch Value="@Flags.Tools.Diagnostics" Change="@(on => Flags.SetAsync(Flags.Tools with { Diagnostics = on }))" Name="tool-diagnostics" />
                     <span class="settings-hint">In the ⋯ menu and Ctrl+K: the server's models, queue and hardware.</span>

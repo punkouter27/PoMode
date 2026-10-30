@@ -21,10 +21,6 @@ public static class ChordShapesEndpoints
             return shapes.Chords.Count == 0 ? TypedResults.NotFound() : TypedResults.Ok(shapes);
         }).AddEndpointFilter<JobIdEndpointFilter>();
 
-        // The Practice page's open-chord jams, made fresh each time. The seed names a jam, so the same
-        // seed always gives the same one back; without one the server picks.
-        app.MapGet("/api/chord-jams/random", (int? seed) => TypedResults.Ok(OpenChordJams.Generate(seed ?? Random.Shared.Next())));
-
         return app;
     }
 }

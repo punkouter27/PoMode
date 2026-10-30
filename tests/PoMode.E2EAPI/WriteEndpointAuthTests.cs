@@ -31,6 +31,8 @@ public sealed class WriteEndpointAuthTests : IDisposable
         "/api/analysis/{jobId}/chroma",
         "/api/analysis/{jobId}/eta",
         "/api/analysis/{jobId}/interpretation",
+        "/api/analysis/{jobId}/loop",
+        "/api/analysis/{jobId}/loop/songs",
         "/api/analysis/{jobId}/lyrics",
         "/api/analysis/{jobId}/midi",
         "/api/analysis/{jobId}/notes",

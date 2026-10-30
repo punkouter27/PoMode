@@ -104,19 +104,47 @@
 
         @* One row under the headline: where the answer goes next, then where the audio came from and
            how it was tuned. Two rows of their own pushed the player under the fold of a desktop. *@
-        @if ((HasContent && Result.PrimaryMode is not null) || Status.Origin is not null || Math.Abs(Result.TuningOffsetCents) >= 0.5)
+        @if ((HasContent && Result.PrimaryMode is not null) || Status.Origin is not null || Status.Identity is not null
+             || _loop is not null || Math.Abs(Result.TuningOffsetCents) >= 0.5)
         {
             <div class="song-subrow">
                 @* The answer is a mode, and these are the two pages that do something with one. Without
                    them every page led to a song and a song led nowhere. *@
                 @if (HasContent && Result.PrimaryMode is { } mode)
                 {
-                    <ModeNextLinks From="song" TonicPitchClass="Result.TonicPitchClass" Mode="mode" Name="@PrimaryHeadline" />
+                    <ModeNextLinks From="song" TonicPitchClass="Result.TonicPitchClass" Mode="mode" Name="@PrimaryHeadline"
+                                   Loop="@_loop?.ProgressionId" />
                 }
                 @* Both sentences are the server's. *@
-                @if (Status.Origin is not null || Math.Abs(Result.TuningOffsetCents) >= 0.5)
+                @if (Status.Origin is not null || Status.Identity is not null || _loop is not null || Math.Abs(Result.TuningOffsetCents) >= 0.5)
                 {
                     <div class="song-chips">
+                        @if (Status.Identity is { } identity)
+                        {
+                            @* What the recording is, and who said so: the file's tags or its sound. *@
+                            <span class="song-identity" role="note" data-identity-source="@identity.Source"
+                                  title="@IdentitySource(identity)">
+                                <span aria-hidden="true">♪</span>
+                                @identity.Title@(identity.Artist is { } artist ? $" · {artist}" : "")
+                                <span class="pm-sr-only">@($", {IdentitySource(identity)}")</span>
+                            </span>
+                        }
+                        @if (_loop is { } loop)
+                        {
+                            @* The chords it keeps coming back to; the links above carry them away. *@
+                            <span class="song-loop" role="note" data-loop="@loop.Numerals"
+                                  title="@($"The loop the song repeats most ({loop.Numerals}), heard {loop.Repeats} times")">
+                                <span aria-hidden="true">🔁</span>
+                                @string.Join(" – ", loop.Symbols)
+                                <span class="song-loop-repeats">@($"×{loop.Repeats}")</span>
+                            </span>
+                            @if (loop.CanFindSongs)
+                            {
+                                <button class="song-why-toggle" type="button" @onclick="OpenLoopSongs" aria-haspopup="dialog">
+                                    Songs on these chords
+                                </button>
+                            }
+                        }
                         @if (Status.Origin is { } take)
                         {
                             <span class="take-origin" role="note" data-take-origin="@take.Kind">
@@ -135,7 +163,7 @@
                the singer's own, and the colours are the verdict on it. *@
             <AnalysisCanvas Model="Visual" SelectedWindowIndex="SelectedWindowIndex"
                             PlayheadSec="PlayheadSec" OnSeek="OnSeek" HighlightEvidence="_whyOpen"
-                            Reveal="true" Ink="@(Status.Origin?.Kind == TakeOrigin.HumTake)"
+                            Reveal="true" Ink="@TakeOrigin.IsSung(Status.Origin?.Kind)"
                             JobId="@Status.JobId" Describe="true"
                             OnReady="@(element => _canvasElement = element)" />
             <div class="song-canvas-foot">
@@ -326,6 +354,8 @@
         _statsLoading = true;
         _whyOpen = false;
         _sectionsOpen = false;
+        _loop = null;
+        var loading = LoadLoopAsync(Status.JobId);
         try
         {
             _stats = await Client.GetStatsAsync(Status.JobId);
@@ -338,7 +368,38 @@
         {
             _statsLoading = false;
         }
+        await loading;
     }
+
+    /// <summary>The chord cycle the song repeats most, fetched beside the statistics; null when none.</summary>
+    private SongLoopDto? _loop;
+
+    private static string IdentitySource(SongIdentityDto identity)
+        => (identity.Source == "tags" ? "Named by the file's own tags" : "Recognised by its sound (AcoustID)")
+            + (identity.LyricsSource is { } lyrics ? $"; lyrics from {lyrics}" : "");
+
+    private async Task LoadLoopAsync(string jobId)
+    {
+        try
+        {
+            var loop = await Client.GetSongLoopAsync(jobId);
+            if (jobId == Status.JobId)
+            {
+                _loop = loop;
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException or TaskCanceledException)
+        {
+            // No loop chip; the links still carry the mode.
+        }
+    }
+
+    private Task OpenLoopSongs()
+        => _loop is { } loop
+            ? Dialogs.OpenSideAsync<LoopSongsPanel>("Songs on these chords",
+                new Dictionary<string, object?> { [nameof(LoopSongsPanel.JobId)] = Status.JobId, [nameof(LoopSongsPanel.Loop)] = loop },
+                Drawer)
+            : Task.CompletedTask;
 
     /// <summary>The "Why this mode?" drawer; while it is open the canvas rings the notes it cites.</summary>
     private bool _whyOpen;

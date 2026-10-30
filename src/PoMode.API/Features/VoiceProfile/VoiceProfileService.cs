@@ -31,7 +31,7 @@ public sealed class VoiceProfileService(JobStore store, ILogger<VoiceProfileServ
         // band tuned 15 cents flat is in tune. A hum take was sung over this app's backing at A=440, so
         // that is its reference — correcting for the take's own offset would forgive exactly the
         // flatness against the chords that a singer wants to hear about.
-        var tuning = state.Origin?.Kind == TakeOrigin.HumTake
+        var tuning = TakeOrigin.IsSung(state.Origin?.Kind)
             ? 0.0
             : (await store.ReadArtifactAsync<ModalResult>(state.JobId, "result.json", ct))?.TuningOffsetCents ?? 0.0;
         if (await store.ReadArtifactAsync<IntonationArtifact>(state.JobId, ArtifactName, ct) is { } cached

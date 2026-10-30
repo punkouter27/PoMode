@@ -11,7 +11,7 @@
     }
     else
     {
-        @Text("shape-fret-label", Left - 4, Top + FretGap - 6, "end", Fingering.BaseFret.ToString())
+        @Text("shape-fret-label", Left - Dot - 3, Top + FretGap - 6, "end", Fingering.BaseFret.ToString())
     }
     @for (var fret = 0; fret <= Frets; fret++)
     {
@@ -64,7 +64,11 @@
     /// <summary>What the drawing shows, for a screen reader.</summary>
     [Parameter, EditorRequired] public required string Label { get; set; }
 
-    private const int Frets = 4, FretGap = 20, StringGap = 16, Left = 20, Top = 22, Dot = 7;
+    private const int Frets = 4, FretGap = 20, StringGap = 16, Top = 22, Dot = 7;
+
+    /// <summary>Room left of the grid: more when a starting fret is numbered there, so the number stays
+    /// clear of a dot or a barre on the low E string.</summary>
+    private int Left => Fingering.BaseFret == 1 ? 20 : 32;
     private const int Height = Top + (Frets * FretGap) + 8;
 
     private int Span => (Fingering.Frets.Length - 1) * StringGap;

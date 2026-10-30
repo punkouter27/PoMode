@@ -1,0 +1,59 @@
+.loop-songs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pm-space-3);
+}
+
+.loop-songs-chords {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--pm-space-1) var(--pm-space-2);
+    margin: 0;
+}
+
+.loop-songs-symbols {
+    font-size: var(--pm-text-md);
+    font-weight: 600;
+}
+
+.loop-songs-numerals,
+.loop-songs-artist,
+.loop-songs-section,
+.loop-songs-credit {
+    color: var(--pm-fg-muted);
+    font-size: var(--pm-text-sm);
+}
+
+.loop-songs-section {
+    font-style: italic;
+}
+
+.loop-songs-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pm-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.loop-songs-list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--pm-space-1) var(--pm-space-2);
+}
+
+.loop-songs-list a {
+    color: var(--pm-accent);
+    font-weight: 600;
+}
+
+.loop-songs-skeleton {
+    height: 12rem;
+}
+
+.loop-songs-credit {
+    margin: 0;
+}

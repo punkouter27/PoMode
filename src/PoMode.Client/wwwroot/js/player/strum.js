@@ -1,5 +1,5 @@
 // The open chord jam's guitar: strums the exact voicings the chord boxes show, on the Karplus-Strong
-// string from voices.js, looping the progression until stopped.
+// string from voices.js, looping the chords until stopped, or (once) playing them through and ending.
 //
 // Like the rest of the player, this module knows no music theory. It is handed each chord's MIDI notes
 // (low string first, from the server's frets), its length in beats, the tempo, and an eighth-note
@@ -24,8 +24,17 @@ const TICK_MS = 50;
 
 let state = null;
 
+// When the last song started playing, on the shared clock: its bar one, whatever chord playback began
+// from. Kept after the strumming stops so a take recorded over it can still be trimmed to bar one.
+let lastStart = null;
+
+/// Bar one of the last song played, in the shared AudioContext's seconds, or null before any.
+export function songStart() {
+    return lastStart;
+}
+
 /// Fires 'pluck' once per string struck, as it is scheduled (up to LOOKAHEAD early), with detail
-/// { ctx, chord, string, midi, when, ringFor, level }: `string` counts the box's strings from the
+/// { ctx, chord, string, midi, when, ringFor, level }: `chord` is the chord's box, `string` counts the box's strings from the
 /// lowest, muted ones included, and `when`/`ringFor`/`level` are exactly what voices.js pluck() was
 /// given. Fires 'stop' with { ctx, at } when the strumming is cut off.
 export const plucks = new EventTarget();
@@ -37,9 +46,13 @@ function publish() {
     } catch { }
 }
 
-/// chords: [{ midi: number[], beats: number, frets?: number[] }]; frets (low string first, -1 muted)
-/// only number the strings in the pluck events. pattern: 8 characters; dotNet gets OnJamChord(index).
-export function play(chords, bpm, pattern, dotNet) {
+/// chords: [{ midi: number[], beats: number, frets?: number[], box?: number, pattern?: string }];
+/// frets (low string first, -1 muted) only number the strings in the pluck events, and box is the
+/// chord box that sounds it (its index among the board's boxes; the chord's own index if absent).
+/// pattern: 8 characters, for any chord without its own. dotNet gets OnJamChord(index) as each chord
+/// sounds. With once, the chords play through a single time and dotNet gets OnJamEnded when the last
+/// one has rung; from starts at that chord rather than the first.
+export function play(chords, bpm, pattern, dotNet, once = false, from = 0) {
     stop();
     if (!chords?.length || !(bpm > 0)) return;
     const ctx = getSharedContext();
@@ -59,7 +72,12 @@ export function play(chords, bpm, pattern, dotNet) {
             ? chord.frets.map((fret, s) => (fret < 0 ? -1 : s)).filter(s => s >= 0)
             : chord.midi.map((_, i) => i);
     }
-    state = { ctx, out, chords, pattern, eighth, starts, total, dotNet, chord: -1, slot: 0, origin: ctx.currentTime + 0.12, voices: [], timer: 0, cues: [] };
+    const first = starts[Math.min(Math.max(0, from), chords.length - 1)];
+    state = {
+        ctx, out, chords, pattern, eighth, starts, total, dotNet, once, ending: false, chord: -1, slot: first,
+        origin: ctx.currentTime + 0.12 - (first * eighth), voices: [], timer: 0, cues: [],
+    };
+    lastStart = state.origin;
     state.timer = setInterval(schedule, TICK_MS);
     schedule();
     publish();
@@ -90,6 +108,10 @@ function schedule() {
     if (!s) return;
     const horizon = s.ctx.currentTime + LOOKAHEAD;
     while (s.origin + (s.slot * s.eighth) < horizon) {
+        if (s.once && s.slot >= s.total) {
+            finish(s);
+            return;
+        }
         const when = s.origin + (s.slot * s.eighth);
         const inLoop = s.slot % s.total;
         const index = chordAt(s.starts, inLoop);
@@ -100,7 +122,7 @@ function schedule() {
             cue(s, index, when);
         }
         // The pattern counts from the top of each bar, whatever chord is under it.
-        strike(s, s.pattern[inLoop % 8], index, when, ringFor);
+        strike(s, (chord.pattern ?? s.pattern)[inLoop % 8], index, when, ringFor);
         s.slot++;
     }
 }
@@ -118,7 +140,7 @@ function strike(s, kind, chord, when, ringFor) {
     const play = (note, at, level) => {
         s.voices.push(pluck(s.ctx, s.out, midi[note], at, ringFor, level));
         if (s.voices.length > 160) s.voices.splice(0, s.voices.length - 160);
-        announce('pluck', { ctx: s.ctx, chord, string: strings[note], midi: midi[note], when: at, ringFor, level });
+        announce('pluck', { ctx: s.ctx, chord: s.chords[chord].box ?? chord, string: strings[note], midi: midi[note], when: at, ringFor, level });
     };
     if (kind === 'B') {
         play(0, when, 0.42);
@@ -131,6 +153,18 @@ function strike(s, kind, chord, when, ringFor) {
             play(midi.length - 1 - i, when + (i * UP_SPREAD), 0.18);
         }
     }
+}
+
+/// Played through once: when the last chord has rung its length, the strumming stops and says so.
+function finish(s) {
+    if (s.ending) return;
+    s.ending = true;
+    const delay = Math.max(0, (s.origin + (s.total * s.eighth) + 0.3 - s.ctx.currentTime) * 1000);
+    setTimeout(() => {
+        if (state !== s) return;
+        stop();
+        try { s.dotNet?.invokeMethodAsync('OnJamEnded'); } catch { }
+    }, delay);
 }
 
 function announce(type, detail) {

@@ -123,8 +123,8 @@ pentatonic card no longer sounds the two notes its scale exists to omit.
 ## Mode Lab layout
 
 The page is a stack of strips, each its own component: the transport (sticky under the header, its
-offset measured by `js/shell/layout.js` as `--pm-header-height`), the backing settings with a
-"Describe it" box, `DrumStrip`, `ModeCards`, then the roll with `GravityPanel` beside it (under it below
+offset measured by `js/shell/layout.js` as `--pm-header-height`), the backing settings (with a
+"Describe it" box when that Settings tool is on), `DrumStrip`, `ModeCards`, then the roll with `GravityPanel` beside it (under it below
 1024px), so the lab is one screen on a desktop. A MIDI keyboard can play
 along (`js/player/midi-in.js`, Web MIDI, notes only, asked for on a click): each key sounds through the
 player's room and lights its body on the home-note view, and the readout counts notes outside the
@@ -143,6 +143,9 @@ plays progressions; the one exercise lives on its own page.
 audio out of the speakers. It shares `modal-player.js`'s AudioContext so the two clocks are
 comparable, and trims the take so sample zero is bar one — the count-in and the mic-open gap come off
 the front.
+
+(The guitar jam's record mode is the one other caller: same recorder, its own endpoint and seeder,
+because its backing is a jam song rather than a Mode Lab request; see "Open guitar chord jam".)
 
 `POST /api/modal-melodies/hum` takes the recording as multipart and the backing as the same query
 parameters `/wav` and `/midi` use. `HumTakeSeeder` then hands the job what it already knows, through
@@ -388,26 +391,168 @@ why the row lives inside the Sing tab rather than above all three.
 
 ### Open guitar chord jam
 
-The card at the foot of `/practice` is practice for the hands: progressions a beginner can finger
+The card at the foot of `/practice` is practice for the hands: short songs a beginner can finger
 that sound like extended chords (add9, sus, sevenths, a Lydian #11), because open strings keep
-ringing through them. Every press of New progression is a fresh one: `OpenChordJams.Generate(seed)`
-(in `Features/ChordShapes`, `GET /api/chord-jams/random?seed=`) picks a key and mode open shapes
-can cover (major most often, Lydian least), a progression shape as scale degrees, and for each step an
-open voicing from a library of 48 written out fret by fret. A voicing may stand on a step only when
-every note it sounds is in the key and its third, if any, is the step's. The pick is weighted toward
-colour (triple) and toward strings left as they were (squared), so changes ring into each other.
-A jam is redrawn unless a tonic chord carries its third (so home is heard) and, for a mode, unless some
-chord sounds the mode's characteristic note (`ScaleModes.CharacteristicIntervals`); otherwise
-C Lydian would be C major under another name. About four in ten split the last bar into a sus and its
-resolution. The sentence about each jam is written from its frets: the fingers that stay put, the open
-strings that drone, the chords that carry the colour. The same seed always gives the same jam, and the
-card keeps the ones heard this visit for Previous. The MIDI the browser strums is derived from the frets
-in standard tuning, so what plays is what the box shows. `OpenChordJamsTests` holds every voicing to
-its name and a thousand seeds to their key, home chord and mode.
+ringing through them, set against sections played up the neck. Every press of New song is a fresh
+one: `OpenChordJams.Generate(seed, settings)` (in `Features/ChordJams`,
+`GET /api/chord-jams/random?seed=` plus one optional query value per slider: `open`, `variety`,
+`mood`, `keyChanges`, `difficulty`, `colour`, `speed`, `busyness`, `tempo`, `borrowed`, `smoothness`,
+`length`, `position`, `capo`, `strumVariety`, `slidChords`, bound through `JamQuery`) picks a key and mode open shapes can cover and
+writes a verse, a chorus and a bridge in it, and sometimes a pre-chorus. Verse and chorus are progression shapes as scale degrees (never the same
+one); pre-chorus and bridge come from shapes that start away from home and end on the chord that
+leans back (V, or ♭VII where the mode has no major V). The form is Verse, Chorus, Verse, Chorus,
+Bridge, Chorus (a pre-chorus goes before each chorus but the last), then a single strum of the tonic.
+
+The Song settings sliders (`ChordJamSettings`, in Shared) shape the next song; the same seed and
+settings always give the same song. Their defaults make a simple song: open chords only, the plain
+form, no key change, easy shapes, a little colour, light strumming, a medium-slow tempo, nothing
+borrowed, no capo.
+
+- **Open chords** (default 100%): each section stays on open chords with that chance; otherwise it
+  is barre chords, or about a third of the time power chords, and is labelled so on the card.
+- **Song structure** (variety, default plain): scales, from none, the pre-chorus (a third of songs at
+  the middle), six- and eight-chord sections (each about one in seven at the middle), a verse or
+  chorus coming back revoiced (`Verse 2` / `Chorus 2`, shown as its own section), and a drawn repeat
+  count (once, twice or four times round; a longer section or a pre-chorus half as often). At plain
+  every song is verse, chorus, bridge in four-chord sections twice round.
+- **Sad to happy** (mood, default the middle): leans the key toward minor and Dorian or toward
+  major, Mixolydian and Lydian; at either end the other side's modes are out.
+- **Key changes** (0 to 3, default 0): the last chorus, then the bridge, then the second verse move up
+  a whole step (or a half step about a third of the time), each change cumulative. Those sections
+  are the same progressions voiced afresh in the new key ("Chorus in A"), on barre chords where open
+  shapes run out, each led in by one bar of the new key's fifth chord ("Lift to A"), and the song
+  ends on the new tonic. A short song has no bridge, so two changes at most.
+- **Difficulty** (default easy): a shape's hardness (fingers down, stretch, a barre) above the
+  slider plus a margin is weighted down to almost nothing, and rare shapes come up more as it rises.
+- **Colour** (default low): colour chords (add9, sus, sevenths) weigh from a tenth to six times a
+  plain triad, triple at the middle.
+- **Chord changes** (default every bar): every two bars, every bar or every half bar.
+- **Strumming** (default sparse): picks the pattern set: a down stroke a beat or two apart, the
+  eighth-note patterns, or constant eighths; the chorus takes the set above, strummed through.
+- **Tempo** (default medium-slow): centres the tempo between about 60 and 124 BPM, give or take 16.
+- **Borrowed chords** (default none): each step but a part's first, a tonic or a pre-chorus or
+  bridge's last may become a chord from the parallel key (♭III, iv, v, ♭VI, ♭VII in major; ii, iii,
+  IV, V, vi in minor), a third of steps at the top. A borrowed step is stored as `-(degree + 1)` of
+  the parallel key and numbered and voiced from it.
+- **Smooth changes** (default smooth): the power on strings carried over from the last chord (0 to
+  4, squared at the middle).
+- **Song length** (default medium): short (verse, chorus, twice), medium, or long (a double last
+  chorus).
+- **Neck position** (default low): weights a barre or power shape by how near its lowest fret is to
+  the 1st to 9th fret. Most roots have one barre shape below the 9th fret, so it chooses only where
+  there are two.
+- **Strum variety** (default steady): with its chance a section's pattern takes a twist (one to
+  three strokes changed) and each chord may take a fill of its own (the last chord of a section most
+  often), sent as the chord's `Pattern` and shown under its box; a chorus stays strummed through.
+- **Slid shapes** (default now and then): how often a chord found by sliding an open shape is played,
+  from not at all (filtered out, so a step that only a slid shape fits sends the song to another key
+  or shape) through a third of a written shape's weight at the default to twenty times at the top.
+- **Capo** (default none): the shapes, names and key stay what the hand plays; the MIDI goes up by
+  the capo's frets, and the song carries `Capo` and `SoundingKey`, shown beside the key.
+
+Chord changes are not always even: in about one section in five (three in five at wild structure)
+one or two chords hand half their length to a neighbour, a 6-beat chord beside a 2-beat one, so a
+change comes early or late. The section keeps its length, its repeats and key-changed versions keep
+the rhythm, and the sentence says which sections do it.
+
+The slide jams are written out and come up only when the settings allow an open, one-key,
+middling-mood song of medium length at one bar a chord with nothing borrowed. Presets: six built in
+(Simple, Campfire, Sad ballad, Rock, Pop with a lift, Wild ride), and the player can name and save
+the sliders as their own (`pm-jam-presets`); picking one sets every slider.
+
+The library is 48 open voicings written out fret by fret, the three slid ones, and the movable
+shapes `Movable()` makes, and the chords `SlidOpen()` finds: twelve common open shapes (C, A, Am, D,
+Dm, E, Em, G, Cadd9, Asus2, Dsus2, Em7) with the fretted fingers slid up one to five frets and the open
+strings left open, each result named from the notes it sounds (root on the bass where that names it,
+a slash chord otherwise) and kept only if it names as a chord: 31 of them, Fmaj9 (the C shape up 5),
+Cmaj9 (G up 5), Am9 and Amaj9 (Asus2 up 3 and 4), Dm9 and Dmaj9 (Dsus2 up 3 and 4) among them. They
+stand on any step they fit at about a third of a written shape's weight, and the sentence names the
+shape one came from. The movable ones are the E-shape and A-shape barre (major, minor, 7, m7, and maj7 and sus2 on
+the A shape) and the power chord from each, for every root at a barre between the 1st and 9th fret,
+written in the library with one spelling each (Bb, F#). A song names every chord for the key it is
+played in (`Spelling`): each scale note on its own letter, the tonic spelled whichever way gives the
+scale fewer accidentals (Ab major, not G# major), a borrowed chord from the parallel scale on the same
+letter. So the same shape is G#m in E and Abm in E♭, and a key change into E♭ names its keys and
+chords in flats. The written-out slide jams keep their own names. A voicing may stand on a step only when it is of the
+section's sound, every note it sounds is in the key and its third, if any, is the step's. The pick
+is weighted toward colour (triple) and toward strings left as they were (squared), so changes ring
+into each other, in one chain across the song. A song is redrawn unless a tonic chord in the verse
+or chorus carries its third (so home is heard) and, for a mode, unless some chord sounds the mode's
+characteristic note (`ScaleModes.CharacteristicIntervals`); otherwise C Lydian would be C major
+under another name. About four in ten split an open verse's last bar into a sus and its resolution.
+The three slide jams (E Phrygian, the C shape slid in G) are written-out songs with the slide as the
+verse. The sentence about each jam is written from the first open section's frets (the fingers that stay put,
+the open strings that drone, the chords that carry the colour), then says which sections are barre
+or power chords, whether chords are borrowed, where the key changes, and the capo. The card keeps the songs heard this visit for Previous.
+The MIDI the browser strums is derived from the frets in standard tuning, so what plays is what the
+box shows. `OpenChordJamsTests` holds every voicing to its name, a thousand default songs to their
+key, home chord, mode, form, section lengths and sounds, the defaults to a simple song, and every
+slider to what it promises (the taste sliders by counting over two hundred songs).
+
+Every song has words to sing along (`JamLyrics.Write`, from the seed, so a replay or a saved song
+sings the same): for each entry of the form one line per chord as played, every time round. They are
+the app's own, put together from small banks of openings and rhyming endings, not from any song, on a
+theme drawn at random per song (love, the road, rain, home, summer; `ChordJamDto.Theme`, shown in the
+panel's header): a
+verse rhymes ABAB and is new each time, the chorus is the same every time with its hook (the song's
+title) on alternate lines, a pre-chorus climbs, a bridge asks; the mood slider picks sad or happy
+banks. A chord of two beats or less gets one sung sound, one of two bars or more a held "oh", a lift
+chord no words. The card's Sing along panel shows the part playing now, one time round at a time, each
+line under its chord; the line being sung is lit, and `js/fx/lyric-wipe.js` wipes the light across it
+over its chord's length (not when effects are off or motion is reduced).
+
+**Record mode** sends a melody sung over a jam song to the analyzer, which is how the jam answers
+"what mode did I just sing in". Record opens the microphone through `hum-recorder.js` (the capture
+path that wants echo cancellation, on the same AudioContext as `strum.js`), counts four clicks in at the
+song's tempo and plays the song from the top; Stop recording, or the song's end, closes the take, which
+is trimmed so sample zero is the song's bar one (`strum.js` `songStart`, passed to `finishCapture`).
+While a take is open or waiting, nothing that would change the song under it (New song, Previous, the
+saved list, the tempo) can be touched. "Find my melody's mode" posts the take to
+`POST /api/chord-jams/take` (multipart: the WAV, the song itself as JSON in a `song` field, `?bpm=` the
+tempo played) and stays on the card: it follows the take's analysis over the hub as the analysis page
+does (subscribe, then read the status once) and, when it completes, reads the result and says "You
+sang in A Dorian" with the confidence and a link to the full analysis. The song travels whole rather than as a seed, so a saved
+song is analysed against the chords it actually played. `JamTakeSeeder` checks it
+(`JamTakeSeeder.Problem`), lays its form out from bar one at that tempo as the job's chord track
+(`Lay`: every chord every time round, then the last, each folded by `Parse` to the seven qualities the
+mode engine voices: add9, sus and power chords as major, maj9 as maj7, m9 as min7, 9 as dom7), writes the
+beat grid at confidence 1.0, marks separation and chord detection provided (`SkippedDryVocal`,
+`GuitarJamBacking`) and stamps `TakeOrigin.JamTake` with a sentence saying what was played to the singer,
+never what they sang. Pitch tracking and the mode analysis then run as for a hum take, so the key and
+mode the page headlines are a reading of the voice. `TakeOrigin.IsSung` covers both kinds wherever a
+take is the caller's own voice: graded at A=440, pooled for their range, skipped by song identity and
+published-lyrics lookups, inked on the analysis canvas; the library has a Jam takes toggle and answers
+"jam", and marks a jam take's row 🎸 jam.
+
+Each jam take's origin carries the song's `JamSongs.Fingerprint` (in Shared, so the browser computes the
+same one: an FNV-1a hash of key, capo, form and every chord as fingered and timed; tempo is out, so a
+take at another speed is over the same song). `GET /api/chord-jams/takes?song=&title=` reads the
+caller's takes over that song through `HumTakeHistory.ForJamSongAsync`, the same summary the Sing tab's
+history uses ("2 takes over “Leave a light on”: 1 came out Dorian, 1 Ionian"), and the card shows it
+under the song with the Practice `TakeHistory` list, read again when the song changes or a take is read.
+
+That list draws its tiles with WebGL, and a page that holds too many contexts loses its oldest: the
+chord board's strings. `string-glow.js` hides its canvas while its context is lost (`data-strings-lost`
+on the board), since a lost canvas still covers the boxes drawn blank, and sets the strings up again if
+the browser restores it.
+
+The card shows every section at once (a section of more than four chords takes the full width), with
+the form as a strip of chips above them. Play runs the song once from the top and stops after the
+final chord; the chip, the section and the box sounding are marked as it goes. A tempo change carries
+on from the chord sounding. A box drawn from a fret past the first leaves room left of the grid for
+its fret number, so the number clears a barre on the low E string.
+
+The sliders are remembered in this browser (`BrowserPrefs`, key `pm-jam-settings`) and apply from
+the next New song. Save keeps a song (key `pm-jam-saved`, newest first, up to 50) whole, chords and
+all, with its seed, the settings it was made with and a label (key, bars, tempo); the Saved songs
+dropdown brings it back exactly as it was, however the generator has changed since. A song saved
+before songs were kept whole has only its seed and settings, so it is made again through the
+endpoint and may come out differently. Nothing is stored on the server.
 
 `js/player/strum.js` strums on the Karplus-Strong string from `voices.js` (down strokes spread 14 ms
-string to string, up strokes over the top four), from an eighth-note pattern per bar: D, U, B for
-bass alone, - to rest. Notes ring until the chord changes, which is the whole sound. It shares
+string to string, up strokes over the top four), from an eighth-note pattern per bar (each chord may carry its own): D, U,
+B for bass alone, - to rest. It loops, or with `once` plays through, calls `OnJamEnded` and stops;
+each chord names the box it sounds in, which is what `string-glow.js` vibrates. Notes ring until the chord changes, which is the whole sound. It shares
 `modal-player.js`'s AudioContext. Practice stops the jam whenever it plays its own chords (every path
 goes through `EnsurePlayerAsync`), and the jam stops the page's chords when it starts. It is held
 while a take records. Like the rest of the page it is unscored. The boxes are `ChordBox`, the same
@@ -546,7 +691,12 @@ workers' blobs, and a wrong one fails silently in production.
   effects that draw a measured fact: gpu-surface, chroma-layer, spectral-glass, heat-haze,
   metaball-field, key-caustics, vibrato-fluid, string-glow; see ui-rules.md, "Effects that carry data").
   Imports are relative, so a module that moves folders has to fix its own siblings.
-- Heavy UI lives in plain JS modules, not Blazor: `player/canvas.js` (dual-lane visualization, pan/zoom, virtualized drawing) and `player/mixer.js` (Web Audio stem playback, synth note overlays, metronome clicks, Space/comma transport keys). `mixer.js` owns the transport clock and drives the canvas playhead directly — no per-frame Blazor renders. Blazor components only issue commands and receive discrete events.
+- The two largest pages keep their logic in code-behind (`ModeLab.razor.cs`, `Practice.razor.cs`);
+  the `.razor` file holds the markup, injections and `@implements`.
+- Every JSON call the client makes passes its `PoModeJsonContext` type info, and the server's calls to
+  outside services use `ExternalJsonContext`, so nothing serializes by reflection. The published
+  client is trimmed, and the trim analyzer finds only the framework's own Router and LayoutView.
+- Heavy UI lives in plain JS modules, not Blazor: `player/canvas.js` (dual-lane visualization, pan/zoom, virtualized drawing; its reveal, onset bursts and note drop are `canvas-motion.js`, the helpers both share `canvas-geometry.js`) and `player/mixer.js` (Web Audio stem playback, synth note overlays, metronome clicks, Space/comma transport keys). `mixer.js` owns the transport clock and drives the canvas playhead directly — no per-frame Blazor renders. Blazor components only issue commands and receive discrete events.
 - JS state is mirrored onto `data-*` attributes (`data-mixer-status`, `data-playhead`, …) precisely so Playwright tests can assert without reaching into module internals. Keep that contract when changing these modules.
 - The app is an installable PWA with an Android share target, so a voice memo can be shared straight
   into PoMode. `service-worker.js` is **network-first, never cache-first** - `Program.cs` serves this
@@ -573,7 +723,8 @@ workers' blobs, and a wrong one fails silently in production.
   (`Services/BrowserPrefs.cs`, JSON through its own source-generated context; anything unreadable reads
   as nothing remembered): the Library's search (`pm-library-filters`), Practice's backing
   (`pm-practice-backing`), the pinned analysis models (`pm-executor-pins`, kept only while the server
-  still lists that executor) and the chosen writer (`pm-interpreter`). The theme, effect level, sound
+  still lists that executor), the chosen writer (`pm-interpreter`) and the saved guitar jam songs
+  (`pm-jam-saved`), the jam's sliders (`pm-jam-settings`) and its named presets (`pm-jam-presets`). The theme, effect level, sound
   and spatial-audio flags stay in `theme.js` / `prefs.js`, which stamp them before first paint. The
   Mode Lab is not remembered: its settings move each other.
 
@@ -618,8 +769,9 @@ header's Search button. `ThemeState` is shared by the header's
 quick toggle and Settings so each shows what the other set.
 
 **More tools** (`FeatureFlags`, localStorage `pm-advanced-tools`): the window inspector, "Rerun with
-another model", the Mode Lab's MIDI keyboard and Diagnostics (menu and Ctrl+K) are off until Settings
-switches them on, so a first visit carries the essentials. Each flag hides one control in place; none
+another model", the Mode Lab's MIDI keyboard, its purity slider and its "Describe it" box, and
+Diagnostics (menu and Ctrl+K) are off until Settings switches them on (a hidden purity slider leaves
+the melody at its default 90%), so a first visit carries the essentials. Each flag hides one control in place; none
 brings back a second arrangement of a page (docs/removed.md). `/diagnostics` itself still answers by URL.
 
 Ctrl+K (`js/shell/palette.js` → `CommandPalette.razor`) opens a combobox over a listbox of pages,
@@ -640,6 +792,7 @@ back as a removable chip. `SongTile` draws each row's analysis as a picture (gro
 stripes = tempo, angle = key), from facts the row already carries. The date column is the first to go
 under 900px.
 
+The library is its own slice (`Features/Library`: `LibraryEndpoints`, `SongSimilarity`).
 `GET /api/library/{id}/similar` (`SongSimilarity`) scores the caller's other analysed songs by the
 cosine of their mode-time profiles, with tempo and a shared tonic as tie-breakers, and words the reason
 claiming only what holds. Shown under a single-song preview.
@@ -676,9 +829,13 @@ no cut can tell a typo from a real ask. Only the person can.
   roles the notes are coloured by; drawn along the foot of the note lane, glowing where the playhead is.
 - **Section wash**: the card takes a faint inset glow of the playing section's mode token, through the
   registered `--pm-section-tint` so the change is a browser-animated cross-fade.
-- **Lyrics** (`Features/Lyrics`): Whisper base.en through Whisper.net on `vocals.wav`, after the job,
-  written as `lyrics.json`; the now-playing chip shows the line being sung. Segments under 0.4 of
-  Whisper's own probability and bracketed sound labels are dropped. Only from a separated vocal.
+- **Lyrics** (`Features/Lyrics`): for a song whose title and artist are known (Song identity, below),
+  LRCLIB's published timed lyrics first (`LrclibClient`, `GET lrclib.net/api/get` with the song's
+  length, which LRCLIB matches within two seconds, so a live take does not get the album's timings);
+  otherwise Whisper base.en through Whisper.net on `vocals.wav`. Either way written as `lyrics.json`
+  after the job; the now-playing chip shows the line being sung. Whisper's segments under 0.4 of its
+  own probability and bracketed sound labels are dropped, and it reads only a separated vocal. LRCLIB
+  is keyless; the requests carry a `User-Agent` naming PoMode, as its docs ask.
 - **Drawers**: "Why this mode?" and "How were the sections found?" open as Radzen side dialogs, so the
   canvas stays where it was while reading why. The why drawer offers Essentia's major/minor key reading
   (`js/infer/key-check.js`, in the browser) worded against the mode by `KeyAgreement`. Essentia.js is
@@ -701,7 +858,8 @@ no cut can tell a typo from a real ask. Only the person can.
 ## Aftercare: work done before anyone asks
 
 `JobAftercare` (a background channel, one job at a time) runs after every finished job except beats and
-the demo template: it writes the default interpreter's summary into its cache, then the lyrics. The
+the demo template: it writes the default interpreter's summary into its cache, then (not for hum takes)
+works out what the song is, then the lyrics, from LRCLIB when the song was named and else Whisper. The
 pipeline's single `IJobOutcomeNotifier` is `OutcomeFanOut`, which enqueues aftercare and sends the Web
 Push.
 
@@ -716,7 +874,7 @@ same prompt and `GroundingCheck`. While a model writes, the template's summary s
 read". `InterpreterStats` counts each writer's passes, grounding retries and fall-throughs for `/diag`.
 The system prompt carries three worked examples of what the grounding check accepts and rejects.
 
-The Mode Lab's "Describe it" box (`ModeLabDescriber`, `POST /api/modal-melodies/describe`) reads plain
+The Mode Lab's "Describe it" box (a Settings tool, off by default; `ModeLabDescriber`, `POST /api/modal-melodies/describe`) reads plain
 rules first (darker/brighter along the brightness order, faster/slower, mode names, "in D" as the mode's
 home note, styles, purity, "new melody") and only sends a phrase the rules find nothing in to a model,
 held to a JSON schema of the five settings; it counts only what actually changes.
@@ -737,8 +895,55 @@ onedrive=true`, incremental consent). `GET /api/onedrive/audio` lists mp3/wav/m4
 upload path. Tokens are cached in memory, so a restart costs one more consent round trip, which the
 picker handles. The app registration is created by `scripts/setup-microsoft-signin.ps1`.
 
+## Song identity
+
+`SongIdentifier` (`Features/SongIdentity`) names a finished upload for the library and the song page,
+and so its lyrics can be looked up instead of heard: the file's own title and artist tags (ATL.NET,
+MIT), else an AcoustID match (`AcoustIdClient`: a Chromaprint fingerprint of the first two minutes from
+AcoustID.NET, the managed port, so no `fpcalc` binary has to be installed, then `POST
+api.acoustid.org/v2/lookup`; a match counts from score 0.8 and only with a title and an artist). The
+answer is stamped on the job (`JobState.Identity`) and travels on `JobStatusDto` and `LibraryEntryDto`:
+a chip under the song's headline, a muted line under the library's file name (which stays the link,
+since runs of one song are grouped by it), and library search matches its words.
+
+- AcoustID is off until `PoMode:AcoustId:ClientKey` is set (Key Vault secret
+  `PoMode--AcoustId--ClientKey`, an application key from acoustid.org/new-application). Its web service
+  is free for **non-commercial use only**; a commercial PoMode needs acoustid.biz.
+- AcoustID.NET is LGPL-2.1 as a whole (its resampler comes from FFmpeg); the NuGet package is
+  referenced unmodified, which LGPL allows. Weigh it as with Essentia.js before redistributing.
+
+## Song loop, and songs on the same chords
+
+`SongLoopFinder` (`Features/SongLoop`) finds the chord cycle a song comes back to most: per bar (the
+section ribbon's grid) the chord that holds at least half of it, then the four- or eight-bar run that
+recurs most without overlapping itself, started on the home chord when the song plays it that way.
+Fewer than two rounds is no loop. `GET /api/analysis/{id}/loop` serves it (404 when none), derived per
+request like `/structure`.
+
+The loop travels as a progression id that is its own definition, `song:Lydian:84:IV:maj,V:maj`
+(`SongLoops` in Shared): mode, tempo, one chord per bar counted from the **parent key**.
+`ModalMelodyGenerator.GetProgression` reads it before the presets, so the Mode Lab, Practice and a
+hum take regenerate the exact backing with no store behind the id. Rooting on the parent key is the
+point: trying other mode cards keeps the song's real chords and moves only the melody's home note.
+The song page's `ModeNextLinks` carry it as `&loop=`, the lab opens on it with "Chords follow mode"
+off, Practice keeps it across mode changes, and the lab's and Practice's own links pass it on.
+
+"Songs on these chords" (`GET /api/analysis/{id}/loop/songs`, a drawer) asks Hooktheory's TheoryTab
+(`HooktheoryClient`, `GET trends/songs?cp=`) for published songs on the same changes, written as
+degrees of the parent major key (`1`…`7`, `b7` for the borrowed ♭VII), repeats collapsed, at most four;
+a loop with any other chromatic chord, or only one chord, has no Hooktheory name and the toggle is not
+drawn. Off until `PoMode:Hooktheory:Username` and `:Password` are set (Key Vault `PoMode--Hooktheory--…`,
+a hooktheory.com account). Hooktheory's terms forbid copying TheoryTab, so answers are held in memory
+for an hour and never stored; each song links back to its TheoryTab page. Sign-in tokens last about an
+hour and a 401 signs in again once; the account's limit is ten requests per ten seconds, shared.
+
 ## Infrastructure notes
 
+- **No Native AOT for the API, on purpose.** The trim/AOT analyzers report about 240 warnings there,
+  nearly all from minimal-API delegate mapping, and the request-delegate generator would clear those;
+  but Microsoft.Identity.Web, the Graph SDK, tusdotnet and Whisper.net are not AOT-ready, so the server
+  stays a normal JIT app. The trimmed WASM client is the part that has to be trim-clean.
+- CI checks whitespace with `dotnet format whitespace PoMode.slnx --verify-no-changes` before building.
 - `SecretsBootstrap` wires Key Vault via `DefaultAzureCredential` with an env-var fallback (logged as a warning). Never add connection strings or appsettings secrets. The VAPID private key is `PoMode--Push--VapidPrivateKey` in `kv-poshared2`; nothing in the app writes it.
 - Auth lives in `Features/Auth`. `PoAuth` issues one session cookie from two doors: **guest** (every
   environment, Production included — the client mints one on first visit so the app works before

@@ -1,74 +1,251 @@
+@using Microsoft.AspNetCore.SignalR.Client
 @using PoMode.Shared.Analysis
 @using PoMode.Client.Services
 @inject AnalysisClient Analysis
 @inject IJSRuntime JS
+@inject BrowserPrefs Prefs
+@inject NavigationManager Navigation
 @implements IAsyncDisposable
 
-@* Open guitar chord jam: progressions built from open-position voicings that leave strings ringing,
+@* Open guitar chord jam: a short song built from open-position voicings that leave strings ringing,
    so a beginner's fingers make add9, sus and seventh chords. Each one is made fresh by the server from
-   a seed (OpenChordJams.Generate) — key, progression, voicings and the sentence about them; this asks
-   for one, keeps the ones already heard so Previous can go back, draws the boxes and strums the loop.
+   a seed (OpenChordJams.Generate) — key, verse, sometimes a pre-chorus, chorus and bridge, the
+   voicings and the sentence about them; this asks for one, keeps the ones already heard so Previous
+   can go back, draws every section's boxes and strums the song through once, verse to final chord.
    Like the rest of Practice it is unscored: there is nothing to get wrong, only something to play. *@
 <RadzenCard class="jam-card" data-jam-id="@_jam?.Id" data-jam-count="@_heard.Count">
     @* A plain heading rather than RadzenText, so this file's styles reach it: on a phone the tab above
        already names the jam, and the heading gives its room back to the chords while staying readable
        to a screen reader. *@
     <h2 class="rz-text-h6 jam-heading">Open guitar chord jam</h2>
-    <p class="jam-intro">Open-position chords that leave strings ringing, so they sound richer than they are to play. Every press makes a new progression: hear it, and play along.</p>
+    <p class="jam-intro">Open-position chords that leave strings ringing, so they sound richer than they are to play. Every press writes a new song, verse, chorus and bridge: hear it from start to finish, and play along.</p>
 
     @if (_jam is null)
     {
-        <p class="jam-pending" role="status">@(_failed ? "No progression could be made just now." : "Tuning up…")</p>
+        <p class="jam-pending" role="status">@(_failed ? "No song could be made just now." : "Tuning up…")</p>
     }
     else
     {
         var jam = _jam;
+        var step = _playing && _current >= 0 && _current < _timeline.Count ? _timeline[_current] : null;
         <div class="jam-controls">
-            <RadzenButton Text="New progression" Icon="casino" ButtonStyle="ButtonStyle.Light"
-                          Disabled="@(Disabled || _loading)" Click="@NewAsync" id="jam-new" />
+            <RadzenButton Text="New song" Icon="casino" ButtonStyle="ButtonStyle.Light"
+                          Disabled="@(Disabled || _loading || Taking)" Click="@NewAsync" id="jam-new" />
             <RadzenButton Text="Previous" Icon="undo" ButtonStyle="ButtonStyle.Light"
-                          Disabled="@(Disabled || _loading || _at == 0)" Click="@PreviousAsync" id="jam-previous"
-                          title="Back to the progression before this one" />
+                          Disabled="@(Disabled || _loading || _at == 0 || Taking)" Click="@PreviousAsync" id="jam-previous"
+                          title="Back to the song before this one" />
+            <RadzenButton Text="@(IsSaved ? "Saved" : "Save")" Icon="@(IsSaved ? "bookmark" : "bookmark_add")" ButtonStyle="ButtonStyle.Light"
+                          Click="@ToggleSavedAsync" id="jam-save"
+                          title="@(IsSaved ? "Take this song off your saved list" : "Keep this song to play again")" />
+            @if (_saved.Count > 0)
+            {
+                @* The seed brings the song back, so the list is labels over seeds, kept in this browser. *@
+                <RadzenDropDown TValue="int?" Data="@SavedOptions" TextProperty="Label" ValueProperty="Seed"
+                                Value="@(IsSaved ? CurrentSeed : null)" Change="@(value => OpenSavedAsync((int?)value))"
+                                Placeholder="@($"Saved songs ({_saved.Count})")" Disabled="@(Disabled || _loading || Taking)"
+                                class="jam-saved" id="jam-saved" aria-label="Saved songs" />
+            }
             <div class="jam-tempo">
                 <RadzenSlider TValue="double" Min="50" Max="160" Step="2" Value="@_bpm" Change="@(value => SetTempoAsync(value))"
-                              Disabled="@Disabled" aria-label="Tempo" class="jam-tempo-slider" />
+                              Disabled="@(Disabled || Taking)" aria-label="Tempo" class="jam-tempo-slider" />
                 <span class="jam-tempo-value">@($"{_bpm:0} BPM")</span>
             </div>
-            <RadzenButton Text="@(_playing ? "Stop" : "Play the jam")" Icon="@(_playing ? "stop" : "play_arrow")"
-                          ButtonStyle="ButtonStyle.Primary" Disabled="@(Disabled && !_playing)"
+            <RadzenButton Text="@(_playing ? "Stop" : "Play the song")" Icon="@(_playing ? "stop" : "play_arrow")"
+                          ButtonStyle="ButtonStyle.Primary" Disabled="@((Disabled && !_playing) || _recording)"
                           Click="@ToggleAsync" id="jam-play" />
+            @* Record: the song from the top with the microphone open, so a melody sung over it goes to the
+               analyzer with these exact chords under it. Stop (or the song's end) ends the take. *@
+            <RadzenButton Text="@(_recording ? (_playing ? "Stop recording" : "Get ready…") : "Record")"
+                          Icon="@(_recording ? "stop_circle" : "mic")"
+                          ButtonStyle="@(_recording ? ButtonStyle.Danger : ButtonStyle.Light)"
+                          Disabled="@((Disabled && !_recording) || _sendingTake || (_recording && !_playing))"
+                          Click="@ToggleRecordAsync" id="jam-record"
+                          title="Sing over the song from the top; the take is analysed for the mode your melody is in" />
         </div>
 
-        <h3 class="jam-title" aria-live="polite"><span class="jam-key">@jam.Key</span> @jam.Name</h3>
+        @if (_take is not null || _takeError is not null)
+        {
+            <div class="jam-take" role="status">
+                @if (_take is not null)
+                {
+                    <span class="jam-take-text">Take recorded: @($"{_takeSeconds / 60:0}:{_takeSeconds % 60:00}") over “@(_takeSong?.Title ?? _takeSong?.Key)”.</span>
+                    <RadzenButton Text="@(_sendingTake ? "Sending…" : "Find my melody's mode")" Icon="insights" ButtonStyle="ButtonStyle.Primary"
+                                  Disabled="@_sendingTake" Click="@AnalyzeTakeAsync" id="jam-take-analyze" />
+                    <RadzenButton Text="Discard" Icon="delete" ButtonStyle="ButtonStyle.Light" Disabled="@_sendingTake"
+                                  Click="@DiscardTake" id="jam-take-discard" />
+                }
+                @if (_takeError is not null)
+                {
+                    <span class="jam-take-error">@_takeError</span>
+                }
+            </div>
+        }
+
+        @* The answer to "what mode did I sing in", on the card: the take's analysis is followed as it runs
+           (pushed over the hub, as the analysis page is) and its reading of the voice shown when it lands. *@
+        @if (_readingJob is not null)
+        {
+            <div class="jam-verdict" role="status" aria-live="polite" data-verdict="@(_verdict is null ? "reading" : "done")">
+                @if (_verdict is null)
+                {
+                    <span class="jam-verdict-detail">Reading your melody… @_readingStage</span>
+                }
+                else
+                {
+                    <strong class="jam-verdict-mode">@_verdict</strong>
+                    <span class="jam-verdict-detail">@_verdictDetail</span>
+                }
+                <a href="@($"song/{_readingJob}")" class="jam-verdict-link">See the full analysis</a>
+            </div>
+        }
+
+        @* What the next New song is made from. Folded away by default: the jam plays without it, and the
+           defaults make a simple song. *@
+        <RadzenFieldset AllowCollapse="true" Collapsed="true" Text="Song settings" class="jam-settings" id="jam-settings">
+            <div class="jam-presets">
+                <RadzenDropDown TValue="string" Data="@PresetNames" Value="@_preset" Change="@(value => ApplyPresetAsync((string?)value))"
+                                Placeholder="Presets" class="jam-preset" id="jam-preset" aria-label="Presets" />
+                <RadzenTextBox @bind-Value="@_presetName" Immediate="true" Placeholder="Name these settings" MaxLength="40"
+                               class="jam-preset-name" id="jam-preset-name" aria-label="Preset name" />
+                <RadzenButton Text="Save preset" Icon="save" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                              Disabled="@string.IsNullOrWhiteSpace(_presetName)" Click="@SavePresetAsync" id="jam-preset-save" />
+            </div>
+            <div class="jam-settings-grid">
+                @foreach (var knob in Knobs)
+                {
+                    var value = knob.Get(_settings);
+                    <div class="jam-setting">
+                        <span class="pm-label" id="@($"jam-{knob.Id}-label")">@knob.Label</span>
+                        <RadzenSlider TValue="double" Min="@knob.Min" Max="@knob.Max" Step="@knob.Step" Value="@value"
+                                      Change="@(changed => SetSettingsAsync(knob.Set(_settings, changed)))"
+                                      aria-labelledby="@($"jam-{knob.Id}-label")" id="@($"jam-{knob.Id}")" class="jam-setting-slider" />
+                        <span class="jam-setting-value">@knob.Reading(value)</span>
+                    </div>
+                }
+            </div>
+            <div class="jam-settings-foot">
+                <span class="jam-settings-note">Used from the next new song.</span>
+                <RadzenButton Text="Defaults" Icon="restart_alt" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                              Click="@(() => SetSettingsAsync(new ChordJamSettings()))" id="jam-settings-defaults" />
+            </div>
+        </RadzenFieldset>
+
+        <h3 class="jam-title" aria-live="polite"><span class="jam-key">@jam.Key</span> @Length(jam)@if (jam.Capo > 0)
+            {
+                <span class="jam-capo">Capo @jam.Capo, sounds in @jam.SoundingKey</span>
+            }</h3>
         <p class="jam-feel">@jam.Feel</p>
 
-        <div class="jam-pattern" aria-label="@PatternLabel(jam.Pattern)">
-            <span class="pm-label">Strum, one bar</span>
-            <ol class="jam-slots" aria-hidden="true">
-                @foreach (var slot in jam.Pattern)
-                {
-                    <li class="jam-slot @(slot == '-' ? "rest" : "")">@SlotGlyph(slot)</li>
-                }
-            </ol>
-        </div>
+        @* The song in the order it plays; the part sounding now is marked, so the eye knows where the ear is. *@
+        <ol class="jam-form" aria-label="Song order">
+            @for (var f = 0; f < jam.Form.Count; f++)
+            {
+                var section = jam.Sections[jam.Form[f]];
+                <li class="jam-form-part @(step?.Form == f ? "current" : "")" aria-current="@(step?.Form == f ? "step" : null)">
+                    @section.Name@(section.Repeats > 1 ? $" ×{section.Repeats}" : "")
+                </li>
+            }
+            <li class="jam-form-part @(step?.Form == jam.Form.Count ? "current" : "")" aria-current="@(step?.Form == jam.Form.Count ? "step" : null)">
+                End on @jam.Ending.Symbol
+            </li>
+        </ol>
+
+        @* Words to sing over the song, one line per chord: the part playing now, one time round at a
+           time, the line being sung lit and wiped across over its chord's length (lyric-wipe.js). *@
+        @if (jam.Lyrics is { Count: > 0 } lyrics)
+        {
+            var entry = step is null ? 0 : Math.Min(step.Form, jam.Form.Count - 1);
+            var part = jam.Sections[jam.Form[entry]];
+            var sung = step is not null && step.Form < jam.Form.Count ? step.Line : -1;
+            var round = Math.Max(0, sung) / part.Chords.Count;
+            <section class="jam-lyrics" aria-label="Sing along">
+                <header class="jam-lyrics-head">
+                    <span class="pm-label">Sing along</span>
+                    <strong class="jam-lyrics-title">“@jam.Title”</strong>
+                    @if (jam.Theme is { } theme)
+                    {
+                        <span class="jam-lyrics-theme">about @theme</span>
+                    }
+                    <span class="jam-lyrics-part">@part.Name@(part.Repeats > 1 ? $", time {round + 1} of {part.Repeats}" : "")</span>
+                </header>
+                <ol class="jam-lyric-lines">
+                    @for (var l = round * part.Chords.Count; l < Math.Min(lyrics[entry].Count, (round + 1) * part.Chords.Count); l++)
+                    {
+                        var chordName = part.Chords[l % part.Chords.Count].Symbol;
+                        var words = lyrics[entry][l].Length == 0 ? "(just play)" : lyrics[entry][l];
+                        if (l == sung)
+                        {
+                            <li class="jam-lyric current" aria-current="true" @ref="_lyricLine">
+                                <span class="jam-lyric-chord">@chordName</span><span class="jam-lyric-words">@words</span>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="jam-lyric @(l < sung ? "sung" : "")">
+                                <span class="jam-lyric-chord">@chordName</span><span class="jam-lyric-words">@words</span>
+                            </li>
+                        }
+                    }
+                </ol>
+            </section>
+        }
 
         @* The board holds one canvas over every box: string-glow.js vibrates the strings of whichever chord
-           is sounding on it, so the page holds one GPU context however long the progression. *@
+           is sounding on it, so the page holds one GPU context however long the song. *@
         <div class="jam-board" @ref="_board">
-            <ol class="jam-chords" data-chord-count="@jam.Chords.Count">
-                @for (var i = 0; i < jam.Chords.Count; i++)
+            <div class="jam-sections">
+                @for (var p = 0; p < jam.Sections.Count; p++)
                 {
-                    var chord = jam.Chords[i];
-                    <li class="jam-chord @(_playing && i == _current ? "current" : "")" data-chord="@chord.Symbol"
-                        aria-current="@(_playing && i == _current ? "true" : null)">
-                        <ChordBox Fingering="@Fingering(chord)" Label="@Describe(chord)" />
-                        <strong class="jam-chord-name">@chord.Symbol</strong>
-                        <span class="jam-chord-beats">@(chord.Beats == 4 ? "1 bar" : chord.Beats % 4 == 0 ? $"{chord.Beats / 4} bars" : $"{chord.Beats} beats")</span>
-                    </li>
+                    var section = jam.Sections[p];
+                    var first = BoxStart(jam, p);
+                    var sounding = step is not null && step.Form < jam.Form.Count && jam.Form[step.Form] == p;
+                    <section class="jam-section @(sounding ? "current" : "") @(section.Chords.Count > 4 ? "long" : "")" data-section="@section.Name">
+                        <header class="jam-section-head">
+                            <h4 class="jam-section-name">@section.Name</h4>
+                            <span class="jam-numerals">@section.Numerals</span>
+                            @if (section.Sound != "open")
+                            {
+                                <span class="jam-sound">@(section.Sound == "power" ? "Power chords" : "Barre chords")</span>
+                            }
+                            <ol class="jam-slots" aria-label="@PatternLabel(section.Pattern)">
+                                @foreach (var slot in section.Pattern)
+                                {
+                                    <li class="jam-slot @(slot == '-' ? "rest" : "")" aria-hidden="true">@SlotGlyph(slot)</li>
+                                }
+                            </ol>
+                        </header>
+                        <ol class="jam-chords" data-chord-count="@section.Chords.Count">
+                            @for (var i = 0; i < section.Chords.Count; i++)
+                            {
+                                var chord = section.Chords[i];
+                                var current = step is not null && step.Box == first + i;
+                                <li class="jam-chord @(current ? "current" : "")" data-chord="@chord.Symbol"
+                                    aria-current="@(current ? "true" : null)">
+                                    <ChordBox Fingering="@Fingering(chord)" Label="@Describe(chord)" />
+                                    <strong class="jam-chord-name">@chord.Symbol</strong>
+                                    <span class="jam-chord-beats">@(chord.Beats == 4 ? "1 bar" : chord.Beats % 4 == 0 ? $"{chord.Beats / 4} bars" : $"{chord.Beats} beats")</span>
+                                    @if (chord.Pattern is { } own)
+                                    {
+                                        @* A fill: this chord strums its own pattern, not its section's. *@
+                                        <span class="jam-chord-strum" aria-label="@PatternLabel(own)" title="This chord's own strum">@string.Concat(own.Select(SlotGlyph))</span>
+                                    }
+                                </li>
+                            }
+                        </ol>
+                    </section>
                 }
-            </ol>
+            </div>
             <canvas class="jam-strings" aria-hidden="true"></canvas>
         </div>
+
+        @* Every take sung over this song, the modes they came out in, the takes themselves to open. *@
+        @if (_songTakes is { Takes.Count: > 0 } songTakes)
+        {
+            <section class="jam-history" aria-label="Your takes over this song">
+                <h3 class="jam-history-heading">Your takes over this song</h3>
+                <TakeHistory History="songTakes" OnDeleted="@(_ => LoadSongTakesAsync())" />
+            </section>
+        }
     }
 </RadzenCard>
 
@@ -79,7 +256,7 @@
     /// <summary>Raised when the jam starts, so the page can stop its own chords first.</summary>
     [Parameter] public EventCallback Started { get; set; }
 
-    /// <summary>Every progression made this visit, in order, and which one is showing.</summary>
+    /// <summary>Every song made this visit, in order, and which one is showing.</summary>
     private readonly List<ChordJamDto> _heard = [];
     private int _at = -1;
     private ChordJamDto? _jam;
@@ -87,17 +264,177 @@
     private bool _loading;
     private double _bpm;
     private bool _playing;
-    private int _current;
+    private int _current = -1;
+
+    /// <summary>One chord of the song as it plays: which entry of the form it belongs to (the form's
+    /// length for the final chord) and which box shows it (-1 when none does).</summary>
+    private sealed record Step(int Form, int Box, int Line = -1, int Beats = 4);
+    private List<Step> _timeline = [];
     private IJSObjectReference? _strum;
     private IJSObjectReference? _glow;
     private DotNetObjectReference<ChordJam>? _self;
     private ElementReference _board;
 
-    protected override Task OnInitializedAsync() => NewAsync();
+    /// <summary>The sliders as they stand, used for the next new song, and the ones each song heard this
+    /// visit was made with, so saving one keeps what brings it back.</summary>
+    private ChordJamSettings _settings = new();
+    private readonly Dictionary<string, ChordJamSettings> _madeWith = [];
 
-    /// <summary>Hooks the strings' overlay to the board once it exists; it listens to strum.js itself.</summary>
+    /// <summary>Songs kept in this browser to play again, newest first.</summary>
+    private List<SavedJam> _saved = [];
+    private const int MaxSaved = 50;
+
+    private sealed record SavedOption(int? Seed, string Label);
+
+    private int? CurrentSeed => int.TryParse(_jam?.Id, System.Globalization.CultureInfo.InvariantCulture, out var seed) ? seed : null;
+    private bool IsSaved => CurrentSeed is { } seed && _saved.Any(saved => saved.Seed == seed);
+    private IEnumerable<SavedOption> SavedOptions => _saved.Select(saved => new SavedOption(saved.Seed, $"{saved.Key} · {saved.Summary}"));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _saved = await Prefs.GetAsync(BrowserPrefs.SavedJamsKey, PrefsJsonContext.Default.ListSavedJam) ?? [];
+        _settings = await Prefs.GetAsync(BrowserPrefs.JamSettingsKey, PrefsJsonContext.Default.ChordJamSettings) ?? new();
+        _presets = await Prefs.GetAsync(BrowserPrefs.JamPresetsKey, PrefsJsonContext.Default.ListJamPreset) ?? [];
+        await NewAsync();
+    }
+
+    private async Task ToggleSavedAsync()
+    {
+        if (_jam is null || CurrentSeed is not { } seed)
+        {
+            return;
+        }
+        _saved = IsSaved
+            ? [.. _saved.Where(saved => saved.Seed != seed)]
+            : [new SavedJam(seed, _jam.Key, $"{Bars(_jam)} bars, {_jam.Bpm:0} BPM", _madeWith.GetValueOrDefault(_jam.Id), _jam), .. _saved.Take(MaxSaved - 1)];
+        await Prefs.SetAsync(BrowserPrefs.SavedJamsKey, _saved, PrefsJsonContext.Default.ListSavedJam);
+    }
+
+    /// <summary>A saved song comes back as it was kept, joining the ones heard this visit; one saved
+    /// before songs were kept whole is made again from its seed and settings.</summary>
+    private async Task OpenSavedAsync(int? seed)
+    {
+        if (seed is not { } value || value == CurrentSeed || _saved.FirstOrDefault(saved => saved.Seed == value) is not { } saved)
+        {
+            return;
+        }
+        if (saved.Song is { } song)
+        {
+            _madeWith[song.Id] = saved.Settings ?? new();
+            _heard.Add(song);
+            await ShowAsync(_heard.Count - 1);
+            return;
+        }
+        await LoadAsync(value, saved.Settings ?? new());
+    }
+
+    private async Task SetSettingsAsync(ChordJamSettings settings)
+    {
+        _settings = settings;
+        if (_presets.Concat(BuiltInPresets).FirstOrDefault(preset => preset.Name == _preset)?.Settings != settings)
+        {
+            _preset = null;
+        }
+        await Prefs.SetAsync(BrowserPrefs.JamSettingsKey, _settings, PrefsJsonContext.Default.ChordJamSettings);
+    }
+
+    /// <summary>One slider of the panel: what it reads from and writes to the settings, its range in
+    /// the slider's units (percent for the 0–1 ones), and the words shown beside it.</summary>
+    private sealed record Knob(string Id, string Label, decimal Min, decimal Max, string Step,
+        Func<ChordJamSettings, double> Get, Func<ChordJamSettings, double, ChordJamSettings> Set, Func<double, string> Reading);
+
+    private static Knob Percent(string id, string label, Func<ChordJamSettings, double> get, Func<ChordJamSettings, double, ChordJamSettings> set, Func<double, string> reading)
+        => new(id, label, 0, 100, "10", settings => Math.Round(get(settings) * 100), (settings, value) => set(settings, value / 100), value => reading(value / 100));
+
+    private static string Third(double value, string low, string middle, string high) => value < 0.34 ? low : value < 0.67 ? middle : high;
+
+    private static readonly Knob[] Knobs =
+    [
+        Percent("open", "Open chords", s => s.OpenChords, (s, v) => s with { OpenChords = v }, v => $"{v:P0} of sections"),
+        Percent("variety", "Song structure", s => s.Variety, (s, v) => s with { Variety = v },
+            v => v switch { < 0.2 => "Plain", < 0.6 => "Some surprises", < 0.9 => "Lots of surprises", _ => "Wild" }),
+        Percent("mood", "Sad to happy", s => s.Mood, (s, v) => s with { Mood = v },
+            v => v switch { < 0.2 => "Sad", < 0.4 => "Wistful", < 0.65 => "Either", < 0.85 => "Bright", _ => "Happy" }),
+        new("keys", "Key changes", 0, 3, "1", s => s.KeyChanges, (s, v) => s with { KeyChanges = (int)v }, v => v == 0 ? "None" : $"{v:0}"),
+        Percent("difficulty", "Difficulty", s => s.Difficulty, (s, v) => s with { Difficulty = v }, v => Third(v, "Easy", "Medium", "Hard")),
+        Percent("colour", "Colour", s => s.Colour, (s, v) => s with { Colour = v }, v => Third(v, "Plain chords", "Some colour", "Jazzy")),
+        new("speed", "Chord changes", 0, 2, "1", s => s.ChangeSpeed, (s, v) => s with { ChangeSpeed = (int)v },
+            v => v switch { 0 => "Every 2 bars", 1 => "Every bar", _ => "Every half bar" }),
+        Percent("busyness", "Strumming", s => s.Busyness, (s, v) => s with { Busyness = v }, v => Third(v, "Sparse", "Medium", "Busy")),
+        Percent("tempo", "Tempo", s => s.Tempo, (s, v) => s with { Tempo = v }, v => $"About {60 + (64 * v):0} BPM"),
+        Percent("borrowed", "Borrowed chords", s => s.Borrowed, (s, v) => s with { Borrowed = v }, v => v == 0 ? "None" : v < 0.5 ? "A few" : "Lots"),
+        Percent("smoothness", "Smooth changes", s => s.Smoothness, (s, v) => s with { Smoothness = v }, v => Third(v, "Loose", "Smooth", "Very smooth")),
+        Percent("length", "Song length", s => s.Length, (s, v) => s with { Length = v }, v => Third(v, "Short", "Medium", "Long")),
+        Percent("position", "Neck position", s => s.Position, (s, v) => s with { Position = v }, v => $"Barres near fret {1 + (8 * v):0}"),
+        new("capo", "Capo", 0, 7, "1", s => s.Capo, (s, v) => s with { Capo = (int)v }, v => v == 0 ? "None" : $"Fret {v:0}"),
+        Percent("strum-variety", "Strum variety", s => s.StrumVariety, (s, v) => s with { StrumVariety = v },
+            v => v == 0 ? "Steady" : Third(v, "A few fills", "Some twists", "Restless")),
+        Percent("slid", "Slid shapes", s => s.SlidChords, (s, v) => s with { SlidChords = v },
+            v => v == 0 ? "None" : v < 0.45 ? "Now and then" : v < 0.8 ? "Often" : "Mostly"),
+    ];
+
+    /// <summary>Settings worth starting from, then any the player has named and saved.</summary>
+    private static readonly JamPreset[] BuiltInPresets =
+    [
+        new("Simple", new()),
+        new("Campfire", new(Variety: 0.3, Mood: 0.8, Colour: 0.4, Busyness: 0.5, Tempo: 0.5, SlidChords: 0.5)),
+        new("Sad ballad", new(Mood: 0, Tempo: 0.1, Busyness: 0.1, ChangeSpeed: 0, Colour: 0.7, Smoothness: 0.9)),
+        new("Rock", new(OpenChords: 0.2, Mood: 0.6, Difficulty: 0.6, Colour: 0.1, Busyness: 0.9, Tempo: 0.75, Position: 0.4, StrumVariety: 0.4)),
+        new("Pop with a lift", new(Variety: 0.5, Mood: 0.75, KeyChanges: 1, Busyness: 0.5, Tempo: 0.6, Length: 0.8)),
+        new("Wild ride", new(OpenChords: 0.5, Variety: 1, KeyChanges: 2, Difficulty: 0.7, Colour: 0.8, ChangeSpeed: 2, Borrowed: 0.7, Length: 0.8, StrumVariety: 0.8, SlidChords: 0.8)),
+    ];
+
+    private List<JamPreset> _presets = [];
+    private string? _preset;
+    private string _presetName = "";
+
+    private IEnumerable<string> PresetNames => BuiltInPresets.Concat(_presets).Select(preset => preset.Name).Distinct();
+
+    private async Task ApplyPresetAsync(string? name)
+    {
+        if (_presets.Concat(BuiltInPresets).FirstOrDefault(preset => preset.Name == name) is { } preset)
+        {
+            _preset = name;
+            await SetSettingsAsync(preset.Settings);
+        }
+    }
+
+    /// <summary>Keeps the sliders as they stand under a name; a name already used is overwritten.</summary>
+    private async Task SavePresetAsync()
+    {
+        var name = _presetName.Trim();
+        if (name.Length == 0)
+        {
+            return;
+        }
+        _presets = [new JamPreset(name, _settings), .. _presets.Where(preset => preset.Name != name)];
+        _preset = name;
+        _presetName = "";
+        await Prefs.SetAsync(BrowserPrefs.JamPresetsKey, _presets, PrefsJsonContext.Default.ListJamPreset);
+    }
+
+    /// <summary>The lyric line being sung, and which chord of the song it was last wiped for.</summary>
+    private ElementReference _lyricLine;
+    private int _wiped = -1;
+    private IJSObjectReference? _lyricFx;
+
+    /// <summary>Wipes the new lyric line across its chord's length; hooks the strings' overlay to the
+    /// board once it exists (it listens to strum.js itself).</summary>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_playing && _current != _wiped && _current >= 0 && _current < _timeline.Count && _timeline[_current].Line >= 0 && _jam?.Lyrics is not null)
+        {
+            _wiped = _current;
+            try
+            {
+                _lyricFx ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/fx/lyric-wipe.js");
+                await _lyricFx.InvokeVoidAsync("wipe", _lyricLine, _timeline[_current].Beats * 60 / Math.Max(1, _bpm));
+            }
+            catch (JSException)
+            {
+                // The line is still lit; only the wipe is lost.
+            }
+        }
         if (_jam is null || _glow is not null)
         {
             return;
@@ -113,14 +450,17 @@
         }
     }
 
-    /// <summary>A progression nobody has heard yet, from a fresh seed; playing carries on into it.</summary>
-    private async Task NewAsync()
+    /// <summary>A song nobody has heard yet, from a fresh seed; playing starts it from the top.</summary>
+    private Task NewAsync() => LoadAsync(Random.Shared.Next(), _settings);
+
+    private async Task LoadAsync(int seed, ChordJamSettings settings)
     {
         _loading = true;
         try
         {
-            if (await Analysis.GetChordJamAsync(Random.Shared.Next()) is { } jam)
+            if (await Analysis.GetChordJamAsync(seed, settings) is { } jam)
             {
+                _madeWith[jam.Id] = settings;
                 _heard.Add(jam);
                 await ShowAsync(_heard.Count - 1);
             }
@@ -128,7 +468,7 @@
         }
         catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException)
         {
-            _failed = _jam is null; // the progression already showing stays
+            _failed = _jam is null; // the song already showing stays
         }
         finally
         {
@@ -145,8 +485,9 @@
         _bpm = _jam.Bpm;
         if (_playing)
         {
-            await StartAsync(); // the new progression from its first chord, at its own tempo
+            await StartAsync(0); // the new song from its first chord, at its own tempo
         }
+        await LoadSongTakesAsync();
     }
 
     /// <summary>Stops the strumming; Practice calls this before it plays chords of its own.</summary>
@@ -172,35 +513,66 @@
 
     private async Task ToggleAsync()
     {
+        if (_recording)
+        {
+            await FinishTakeAsync();
+            return;
+        }
         if (_playing)
         {
             await StopAsync();
             return;
         }
         await Started.InvokeAsync();
-        await StartAsync();
+        await StartAsync(0);
     }
 
-    private async Task StartAsync()
+    /// <summary>Strums the song once through from chord <paramref name="from"/> of its playing order:
+    /// every section each time the form brings it round, then the final chord rung on a single strum.</summary>
+    private async Task StartAsync(int from)
     {
         if (_jam is null)
         {
             return;
         }
+        var jam = _jam;
         _strum ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/player/strum.js");
         _self ??= DotNetObjectReference.Create(this);
-        _current = 0;
+        var chords = new List<object>();
+        _timeline = [];
+        for (var f = 0; f < jam.Form.Count; f++)
+        {
+            var section = jam.Sections[jam.Form[f]];
+            var first = BoxStart(jam, jam.Form[f]);
+            for (var round = 0; round < section.Repeats; round++)
+            {
+                for (var i = 0; i < section.Chords.Count; i++)
+                {
+                    var chord = section.Chords[i];
+                    chords.Add(new { midi = chord.Midi, beats = chord.Beats, frets = chord.Frets, box = first + i, pattern = chord.Pattern ?? section.Pattern });
+                    _timeline.Add(new(f, first + i, (round * section.Chords.Count) + i, chord.Beats));
+                }
+            }
+        }
+        // The last chord lights the box that already shows the same shape, if one does.
+        var ending = jam.Sections.SelectMany(section => section.Chords).ToList()
+            .FindIndex(chord => chord.Symbol == jam.Ending.Symbol && chord.Frets.SequenceEqual(jam.Ending.Frets));
+        chords.Add(new { midi = jam.Ending.Midi, beats = jam.Ending.Beats, frets = jam.Ending.Frets, box = ending, pattern = "D-------" });
+        _timeline.Add(new(jam.Form.Count, ending));
+
+        _current = Math.Clamp(from, 0, _timeline.Count - 1);
+        _wiped = -1;
         _playing = true;
-        await _strum.InvokeVoidAsync("play",
-            _jam.Chords.Select(chord => new { midi = chord.Midi, beats = chord.Beats, frets = chord.Frets }), _bpm, _jam.Pattern, _self);
+        await _strum.InvokeVoidAsync("play", chords, _bpm, jam.Sections[0].Pattern, _self, true, _current);
     }
 
+    /// <summary>A new tempo carries on from the chord sounding now rather than going back to the top.</summary>
     private async Task SetTempoAsync(double bpm)
     {
         _bpm = bpm;
         if (_playing)
         {
-            await StartAsync();
+            await StartAsync(_current);
         }
     }
 
@@ -210,6 +582,254 @@
         _current = index;
         StateHasChanged();
     }
+
+    [JSInvokable]
+    public async Task OnJamEnded()
+    {
+        _playing = false;
+        _wiped = -1;
+        _current = -1;
+        if (_recording)
+        {
+            await FinishTakeAsync();
+        }
+        StateHasChanged();
+    }
+
+    // ---- Record: a take sung over the song ----
+
+    /// <summary>The microphone is open (counting in, or the song playing), and the take that came of it
+    /// with the song and tempo it was sung over, waiting to be analysed or thrown away.</summary>
+    private bool _recording;
+    private bool _songStarted;
+    private byte[]? _take;
+    private ChordJamDto? _takeSong;
+    private double _takeBpm;
+    private double _takeSeconds;
+    private bool _sendingTake;
+    private string? _takeError;
+    private IJSObjectReference? _hum;
+
+    /// <summary>Anything that would change the song under a take is held while one is open or waiting.</summary>
+    private bool Taking => _recording || _sendingTake;
+
+    private async Task ToggleRecordAsync()
+    {
+        if (_recording)
+        {
+            await FinishTakeAsync();
+            return;
+        }
+        if (_jam is null)
+        {
+            return;
+        }
+        await StopAsync();
+        await Started.InvokeAsync();
+        (_take, _takeError, _songStarted) = (null, null, false);
+        try
+        {
+            _hum ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/capture/hum-recorder.js");
+            _strum ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/player/strum.js");
+            if (!await _hum.InvokeAsync<bool>("beginCapture"))
+            {
+                _takeError = "The microphone could not be opened.";
+                return;
+            }
+        }
+        catch (JSException)
+        {
+            _takeError = "The microphone could not be opened. Check the browser's permission for this site.";
+            return;
+        }
+        _recording = true;
+        StateHasChanged();
+        // Four clicks at the song's tempo, then the song from the top; the take is trimmed to its bar one.
+        await _hum.InvokeVoidAsync("countIn", _bpm, 4);
+        if (!_recording)
+        {
+            return;
+        }
+        _songStarted = true;
+        await StartAsync(0);
+    }
+
+    /// <summary>Closes the microphone and keeps the take, trimmed to the song's first downbeat.</summary>
+    private async Task FinishTakeAsync()
+    {
+        if (!_recording || _hum is null)
+        {
+            return;
+        }
+        _recording = false;
+        try
+        {
+            if (!_songStarted)
+            {
+                await _hum.InvokeVoidAsync("cancelCapture"); // stopped in the count-in: nothing was sung over the song
+                return;
+            }
+            var start = _strum is null ? null : await _strum.InvokeAsync<double?>("songStart");
+            var take = await _hum.InvokeAsync<byte[]>("finishCapture", start);
+            await StopAsync();
+            if (take.Length == 0)
+            {
+                _takeError = "Nothing was recorded. Try again a little louder.";
+                return;
+            }
+            (_take, _takeSong, _takeBpm) = (take, _jam, _bpm);
+            // 16-bit mono WAV: the sample rate sits at byte 24 of the header, the samples after byte 44.
+            _takeSeconds = Math.Round((take.Length - 44) / 2.0 / Math.Max(1, BitConverter.ToInt32(take, 24)));
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>Sends the take with the song it was sung over and goes to its analysis, where the mode
+    /// the melody is in is the headline.</summary>
+    private async Task AnalyzeTakeAsync()
+    {
+        if (_take is null || _takeSong is null || _sendingTake)
+        {
+            return;
+        }
+        _sendingTake = true;
+        _takeError = null;
+        try
+        {
+            var (job, error) = await Analysis.UploadJamTakeAsync(_take, _takeSong, _takeBpm);
+            if (job is { JobId.Length: > 0 })
+            {
+                DiscardTake();
+                await FollowAsync(job);
+                return;
+            }
+            _takeError = string.IsNullOrWhiteSpace(error) ? "The analyzer would not take the recording." : error.Trim('"');
+        }
+        catch (HttpRequestException)
+        {
+            _takeError = "The take could not be sent. It is still here; try again.";
+        }
+        finally
+        {
+            _sendingTake = false;
+        }
+    }
+
+    private void DiscardTake() => (_take, _takeSong, _takeError) = (null, null, null);
+
+    // ---- The verdict and the history ----
+
+    /// <summary>The take being read, where its analysis has got to, and once it is done what it found.</summary>
+    private string? _readingJob;
+    private string? _readingStage;
+    private string? _verdict;
+    private string? _verdictDetail;
+    private HubConnection? _hub;
+    private TakeHistoryDto? _songTakes;
+
+    /// <summary>Follows a sent take's analysis the way the analysis page does: subscribe on the hub, then
+    /// read the status once, which also covers a take that finished before the subscription landed.</summary>
+    private async Task FollowAsync(JobStatusDto job)
+    {
+        (_readingJob, _readingStage, _verdict, _verdictDetail) = (job.JobId, Stage(job), null, null);
+        StateHasChanged();
+        try
+        {
+            if (_hub is null)
+            {
+                _hub = new HubConnectionBuilder().WithUrl(Navigation.ToAbsoluteUri("/hubs/analysis")).WithAutomaticReconnect().Build();
+                _hub.On<JobStatusDto>("JobStatusChanged", OnStatusChangedAsync);
+                _hub.Reconnected += _ => _readingJob is { } id ? SubscribeAsync(id) : Task.CompletedTask;
+            }
+            if (_hub.State == HubConnectionState.Disconnected)
+            {
+                await _hub.StartAsync();
+            }
+            await SubscribeAsync(job.JobId);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
+        {
+            _readingStage = "(its progress could not be followed here; the full analysis has it)";
+        }
+    }
+
+    private async Task SubscribeAsync(string jobId)
+    {
+        await _hub!.InvokeAsync("Subscribe", jobId);
+        if (await Analysis.GetStatusAsync(jobId) is { } current)
+        {
+            await OnStatusChangedAsync(current);
+        }
+    }
+
+    private async Task OnStatusChangedAsync(JobStatusDto status)
+    {
+        if (status.JobId != _readingJob || _verdict is not null)
+        {
+            return;
+        }
+        _readingStage = Stage(status);
+        if (status.Stage == JobStage.Complete)
+        {
+            var result = await Analysis.GetResultAsync(status.JobId);
+            (_verdict, _verdictDetail) = result?.PrimaryMode is { } mode
+                ? ($"You sang in {result.TonicName} {ScaleModes.DisplayName(mode.ToString())}",
+                    $"{result.PrimaryConfidence:P0} confidence, read from your melody over the song's chords.")
+                : ("No clear mode in that take", "Sing a little longer or a little louder, and try again.");
+            await LoadSongTakesAsync();
+        }
+        else if (status.Stage is JobStage.Failed or JobStage.Cancelled)
+        {
+            (_verdict, _verdictDetail) = ("That take could not be read", status.Error ?? "");
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static string Stage(JobStatusDto status) => status.Stage.IsTerminal() ? "" : $"({status.Progress:P0})";
+
+    /// <summary>The caller's takes over the song showing, read again whenever the song or a take changes.</summary>
+    private async Task LoadSongTakesAsync()
+    {
+        if (_jam is not { } song)
+        {
+            return;
+        }
+        try
+        {
+            var takes = await Analysis.GetJamTakesAsync(song);
+            if (ReferenceEquals(song, _jam))
+            {
+                _songTakes = takes;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException)
+        {
+            _songTakes = null; // no history is no harm: the jam plays without it
+        }
+    }
+
+    /// <summary>The index of a section's first box among all the board's boxes, sections in order.</summary>
+    private static int BoxStart(ChordJamDto jam, int section)
+        => jam.Sections.Take(section).Sum(s => s.Chords.Count);
+
+    /// <summary>How long the song runs at the tempo set, in bars and minutes.</summary>
+    private string Length(ChordJamDto jam)
+    {
+        var seconds = (int)Math.Round(Beats(jam) * 60 / Math.Max(1, _bpm));
+        return $"{Bars(jam)} bars, {seconds / 60}:{seconds % 60:00}";
+    }
+
+    private static int Beats(ChordJamDto jam)
+        => jam.Form.Sum(f => jam.Sections[f].Repeats * jam.Sections[f].Chords.Sum(chord => chord.Beats)) + jam.Ending.Beats;
+
+    private static int Bars(ChordJamDto jam) => Beats(jam) / 4;
 
     /// <summary>A shape slid past the 4th fret is drawn from its lowest fretted fret, numbered beside the
     /// grid, so the slid C at the 3rd fret looks like the C it came from; open strings stay open.</summary>
@@ -254,6 +874,22 @@
             {
                 await _glow.InvokeVoidAsync("dispose");
                 await _glow.DisposeAsync();
+            }
+            if (_lyricFx is not null)
+            {
+                await _lyricFx.DisposeAsync();
+            }
+            if (_hub is not null)
+            {
+                await _hub.DisposeAsync();
+            }
+            if (_hum is not null)
+            {
+                if (_recording)
+                {
+                    await _hum.InvokeVoidAsync("cancelCapture");
+                }
+                await _hum.DisposeAsync();
             }
         }
         catch (JSDisconnectedException)

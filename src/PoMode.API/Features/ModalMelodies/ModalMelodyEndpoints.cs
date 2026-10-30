@@ -54,7 +54,7 @@ public static class ModalMelodyEndpoints
                 chords: generated.Chords,
                 result: generated.ModalAnalysis);
 
-            var fileName = $"modal-{generated.TonicPitchClass}-{generated.Mode}-{generated.ProgressionId}.mid";
+            var fileName = $"modal-{generated.TonicPitchClass}-{generated.Mode}-{FileStem(generated.ProgressionId)}.mid";
             return TypedResults.File(midiBytes, "audio/midi", fileName);
         })
         .WithName("ExportModalMelodyMidiGet")
@@ -79,7 +79,7 @@ public static class ModalMelodyEndpoints
                 chords: generated.Chords,
                 totalDurationSec: duration);
 
-            var fileName = $"modal-{generated.TonicPitchClass}-{generated.Mode}-{generated.ProgressionId}.wav";
+            var fileName = $"modal-{generated.TonicPitchClass}-{generated.Mode}-{FileStem(generated.ProgressionId)}.wav";
             return TypedResults.File(wavBytes, "audio/wav", fileName);
         })
         .WithName("ExportModalMelodyWavGet")
@@ -99,7 +99,7 @@ public static class ModalMelodyEndpoints
                 chords: generated.Chords,
                 totalDurationSec: duration);
 
-            var fileName = $"ModeLab_{generated.Mode}_{generated.ProgressionId}.wav";
+            var fileName = $"ModeLab_{generated.Mode}_{FileStem(generated.ProgressionId)}.wav";
             using var stream = new MemoryStream(wavBytes);
 
             var state = await intake.StartAsync(
@@ -257,4 +257,9 @@ public static class ModalMelodyEndpoints
             Style: style ?? MelodyStyle.Lyrical,
             Seed: seed ?? 42,
             TargetPurity: targetPurity ?? 90.0);
+
+    /// <summary>A progression's id as a file name: a song's loop carries its chords in the id, and
+    /// their colons and commas are not file-name characters.</summary>
+    private static string FileStem(string progressionId)
+        => progressionId.StartsWith(SongLoops.Prefix, StringComparison.Ordinal) ? "song-loop" : progressionId;
 }

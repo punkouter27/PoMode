@@ -68,7 +68,7 @@
         new("Setting", "Theme: light", () => Theme.SetAsync("light")),
         new("Setting", "Theme: dark", () => Theme.SetAsync("dark")),
         new("Setting", "Analysis models", () => GoAsync("settings")),
-        new("Setting", "More tools: inspector, rerun, MIDI, diagnostics", () => GoAsync("settings#more-tools")),
+        new("Setting", "More tools: inspector, rerun, MIDI, diagnostics, purity, describe", () => GoAsync("settings#more-tools")),
         new("Setting", "Keyboard shortcuts", () => GoAsync("settings#shortcuts")),
         new("Setting", "Download everything I added", () => { Navigation.NavigateTo("api/account/export", forceLoad: true); return Task.CompletedTask; }),
         .. _songs,

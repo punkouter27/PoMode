@@ -5,17 +5,21 @@ using PoMode.API.Features.Account;
 using PoMode.API.Features.Analysis;
 using PoMode.API.Features.Auth;
 using PoMode.API.Features.BeatTracking;
+using PoMode.API.Features.ChordJams;
 using PoMode.API.Features.ChordRecognition;
 using PoMode.API.Features.ChordShapes;
 using PoMode.API.Features.Demo;
 using PoMode.API.Features.Diagnostics;
 using PoMode.API.Features.Export;
+using PoMode.API.Features.Library;
 using PoMode.API.Features.Lyrics;
 using PoMode.API.Features.ModalAnalysis;
 using PoMode.API.Features.ModalMelodies;
 using PoMode.API.Features.OneDrive;
 using PoMode.API.Features.PitchTracking;
 using PoMode.API.Features.Push;
+using PoMode.API.Features.SongIdentity;
+using PoMode.API.Features.SongLoop;
 using PoMode.API.Features.SongStatistics;
 using PoMode.API.Features.Separation;
 using PoMode.API.Features.SoundSearch;
@@ -93,6 +97,7 @@ builder.Services.AddSingleton<IBeatTracker, DspBeatTracker>();
 builder.Services.AddSingleton<ArtifactModalAnalyzer>();
 builder.Services.AddSingleton<ModalMelodyGenerator>();
 builder.Services.AddSingleton<HumTakeSeeder>();
+builder.Services.AddSingleton<JamTakeSeeder>();
 builder.Services.AddSingleton<VoiceProfileService>();
 builder.Services.AddSingleton<HumTakeHistory>();
 builder.Services.AddSingleton<ISongInterpreter, OllamaSongInterpreter>();
@@ -112,6 +117,31 @@ builder.Services.AddSingleton(sp => PushSettings.Resolve(
 builder.Services.AddSingleton<PushSubscriptionStore>();
 builder.Services.AddSingleton<WebPushOutcomeNotifier>();
 builder.Services.AddSingleton<LyricsTranscriber>();
+// What a finished song is (its tags, else AcoustID) and its published lyrics (LRCLIB), both in
+// aftercare, and the songs that share its chord loop (Hooktheory), asked from the song page. The two
+// with accounts are off until their keys are in Key Vault (docs/architecture.md, Song identity).
+const string userAgent = "PoMode (+https://github.com/punkouter27/PoMode)";
+builder.Services.AddSingleton<AcoustIdClient>();
+builder.Services.AddSingleton<SongIdentifier>();
+builder.Services.AddSingleton<LrclibClient>();
+builder.Services.AddSingleton<HooktheoryClient>();
+builder.Services.AddHttpClient(AcoustIdClient.HttpClientName, client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+});
+builder.Services.AddHttpClient(LrclibClient.HttpClientName, client =>
+{
+    client.BaseAddress = LrclibClient.BaseAddress;
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+});
+builder.Services.AddHttpClient(HooktheoryClient.HttpClientName, client =>
+{
+    client.BaseAddress = HooktheoryClient.BaseAddress;
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+});
 builder.Services.AddSingleton<JobAftercare>();
 builder.Services.AddHostedService(services => services.GetRequiredService<JobAftercare>());
 // Search by sound: CLAP embeds each finished song in the background, and the library asks in words.
@@ -232,8 +262,10 @@ app.MapModalMelodies();
 app.MapMidiExport();
 app.MapSongStats();
 app.MapChordShapes();
+app.MapChordJams();
 app.MapVoiceProfile();
 app.MapSongStructure();
+app.MapSongLoop();
 app.MapPush();
 app.MapAccount();
 app.MapOneDrive();

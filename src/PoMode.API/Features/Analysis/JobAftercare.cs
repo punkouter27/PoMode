@@ -1,15 +1,16 @@
 using System.Threading.Channels;
+using PoMode.API.Audio;
 using PoMode.API.Features.Lyrics;
-using PoMode.API.Features.Push;
+using PoMode.API.Features.SongIdentity;
 using PoMode.API.Features.SongStatistics;
-using PoMode.API.Features.SoundSearch;
 using PoMode.Shared.Analysis;
 
 namespace PoMode.API.Features.Analysis;
 
 /// <summary>
 /// Work worth doing for a finished song before anyone asks for it, so opening it is instant: the
-/// written summary (the default interpreter's, which then sits in its cache) and the lyrics. One at a
+/// written summary (the default interpreter's, which then sits in its cache), what the song is (its tags,
+/// else AcoustID) and the lyrics (LRCLIB's published ones for a named song, else Whisper's). One at a
 /// time, in the background, after the analysis worker has moved on, because both are seconds to a
 /// minute of model time that a person opening the song would otherwise wait through.
 /// </summary>
@@ -22,6 +23,8 @@ public sealed class JobAftercare(
     JobStore store,
     SongInterpreterSelector interpreters,
     LyricsTranscriber lyrics,
+    SongIdentifier identifier,
+    LrclibClient lrclib,
     ILogger<JobAftercare> logger) : BackgroundService
 {
     private readonly Channel<string> _jobs = Channel.CreateUnbounded<string>(new UnboundedChannelOptions { SingleReader = true });
@@ -43,7 +46,19 @@ public sealed class JobAftercare(
                 continue;
             }
             await TryAsync("summary", jobId, () => WriteSummaryAsync(jobId, stoppingToken), stoppingToken);
-            if (state.Origin?.Kind is not TakeOrigin.HumTake)
+            if (TakeOrigin.IsSung(state.Origin?.Kind))
+            {
+                continue;
+            }
+            SongIdentityDto? identity = null;
+            await TryAsync("identity", jobId, async () => identity = await identifier.IdentifyAsync(state, stoppingToken), stoppingToken);
+            var published = false;
+            if (identity is not null)
+            {
+                await TryAsync("published lyrics", jobId,
+                    async () => published = await WritePublishedLyricsAsync(state, identity, stoppingToken), stoppingToken);
+            }
+            if (!published)
             {
                 await TryAsync("lyrics", jobId, () => lyrics.TranscribeAsync(state, stoppingToken), stoppingToken);
             }
@@ -62,6 +77,23 @@ public sealed class JobAftercare(
         }
     }
 
+    /// <summary>LRCLIB's timed lyrics as the song's lyrics, when it has them for this song at this
+    /// length; false leaves the song to Whisper. An instrumental is written as no lines, not misheard.</summary>
+    private async Task<bool> WritePublishedLyricsAsync(JobState state, SongIdentityDto identity, CancellationToken ct)
+    {
+        if (AudioDecoder.TryReadDurationSeconds(store.InputPath(state)) is not { } duration
+            || await lrclib.SyncedAsync(identity, duration, ct) is not { } lines)
+        {
+            return false;
+        }
+        await store.WriteArtifactAsync(state.JobId, LyricsTranscriber.ArtifactName, lines.ToList(), ct);
+        if (lines.Count > 0)
+        {
+            await identifier.StampAsync(state.JobId, identity with { LyricsSource = "LRCLIB" }, ct);
+        }
+        return true;
+    }
+
     private async Task TryAsync(string what, string jobId, Func<Task> work, CancellationToken ct)
     {
         try
@@ -76,17 +108,5 @@ public sealed class JobAftercare(
         {
             logger.LogWarning(ex, "Writing the {What} ahead of time failed for job {JobId}.", what, jobId);
         }
-    }
-}
-
-/// <summary>Everything that wants to hear a job finished: the owner's browsers (Web Push), the work
-/// done ahead of the owner opening it (<see cref="JobAftercare"/>), and the library's sound index.</summary>
-public sealed class OutcomeFanOut(WebPushOutcomeNotifier push, JobAftercare aftercare, SoundIndexer sound) : IJobOutcomeNotifier
-{
-    public async Task NotifyAsync(JobState state, CancellationToken ct)
-    {
-        aftercare.Enqueue(state);
-        sound.Enqueue(state);
-        await push.NotifyAsync(state, ct);
     }
 }

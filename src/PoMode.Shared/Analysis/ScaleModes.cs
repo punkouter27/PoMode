@@ -68,70 +68,70 @@ public static class ScaleModes
     public static IReadOnlyList<int> Intervals(ScaleMode mode) => IntervalSets[mode];
 
     /// <summary>Sharp-spelled pitch-class name — the app's one naming convention for a bare pitch class.</summary>
-        public static string NoteName(int pitchClass) => Names[Mod(pitchClass)];
+    public static string NoteName(int pitchClass) => Names[Mod(pitchClass)];
 
-        /// <summary>
-        /// A pitch's name spelled to suit <paramref name="tonicPitchClass"/>'s key: flats in the six flat
-        /// keys, sharps everywhere else. Without this a scale on F printed "F G A A# C D E" — an A#
-        /// where every musician reads Bb — and a chord's root contradicted the flat in its own roman
-        /// numeral. <see cref="NoteName(int)"/> stays sharp for the places that carry a pitch class with
-        /// no key behind it (a DTO field, a log line).
-        /// </summary>
-        public static string NoteName(int pitchClass, int tonicPitchClass)
+    /// <summary>
+    /// A pitch's name spelled to suit <paramref name="tonicPitchClass"/>'s key: flats in the six flat
+    /// keys, sharps everywhere else. Without this a scale on F printed "F G A A# C D E" — an A#
+    /// where every musician reads Bb — and a chord's root contradicted the flat in its own roman
+    /// numeral. <see cref="NoteName(int)"/> stays sharp for the places that carry a pitch class with
+    /// no key behind it (a DTO field, a log line).
+    /// </summary>
+    public static string NoteName(int pitchClass, int tonicPitchClass)
+    {
+        var pc = Mod(pitchClass);
+        if (!IsFlatKey(tonicPitchClass))
         {
-            var pc = Mod(pitchClass);
-            if (!IsFlatKey(tonicPitchClass))
-            {
-                return Names[pc];
-            }
-            // A flat key spells a black key as a flat. Ranking natural above flat above sharp means a
-            // flat key reads Bb and Eb while a white key keeps its letter: E, not Fb.
-            var bestLetter = -1;
-            var bestAccidental = "";
-            var bestRank = int.MaxValue;
-            for (var letter = 0; letter < Letters.Length; letter++)
-            {
-                var offset = Mod(pc - LetterPitchClasses[letter]);
-                var (accidental, rank) = offset switch
-                {
-                    0 => ("", 0),
-                    11 => ("b", 1),
-                    1 => ("#", 2),
-                    _ => ("", int.MaxValue),
-                };
-                if (rank < bestRank)
-                {
-                    bestRank = rank;
-                    bestLetter = letter;
-                    bestAccidental = accidental;
-                }
-            }
-            return bestLetter < 0 ? Names[pc] : $"{Letters[bestLetter]}{bestAccidental}";
+            return Names[pc];
         }
-
-        /// <summary>
-        /// The diatonic letter index (C=0 … B=6) a pitch class is spelled with on its own: pitch 10 is
-        /// B flat, not A sharp. Chord roots are spelled from a letter rather than a pitch class, which is
-        /// the only way a chord can agree with its roman numeral — G's flat five is D flat, even though
-        /// a pitch class alone would have said C sharp.
-        /// </summary>
-        public static int LetterIndexOf(int pitchClass)
+        // A flat key spells a black key as a flat. Ranking natural above flat above sharp means a
+        // flat key reads Bb and Eb while a white key keeps its letter: E, not Fb.
+        var bestLetter = -1;
+        var bestAccidental = "";
+        var bestRank = int.MaxValue;
+        for (var letter = 0; letter < Letters.Length; letter++)
         {
-            var letter = NoteName(pitchClass, pitchClass)[0];
-            return Array.IndexOf(Letters, letter.ToString());
+            var offset = Mod(pc - LetterPitchClasses[letter]);
+            var (accidental, rank) = offset switch
+            {
+                0 => ("", 0),
+                11 => ("b", 1),
+                1 => ("#", 2),
+                _ => ("", int.MaxValue),
+            };
+            if (rank < bestRank)
+            {
+                bestRank = rank;
+                bestLetter = letter;
+                bestAccidental = accidental;
+            }
         }
+        return bestLetter < 0 ? Names[pc] : $"{Letters[bestLetter]}{bestAccidental}";
+    }
 
-        /// <summary>A diatonic letter plus the accidental to print on it: -1 flat, 1 sharp, 0 none.</summary>
-        public static string SpellLetter(int letterIndex, int accidental)
-            => $"{Letters[((letterIndex % 7) + 7) % 7]}{(accidental < 0 ? "b" : accidental > 0 ? "#" : "")}";
+    /// <summary>
+    /// The diatonic letter index (C=0 … B=6) a pitch class is spelled with on its own: pitch 10 is
+    /// B flat, not A sharp. Chord roots are spelled from a letter rather than a pitch class, which is
+    /// the only way a chord can agree with its roman numeral — G's flat five is D flat, even though
+    /// a pitch class alone would have said C sharp.
+    /// </summary>
+    public static int LetterIndexOf(int pitchClass)
+    {
+        var letter = NoteName(pitchClass, pitchClass)[0];
+        return Array.IndexOf(Letters, letter.ToString());
+    }
 
-        /// <summary>The pitch class a diatonic letter sits at in its natural form (C=0 … B=11).</summary>
-        public static int LetterPitchClass(int letterIndex)
-            => LetterPitchClasses[((letterIndex % 7) + 7) % 7];
+    /// <summary>A diatonic letter plus the accidental to print on it: -1 flat, 1 sharp, 0 none.</summary>
+    public static string SpellLetter(int letterIndex, int accidental)
+        => $"{Letters[((letterIndex % 7) + 7) % 7]}{(accidental < 0 ? "b" : accidental > 0 ? "#" : "")}";
 
-        /// <summary>The mode's note names built on <paramref name="tonicPitchClass"/>, tonic first.</summary>
-        public static string[] NoteNames(int tonicPitchClass, ScaleMode mode)
-            => [.. IntervalSets[mode].Select(interval => NoteName(tonicPitchClass + interval, tonicPitchClass))];
+    /// <summary>The pitch class a diatonic letter sits at in its natural form (C=0 … B=11).</summary>
+    public static int LetterPitchClass(int letterIndex)
+        => LetterPitchClasses[((letterIndex % 7) + 7) % 7];
+
+    /// <summary>The mode's note names built on <paramref name="tonicPitchClass"/>, tonic first.</summary>
+    public static string[] NoteNames(int tonicPitchClass, ScaleMode mode)
+        => [.. IntervalSets[mode].Select(interval => NoteName(tonicPitchClass + interval, tonicPitchClass))];
 
     /// <summary>Degree semitone offset of the relative mode in the parent major scale.</summary>
     public static int ModeDegreeOffset(ScaleMode mode) => mode switch

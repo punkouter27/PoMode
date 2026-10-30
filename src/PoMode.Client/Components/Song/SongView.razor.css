@@ -108,6 +108,26 @@
     min-width: 0;
 }
 
+.song-identity,
+.song-loop {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--pm-border);
+    border-radius: 999px;
+    background: var(--pm-surface-alt);
+    color: var(--pm-fg);
+    font-size: var(--pm-text-xs);
+    font-weight: 600;
+    min-width: 0;
+}
+
+.song-loop-repeats {
+    color: var(--pm-fg-muted);
+    font-weight: 400;
+}
+
 .song-actions-group {
     display: flex;
     align-items: center;

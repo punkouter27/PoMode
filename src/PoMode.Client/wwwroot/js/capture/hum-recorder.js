@@ -143,15 +143,16 @@ export function countIn(bpm, beats) {
 const MIN_TAKE_SECONDS = 0.5;
 
 /// Closes the microphone and returns the take as 16-bit mono PCM WAV bytes, trimmed so sample zero
-/// is the loop's downbeat. Returns an empty array — never null, which does not survive the byte-array
-/// marshalling — when nothing usable was captured.
-export function finishCapture() {
+/// is the loop's downbeat (or downbeatAt, on the same clock, when something other than the modal
+/// player played the backing: the guitar jam passes its song's bar one). Returns an empty array —
+/// never null, which does not survive the byte-array marshalling — when nothing usable was captured.
+export function finishCapture(downbeatAt) {
     // Felt rather than seen: by the end of a take the singer is usually looking anywhere but at
     // the Stop button, and a phone in the hand can say "got it" without a sound over the recording.
     sfx.thud();
     // Read the downbeat before anything is torn down — the caller stops the player afterwards, and
     // a stopped player no longer knows when its pass through the loop began.
-    const playbackStart = player.getPlaybackStartTime();
+    const playbackStart = typeof downbeatAt === 'number' ? downbeatAt : player.getPlaybackStartTime();
     isCapturing = false;
     teardown();
 

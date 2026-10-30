@@ -39,8 +39,11 @@ public sealed partial class LibraryQuery
     /// <summary>The chips alone, without the words that went to the file name.</summary>
     public bool MatchesFilters(LibraryEntryDto entry) => _tests.All(test => test(entry));
 
+    /// <summary>Each word is in the file name, or in the title or artist the song was identified as.</summary>
     private bool MatchesName(LibraryEntryDto entry)
-        => _nameWords.All(word => entry.FileName.Contains(word, StringComparison.OrdinalIgnoreCase));
+        => _nameWords.All(word => entry.FileName.Contains(word, StringComparison.OrdinalIgnoreCase)
+            || entry.Identity?.Title.Contains(word, StringComparison.OrdinalIgnoreCase) == true
+            || entry.Identity?.Artist?.Contains(word, StringComparison.OrdinalIgnoreCase) == true);
 
     /// <summary>The words that were not a filter, in order: a file name to find, or a sound to describe.</summary>
     public string Description => string.Join(' ', _nameWords);
@@ -122,6 +125,7 @@ public sealed partial class LibraryQuery
     {
         TakeOrigin.Beat => "beats",
         TakeOrigin.HumTake => "takes",
+        TakeOrigin.JamTake => "jams",
         _ => "demo",
     };
 
@@ -172,6 +176,7 @@ public sealed partial class LibraryQuery
     {
         "beat" or "beats" or "drums" => (TakeOrigin.Beat, "Beats"),
         "hum" or "hums" or "take" or "takes" => (TakeOrigin.HumTake, "Sung takes"),
+        "jam" or "jams" => (TakeOrigin.JamTake, "Jam takes"),
         "demo" => (TakeOrigin.Demo, "Demo"),
         _ => null,
     };

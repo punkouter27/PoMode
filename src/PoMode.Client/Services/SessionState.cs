@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using PoMode.Shared.Account;
+using PoMode.Shared.Serialization;
 
 namespace PoMode.Client.Services;
 
@@ -10,6 +11,9 @@ namespace PoMode.Client.Services;
 /// </summary>
 public sealed class SessionState(HttpClient http)
 {
+    /// <summary>The source-generated contracts, so the trimmed client never serializes by reflection.</summary>
+    private static PoModeJsonContext Json => PoModeJsonContext.Default;
+
     private Task<SessionDto>? _ready;
 
     public SessionDto? Current { get; private set; }
@@ -30,13 +34,13 @@ public sealed class SessionState(HttpClient http)
 
     private async Task<SessionDto> ResolveAsync()
     {
-        var session = await http.GetFromJsonAsync<SessionDto>("api/auth/session")
+        var session = await http.GetFromJsonAsync("api/auth/session", Json.SessionDto)
                       ?? new SessionDto(SessionKind.None, null, false);
         if (session.Kind == SessionKind.None)
         {
             var response = await http.PostAsync("auth/guest", content: null);
             response.EnsureSuccessStatusCode();
-            session = await response.Content.ReadFromJsonAsync<SessionDto>() ?? session;
+            session = await response.Content.ReadFromJsonAsync(Json.SessionDto) ?? session;
         }
         Current = session;
         Changed?.Invoke();

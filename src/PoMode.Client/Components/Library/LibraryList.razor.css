@@ -459,3 +459,9 @@
         height: 2.75rem;
     }
 }
+
+.library-identity {
+    display: block;
+    color: var(--pm-fg-muted);
+    font-size: var(--pm-text-xs);
+}

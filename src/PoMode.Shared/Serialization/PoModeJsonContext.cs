@@ -33,6 +33,8 @@ namespace PoMode.Shared.Serialization;
 [JsonSerializable(typeof(ChromaDto))]
 [JsonSerializable(typeof(List<LyricLineDto>))]
 [JsonSerializable(typeof(ChordShapesDto))]
+[JsonSerializable(typeof(SongLoopDto))]
+[JsonSerializable(typeof(List<ProgressionSongDto>))]
 [JsonSerializable(typeof(List<ChordJamDto>))]
 [JsonSerializable(typeof(SongInterpretationDto))]
 [JsonSerializable(typeof(List<InterpreterOptionDto>))]
@@ -49,4 +51,8 @@ namespace PoMode.Shared.Serialization;
 [JsonSerializable(typeof(SongQuestionRequest))]
 [JsonSerializable(typeof(SongAnswerDto))]
 [JsonSerializable(typeof(InterpretationEvent))]
+[JsonSerializable(typeof(string[]))]
+[JsonSerializable(typeof(int))]
+[JsonSerializable(typeof(string))]
+[JsonSerializable(typeof(VisualizationPayload))]
 public sealed partial class PoModeJsonContext : JsonSerializerContext;

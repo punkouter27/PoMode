@@ -6,11 +6,11 @@
 <nav class="mode-next" aria-label="Take this mode further">
     @if (From != "modes")
     {
-        <a href="@($"modes?{Query}")" id="@($"{From}-to-modes")">Explore @Name in the Mode Lab</a>
+        <a href="@($"modes?{Query}")" id="@($"{From}-to-modes")">Explore @Name@(Loop is null ? "" : " over the song's chords") in the Mode Lab</a>
     }
     @if (From != "practice")
     {
-        <a href="@($"practice?{Query}")" id="@($"{From}-to-practice")">Sing over @Name in Practice</a>
+        <a href="@($"practice?{Query}")" id="@($"{From}-to-practice")">Sing over @(Loop is null ? Name : "the song's chords") in Practice</a>
     }
 </nav>
 
@@ -26,5 +26,9 @@
     /// <summary>The mode as the page already shows it, "E Dorian".</summary>
     [Parameter, EditorRequired] public required string Name { get; set; }
 
-    private string Query => ModeLink.Query(TonicPitchClass, Mode);
+    /// <summary>The song's own chord loop as a progression id (<see cref="SongLoops"/>), when it has
+    /// one: both pages then open on the song's chords at its tempo instead of the mode's cadence.</summary>
+    [Parameter] public string? Loop { get; set; }
+
+    private string Query => ModeLink.Query(TonicPitchClass, Mode) + (Loop is { } loop ? $"&loop={Uri.EscapeDataString(loop)}" : "");
 }

@@ -32,6 +32,10 @@ public sealed class JobState
     /// it was sung over. Null for an ordinary upload, which is its own complete explanation.</summary>
     public TakeOrigin? Origin { get; set; }
 
+    /// <summary>What the recording is, stamped after the job by <c>SongIdentifier</c> (tags, else
+    /// AcoustID), so the library can name it without opening anything. Null when nothing said.</summary>
+    public SongIdentityDto? Identity { get; set; }
+
     /// <summary>The signed-in user (guest or Microsoft) who created the job, as <c>PoUser.IdOf</c>
     /// reads it. Settable because a guest who signs in with Microsoft takes their library with
     /// them. Null on jobs from before ownership existed; those belong to no one's library.</summary>
@@ -90,9 +94,10 @@ public sealed class JobState
         PrimaryMode = PrimaryMode,
         TempoBpm = TempoBpm,
         Origin = Origin,
+        Identity = Identity,
         OwnerId = ownerId,
     };
 
     public JobStatusDto ToDto(double? liveProgress = null)
-        => new(JobId, Stage, liveProgress ?? Progress, Plan, CompletedStages, Error, CreatedAt, StageHistory, InputFileName, Origin);
+        => new(JobId, Stage, liveProgress ?? Progress, Plan, CompletedStages, Error, CreatedAt, StageHistory, InputFileName, Origin, Identity);
 }

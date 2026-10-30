@@ -164,6 +164,11 @@
                             {
                                 @entry.FileName
                             }
+                            @if (entry.Identity is { } identity)
+                            {
+                                @* The file name stays the link: runs of one song are grouped by it. *@
+                                <span class="library-identity">@identity.Title@(identity.Artist is { } artist ? $" · {artist}" : "")</span>
+                            }
                             @* Only the latest run of each song is listed; the badge lists the earlier ones. *@
                             @if (GroupsRuns && IsLatest(entry) && RunCountOf(entry) is > 1 and var runs)
                             {
@@ -190,7 +195,7 @@
                             else if (entry.Origin is { } origin)
                             {
                                 <span class="library-origin-badge" title="@origin.Description"
-                                      data-origin-kind="@origin.Kind">🎤 hum</span>
+                                      data-origin-kind="@origin.Kind">@(origin.Kind == TakeOrigin.JamTake ? "🎸 jam" : "🎤 hum")</span>
                             }
                             @if (_offline.Contains(entry.JobId))
                             {
@@ -437,7 +442,7 @@
     /// <summary>The kinds offered as toggles: the ones the library holds, on the unscoped list.</summary>
     private List<(string Kind, string Label)> KindToggles
         => Only is not null || _entries is null ? []
-            : [.. new[] { (TakeOrigin.Beat, "Beats"), (TakeOrigin.HumTake, "Sung takes") }
+            : [.. new[] { (TakeOrigin.Beat, "Beats"), (TakeOrigin.HumTake, "Sung takes"), (TakeOrigin.JamTake, "Jam takes") }
                 .Where(kind => _entries.Any(entry => entry.Origin?.Kind == kind.Item1))];
 
     /// <summary>The chips, less the kinds a pressed toggle already states.</summary>

@@ -117,7 +117,8 @@ onto `data-*` for Playwright.
 
 - **Settings** (`/settings`) holds every optional choice, each at its best value; the menu keeps only
   places to go. Ctrl+K opens the palette. Its "More tools" section switches on the power-user
-  controls (inspector, rerun, MIDI, Diagnostics), all off by default; a flag hides one control in
+  controls (inspector, rerun, MIDI, the Mode Lab's purity slider and "Describe it" box, Diagnostics),
+  all off by default; a flag hides one control in
   place, never a second layout.
 - **`.pm-label`** is the one small-caps caption (section titles, figure labels); a component adds only
   what differs (a colour, a weight).
@@ -150,7 +151,7 @@ that scrolls. What made the tall pages fit was splitting them by job, never clip
   pages its takes five at a time.
 
 A phone is allowed to scroll the finished song and the Mode Lab, both content that exists to be read
-and compared, and Practice's Guitar jam tab (its length is the generated progression's). Every other
+and compared, and Practice's Guitar jam tab, on a desktop too (its length is the generated song's). Every other
 route fits 390×844 too.
 
 ## The build watermark

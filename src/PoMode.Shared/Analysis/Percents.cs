@@ -21,9 +21,9 @@ public static class Percents
             ? $"{Math.Round(fraction * 100, MidpointRounding.AwayFromZero):0}%"
             : "0%";
 
-        /// <summary>
-        /// The same for a confidence that may not have been measured. A null is nothing to print, which
-        /// is what formatting a null double has always produced here.
-        /// </summary>
-        public static string Of(double? fraction) => fraction is { } value ? Of(value) : string.Empty;
+    /// <summary>
+    /// The same for a confidence that may not have been measured. A null is nothing to print, which
+    /// is what formatting a null double has always produced here.
+    /// </summary>
+    public static string Of(double? fraction) => fraction is { } value ? Of(value) : string.Empty;
 }

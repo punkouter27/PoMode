@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using PoMode.API.Features.Analysis;
 using PoMode.API.Features.Auth;
 using PoMode.API.Features.Demo;
 using PoMode.API.Features.SoundSearch;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.API.Features.Library;
 
 public static class LibraryEndpoints
 {
@@ -120,6 +121,7 @@ public static class LibraryEndpoints
             tonicName,
             primaryMode,
             tempoBpm,
-            state.Origin);
+            state.Origin,
+            state.Identity);
     }
 }

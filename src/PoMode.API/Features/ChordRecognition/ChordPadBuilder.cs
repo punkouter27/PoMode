@@ -41,14 +41,14 @@ public static class ChordPadBuilder
     }
 
     /// <summary>Chord quality → semitone intervals above the root. Shared with the MIDI export.</summary>
-    public static int[] VoicingFor(string quality) => quality.ToLowerInvariant() switch
+    public static int[] VoicingFor(string quality) => ChordQualities.Normalise(quality) switch
     {
-        "min7" or "m7" => [0, 3, 7, 10],
-        "maj7" => [0, 4, 7, 11],
-        "7" or "dom7" => [0, 4, 7, 10],
-        "min" or "m" => [0, 3, 7],
-        "dim" => [0, 3, 6],
-        "aug" => [0, 4, 8],
+        ChordQualities.Minor7 => [0, 3, 7, 10],
+        ChordQualities.Major7 => [0, 4, 7, 11],
+        ChordQualities.Dominant7 => [0, 4, 7, 10],
+        ChordQualities.Minor => [0, 3, 7],
+        ChordQualities.Diminished => [0, 3, 6],
+        ChordQualities.Augmented => [0, 4, 8],
         _ => [0, 4, 7],
     };
 }

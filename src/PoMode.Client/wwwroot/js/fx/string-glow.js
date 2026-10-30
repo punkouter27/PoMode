@@ -59,14 +59,28 @@ export function attach(board) {
     }
     s.onPluck = (event) => pluck(s, event.detail);
     s.onStop = (event) => cut(s, event.detail);
+    // A page holds only so many WebGL contexts and the browser drops the oldest past that (Practice's
+    // take list draws its own). A lost canvas still covers the board, drawn blank, so it is hidden until
+    // the context comes back (preventDefault asks for that), when the strings are set up again.
     s.onLost = (event) => {
         event.preventDefault();
         s.lost = true;
         halt(s);
+        s.board.dataset.stringsLost = 'yes';
+    };
+    s.onRestored = () => {
+        if (state !== s || !s.gl || !setupGl(s, s.gl)) {
+            return;
+        }
+        s.lost = false;
+        delete s.board.dataset.stringsLost;
+        size(s);
+        restyle(s);
     };
     plucks.addEventListener('pluck', s.onPluck);
     plucks.addEventListener('stop', s.onStop);
     canvas.addEventListener('webglcontextlost', s.onLost);
+    canvas.addEventListener('webglcontextrestored', s.onRestored);
     s.unsubscribe = prefs.subscribe(() => restyle(s));
     try {
         s.resize = new ResizeObserver(() => size(s));
@@ -88,6 +102,7 @@ export function dispose() {
     plucks.removeEventListener('pluck', s.onPluck);
     plucks.removeEventListener('stop', s.onStop);
     s.canvas.removeEventListener('webglcontextlost', s.onLost);
+    s.canvas.removeEventListener('webglcontextrestored', s.onRestored);
     s.unsubscribe?.();
     s.resize?.disconnect();
     if (s.gl && !s.lost) {
@@ -101,6 +116,7 @@ export function dispose() {
     }
     try {
         delete s.board.dataset.strings;
+        delete s.board.dataset.stringsLost;
     } catch { }
 }
 

@@ -137,7 +137,7 @@ public static class SongSectionBuilder
     // ---- Bar grid ---------------------------------------------------------------------------
 
     /// <summary>Bar edges from 0 to <paramref name="duration"/>: bar <c>i</c> is <c>[edges[i], edges[i+1])</c>.</summary>
-    private static double[] BarStarts(double duration, ModalResult result, TempoMapDto? tempoMap, BeatGridDto? beats)
+    internal static double[] BarStarts(double duration, ModalResult result, TempoMapDto? tempoMap, BeatGridDto? beats)
     {
         var starts = new List<double>();
         double barSec;
