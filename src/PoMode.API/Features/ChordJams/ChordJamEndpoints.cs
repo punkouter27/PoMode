@@ -114,6 +114,7 @@ public sealed class JamQuery
     public int? Capo { get; init; }
     public double? StrumVariety { get; init; }
     public double? SlidChords { get; init; }
+    public double? Bass { get; init; }
 
     public ChordJamSettings Settings()
     {
@@ -121,6 +122,6 @@ public sealed class JamQuery
         return new(Open ?? d.OpenChords, Variety ?? d.Variety, Mood ?? d.Mood, KeyChanges ?? d.KeyChanges,
             Difficulty ?? d.Difficulty, Colour ?? d.Colour, Speed ?? d.ChangeSpeed, Busyness ?? d.Busyness,
             Tempo ?? d.Tempo, Borrowed ?? d.Borrowed, Smoothness ?? d.Smoothness, Length ?? d.Length,
-            Position ?? d.Position, Capo ?? d.Capo, StrumVariety ?? d.StrumVariety, SlidChords ?? d.SlidChords);
+            Position ?? d.Position, Capo ?? d.Capo, StrumVariety ?? d.StrumVariety, SlidChords ?? d.SlidChords, Bass ?? d.Bass);
     }
 }

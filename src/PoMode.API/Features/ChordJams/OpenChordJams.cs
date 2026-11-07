@@ -372,13 +372,13 @@ public static class OpenChordJams
         static double Unit(double value) => Math.Clamp(value, 0, 1);
         var c = new ChordJamSettings(Unit(s.OpenChords), Unit(s.Variety), Unit(s.Mood), Math.Clamp(s.KeyChanges, 0, 3),
             Unit(s.Difficulty), Unit(s.Colour), Math.Clamp(s.ChangeSpeed, 0, 2), Unit(s.Busyness), Unit(s.Tempo),
-            Unit(s.Borrowed), Unit(s.Smoothness), Unit(s.Length), Unit(s.Position), Math.Clamp(s.Capo, 0, 7), Unit(s.StrumVariety), Unit(s.SlidChords));
+            Unit(s.Borrowed), Unit(s.Smoothness), Unit(s.Length), Unit(s.Position), Math.Clamp(s.Capo, 0, 7), Unit(s.StrumVariety), Unit(s.SlidChords), Unit(s.Bass));
         var random = new Random(seed);
         // The slide jams are written out: all open strings, one key, a mood, a length and a pace of their
         // own, so they give way to any setting that says otherwise.
         var slide = random.NextDouble() < SlideChance * c.OpenChords && c.KeyChanges == 0 && c.Mood is > 0.2 and < 0.8
             && c.Borrowed == 0 && c.ChangeSpeed == 1 && c.Length is >= 0.34 and < 0.67;
-        var jam = WithCapo(slide ? Slide(seed, random, c) : Song(seed, random, c), c.Capo);
+        var jam = WithCapo(JamBass.Write(slide ? Slide(seed, random, c) : Song(seed, random, c), seed, c.Bass), c.Capo);
         var (title, theme, lyrics) = JamLyrics.Write(seed, c.Mood, jam);
         return jam with { Title = title, Theme = theme, Lyrics = lyrics };
     }
@@ -658,7 +658,11 @@ public static class OpenChordJams
         var name = jam.Key.Split(' ', 2);
         var shape = Enumerable.Range(0, 12).First(pc => ScaleModes.NoteName(pc) == name[0]);
         var sounding = $"{ScaleModes.NoteName(shape + capo, shape + capo)} {name[1]}";
-        JamChordDto Up(JamChordDto chord) => chord with { Midi = [.. chord.Midi.Select(midi => midi + capo)] };
+        JamChordDto Up(JamChordDto chord) => chord with
+        {
+            Midi = [.. chord.Midi.Select(midi => midi + capo)],
+            Bass = chord.Bass?.Select(note => note with { Midi = note.Midi + capo }).ToList(),
+        };
         return jam with
         {
             Feel = $"Capo on the {Ordinal(capo)} fret: you finger {jam.Key} shapes and it sounds in {sounding}. {jam.Feel}",

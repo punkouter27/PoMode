@@ -104,6 +104,11 @@
                         <span class="vibrato-readout" data-vibrato-readout data-testid="practice-vibrato-readout"></span>
                     </div>
 
+                    @if (_state is TakeState.Idle)
+                    {
+                        <VoiceTiming Id="practice-timing-prompt" Prompt="true" Ms="@_nudgeMs" MsChanged="@SetNudgeAsync"
+                                     BeforeMeasure="@StopEverythingAsync" />
+                    }
                     <div class="take-actions">
                         @switch (_state)
                         {

@@ -114,21 +114,29 @@ public sealed record ChordJamDto(
 /// <param name="Capo">0–7: the fret the capo is on.</param>
 /// <param name="SlidChords">0–1: how often a chord found by sliding an open shape up the neck is played; 0 never.</param>
 /// <param name="StrumVariety">0–1: how often a section twists its strum pattern and a chord takes a fill of its own.</param>
+/// <param name="Bass">0–1: how often a section's bass leaves the roots for a walking or melodic line; 0 roots only.</param>
 public sealed record ChordJamSettings(
     double OpenChords = 1, double Variety = 0, double Mood = 0.5, int KeyChanges = 0,
     double Difficulty = 0.2, double Colour = 0.3, int ChangeSpeed = 1, double Busyness = 0.3,
     double Tempo = 0.4, double Borrowed = 0, double Smoothness = 0.7, double Length = 0.5,
-    double Position = 0, int Capo = 0, double StrumVariety = 0, double SlidChords = 0.3);
+    double Position = 0, int Capo = 0, double StrumVariety = 0, double SlidChords = 0.3, double Bass = 0.3);
 
 /// <summary>One section of a jam song: its name (Verse, Chorus, Bridge), its progression as numerals,
 /// an eighth-note strum pattern over a 4/4 bar (D down, U up, B bass alone, - rest), how many times
 /// it goes round each time it comes up, its chords, and what they are: <c>open</c> chords, <c>barre</c>
 /// chords or <c>power</c> chords.</summary>
-public sealed record JamSectionDto(string Name, string Numerals, string Pattern, int Repeats, IReadOnlyList<JamChordDto> Chords, string Sound);
+/// <remarks><c>Bass</c> names the section's bass line (Root notes, Root and fifth, Driving eighths, Walking, Melodic).</remarks>
+public sealed record JamSectionDto(string Name, string Numerals, string Pattern, int Repeats, IReadOnlyList<JamChordDto> Chords, string Sound, string? Bass = null);
 
 /// <summary>One chord of a jam as fingered, low E string first: fret (-1 muted, 0 open) and finger per
 /// string, any barred frets, the MIDI notes a strum sounds in standard tuning, its length in beats, and
 /// its own strum pattern when it plays a fill rather than its section's.</summary>
-public sealed record JamChordDto(string Symbol, int[] Frets, int[] Fingers, int[] Barres, int[] Midi, int Beats, string? Pattern = null);
+/// <remarks><c>Bass</c> is the bass line under the chord, each note timed in eighths from the chord's start.</remarks>
+public sealed record JamChordDto(string Symbol, int[] Frets, int[] Fingers, int[] Barres, int[] Midi, int Beats, string? Pattern = null,
+    IReadOnlyList<JamBassNoteDto>? Bass = null);
+
+/// <summary>One bass note: its MIDI pitch, when it starts and how long it lasts, both in eighth notes,
+/// counted from the start of the chord it sits under.</summary>
+public sealed record JamBassNoteDto(int Midi, int At, int Length);
 
 public sealed record ChromaDto(double FramesPerSecond, int Frames, int TonicPitchClass, string Energy);

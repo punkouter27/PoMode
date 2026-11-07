@@ -28,3 +28,20 @@
     font-size: var(--pm-text-sm);
     color: var(--pm-fg-muted);
 }
+
+/* The one-time offer: a quiet strip above the first take, not a dialog in the way of singing. */
+.voice-timing-prompt {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pm-space-2);
+    margin-top: var(--pm-space-2);
+    padding: var(--pm-space-2) var(--pm-space-3);
+    border: 1px dashed var(--pm-accent);
+    border-radius: 6px;
+}
+
+.voice-timing-prompt-text {
+    flex: 1 1 16rem;
+    font-size: var(--pm-text-sm);
+}

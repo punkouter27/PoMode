@@ -4,12 +4,13 @@
 // Before this each of those built its own oscillator pair, and the mixer's lead was a raw detuned
 // sawtooth. That matters more here than in most apps: the note overlays are how a user *hears* what
 // the analysis transcribed and which chord it named, so a voice that sounds like a test tone makes
-// the transcription sound wrong even where it is right. Three voices, each chosen for what it has to
+// the transcription sound wrong even where it is right. Four voices, each chosen for what it has to
 // carry:
 //
 //   lead    the sung melody: a rounded tone with a vibrato that arrives late, as a singer's does
 //   pluck   the backing line: Karplus-Strong string, rendered once per pitch and cached
 //   epiano  chords and single reference notes: two-operator FM, a bell-bright attack that settles
+//   bass    the guitar jam's bass line: a filtered triangle with a sub-octave, decaying like a string
 //
 // Plus one generated room, so none of it plays in a dry vacuum. Every sample here is computed; there
 // are no assets to fetch, which suits a network-first service worker.
@@ -257,4 +258,44 @@ export function epiano(ctx, out, midi, when, duration, level = 0.4, onEnded = nu
 }
 
 /// The voice for each named part, so callers pick by role rather than by synthesis method.
-export const VOICES = { lead, pluck, epiano };
+/// The bass guitar under the guitar jam: a triangle with a sine an octave down for weight, through a
+/// lowpass that opens on the attack and closes as the note rings, the way a plucked bass string's
+/// brightness fades. It decays like a string, so a short note thumps and a long one sustains softly.
+export function bass(ctx, out, midi, when, duration, level = 0.5, onEnded = null) {
+    const freq = freqOf(midi);
+    const length = Math.max(0.08, duration);
+    const body = ctx.createOscillator();
+    body.type = 'triangle';
+    body.frequency.setValueAtTime(freq, when);
+    const sub = ctx.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(freq / 2, when);
+    const subLevel = ctx.createGain();
+    subLevel.gain.value = 0.5;
+
+    const tone = ctx.createBiquadFilter();
+    tone.type = 'lowpass';
+    tone.Q.value = 0.7;
+    tone.frequency.setValueAtTime(Math.min(2400, freq * 14), when);
+    tone.frequency.exponentialRampToValueAtTime(Math.max(140, freq * 3), when + Math.min(0.35, length));
+
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, when);
+    env.gain.exponentialRampToValueAtTime(level, when + 0.008);
+    env.gain.exponentialRampToValueAtTime(level * 0.55, when + Math.min(0.25, length));
+    env.gain.setValueAtTime(level * 0.55, when + Math.max(length - 0.05, 0.03));
+    env.gain.exponentialRampToValueAtTime(0.0001, when + length + 0.06);
+
+    body.connect(tone);
+    sub.connect(subLevel);
+    subLevel.connect(tone);
+    tone.connect(env);
+    env.connect(out);
+    for (const osc of [body, sub]) {
+        osc.start(when);
+        osc.stop(when + length + 0.1);
+    }
+    return finish([body, sub], [subLevel, tone, env], onEnded);
+}
+
+export const VOICES = { lead, pluck, epiano, bass };

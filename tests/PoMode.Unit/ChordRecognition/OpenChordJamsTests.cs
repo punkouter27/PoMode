@@ -228,10 +228,29 @@ public class OpenChordJamsTests
         var slid = new int[2];
         var (unevenPlain, unevenWild, sectionCount) = (0, 0, 0);
         var (colour, rare, height, carried) = (new int[2], new int[2], new double[2], new double[2]);
+        var (adventurous, bassSections) = (0, 0);
         for (var seed = 0; seed < 200; seed++)
         {
             Assert.All(OpenChordJams.Generate(seed, new(OpenChords: 0)).Sections, section => Assert.NotEqual("open", section.Sound));
             Assert.All(OpenChordJams.Generate(seed, new(OpenChords: 1)).Sections, section => Assert.Equal("open", section.Sound));
+
+            // A bass line under every chord, inside the chord's length and the bass register; at the
+            // slider's bottom it only holds the ground; it changes nothing else about the song.
+            var roots = OpenChordJams.Generate(seed, new(Bass: 0, Capo: seed % 3));
+            Assert.All(roots.Sections, section => Assert.Contains(section.Bass, new[] { "Root notes", "Root and fifth", "Driving eighths" }));
+            Assert.All(roots.Sections.SelectMany(section => section.Chords).Append(roots.Ending), chord =>
+            {
+                Assert.NotEmpty(chord.Bass!);
+                Assert.All(chord.Bass!, note => Assert.True(note.At >= 0 && note.Length >= 1 && note.At + note.Length <= chord.Beats * 2
+                    && note.Midi is >= 28 and <= 28 + 7 + 24, $"seed {seed}: {chord.Symbol} bass {note}"));
+            });
+            var wandering = OpenChordJams.Generate(seed, new(Bass: 1, Capo: seed % 3));
+            Assert.Equal(roots.Sections.Select(section => string.Join(' ', section.Chords.Select(chord => chord.Symbol))),
+                wandering.Sections.Select(section => string.Join(' ', section.Chords.Select(chord => chord.Symbol))));
+            Assert.All(wandering.Sections.SelectMany(section => section.Chords).SelectMany(chord => chord.Bass!),
+                note => Assert.InRange(note.Midi, 28 + (seed % 3), 28 + (seed % 3) + 7 + 24));
+            adventurous += wandering.Sections.Count(section => section.Bass is "Walking" or "Melodic");
+            bassSections += wandering.Sections.Count;
 
             var plain = OpenChordJams.Generate(seed, new(Variety: 0));
             Assert.Equal(new[] { "Verse", "Chorus", "Bridge" }, plain.Sections.Select(section => section.Name));
@@ -339,6 +358,7 @@ public class OpenChordJamsTests
         Assert.True(fills > 200, $"only {fills} fills at full strum variety");
         Assert.InRange(unevenPlain, sectionCount / 20, sectionCount * 2 / 5);
         Assert.True(unevenWild > unevenPlain * 1.5, $"uneven sections {unevenPlain} plain → {unevenWild} wild");
+        Assert.InRange(adventurous, bassSections * 3 / 4, bassSections);
         Assert.Equal(0, slid[0]);
         Assert.True(slid[1] > 400, $"only {slid[1]} slid-shape chords with the slider at the top");
         Assert.True(colour[1] > colour[0] * 1.5, $"colour {colour[0]} → {colour[1]}");

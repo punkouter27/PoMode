@@ -127,6 +127,12 @@
     font-weight: 600;
 }
 
+/* What the bass does under the section: a fact about the part, quieter than the chords' sound. */
+.jam-bass {
+    color: var(--pm-fg-muted);
+    font-size: var(--pm-text-xs);
+}
+
 .jam-numerals {
     color: var(--pm-fg-muted);
     font-size: var(--pm-text-sm);

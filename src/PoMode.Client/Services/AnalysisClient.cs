@@ -164,7 +164,7 @@ public sealed class AnalysisClient(HttpClient http)
             ("keyChanges", settings.KeyChanges), ("difficulty", settings.Difficulty), ("colour", settings.Colour),
             ("speed", settings.ChangeSpeed), ("busyness", settings.Busyness), ("tempo", settings.Tempo),
             ("borrowed", settings.Borrowed), ("smoothness", settings.Smoothness), ("length", settings.Length),
-            ("position", settings.Position), ("capo", settings.Capo), ("strumVariety", settings.StrumVariety), ("slidChords", settings.SlidChords),
+            ("position", settings.Position), ("capo", settings.Capo), ("strumVariety", settings.StrumVariety), ("slidChords", settings.SlidChords), ("bass", settings.Bass),
         ];
         // Invariant, so a comma-decimal browser locale still sends 0.5 rather than 0,5.
         var values = query.Select(pair => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{pair.Name}={pair.Value}"));

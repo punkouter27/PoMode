@@ -22,8 +22,12 @@ public sealed class BrowserPrefs(IJSRuntime js)
     public const string SavedJamsKey = "pm-jam-saved";
     public const string JamSettingsKey = "pm-jam-settings";
     public const string JamPresetsKey = "pm-jam-presets";
+    /// <summary>"off" once the jam's bass line has been muted; absent means on.</summary>
+    public const string JamBassKey = "pm-jam-bass";
     /// <summary>How far, in ms, a sung take is moved earlier to undo this device's headphone and mic delay.</summary>
     public const string VoiceTimingKey = "pm-voice-timing";
+    /// <summary>Set once the singer has measured, set or waved off the voice timing, so it is offered once.</summary>
+    public const string VoiceTimingAskedKey = "pm-voice-timing-asked";
 
     public async Task<T?> GetAsync<T>(string key, JsonTypeInfo<T> type)
     {

@@ -1,5 +1,6 @@
 // The open chord jam's guitar: strums the exact voicings the chord boxes show, on the Karplus-Strong
 // string from voices.js, looping the chords until stopped, or (once) playing them through and ending.
+// Under it, the bass line the server wrote for each chord, on voices.js's bass, on the same eighths.
 //
 // Like the rest of the player, this module knows no music theory. It is handed each chord's MIDI notes
 // (low string first, from the server's frets), its length in beats, the tempo, and an eighth-note
@@ -12,7 +13,7 @@
 // chord box can set the same string vibrating (string-glow.js) in step with what is heard rather
 // than with a setTimeout's guess at it.
 
-import { bus, pluck } from './voices.js';
+import { bass, bus, pluck } from './voices.js';
 import { getSharedContext } from './modal-player.js';
 
 // A strum is not a block chord: each string sounds a moment after the one before it.
@@ -23,6 +24,17 @@ const LOOKAHEAD = 0.25;
 const TICK_MS = 50;
 
 let state = null;
+
+// The bass's own level, so it can be muted (to play the bass part yourself) without the strum.
+let bassLevel = 1;
+
+/// Turns the bass line on or off, now and for every song after; a song playing hears it at once.
+export function setBass(on) {
+    bassLevel = on ? 1 : 0;
+    if (state) {
+        state.bassOut.gain.setTargetAtTime(bassLevel, state.ctx.currentTime, 0.02);
+    }
+}
 
 // When the last song started playing, on the shared clock: its bar one, whatever chord playback began
 // from. Kept after the strumming stops so a take recorded over it can still be trimmed to bar one.
@@ -46,7 +58,8 @@ function publish() {
     } catch { }
 }
 
-/// chords: [{ midi: number[], beats: number, frets?: number[], box?: number, pattern?: string }];
+/// chords: [{ midi: number[], beats: number, frets?: number[], box?: number, pattern?: string, bass?: [{ midi, at, length }] }];
+/// bass, when present, is the chord's bass line: each note's start and length in eighths from the chord's top.
 /// frets (low string first, -1 muted) only number the strings in the pluck events, and box is the
 /// chord box that sounds it (its index among the board's boxes; the chord's own index if absent).
 /// pattern: 8 characters, for any chord without its own. dotNet gets OnJamChord(index) as each chord
@@ -59,6 +72,9 @@ export function play(chords, bpm, pattern, dotNet, once = false, from = 0) {
     const out = ctx.createGain();
     out.gain.value = 0.85;
     out.connect(bus(ctx, ctx.destination, 0.24));
+    const bassOut = ctx.createGain();
+    bassOut.gain.value = bassLevel;
+    bassOut.connect(out);
 
     const eighth = 30 / bpm;
     // The slot each chord starts on, in eighths from the top of the loop.
@@ -74,7 +90,7 @@ export function play(chords, bpm, pattern, dotNet, once = false, from = 0) {
     }
     const first = starts[Math.min(Math.max(0, from), chords.length - 1)];
     state = {
-        ctx, out, chords, pattern, eighth, starts, total, dotNet, once, ending: false, chord: -1, slot: first,
+        ctx, out, bassOut, chords, pattern, eighth, starts, total, dotNet, once, ending: false, chord: -1, slot: first,
         origin: ctx.currentTime + 0.12 - (first * eighth), voices: [], timer: 0, cues: [],
     };
     lastStart = state.origin;
@@ -94,6 +110,7 @@ export function stop() {
         }
     }
     try { state.out.disconnect(); } catch { }
+    try { state.bassOut.disconnect(); } catch { }
     announce('stop', { ctx: state.ctx, at: now + 0.02 });
     state = null;
     publish();
@@ -123,6 +140,12 @@ function schedule() {
         }
         // The pattern counts from the top of each bar, whatever chord is under it.
         strike(s, (chord.pattern ?? s.pattern)[inLoop % 8], index, when, ringFor);
+        const into = inLoop - s.starts[index];
+        for (const note of chord.bass ?? []) {
+            if (note.at === into) {
+                s.voices.push(bass(s.ctx, s.bassOut, note.midi, when, note.length * s.eighth, 0.42));
+            }
+        }
         s.slot++;
     }
 }

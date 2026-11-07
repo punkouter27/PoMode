@@ -53,6 +53,13 @@
             <RadzenButton Text="@(_playing ? "Stop" : "Play the song")" Icon="@(_playing ? "stop" : "play_arrow")"
                           ButtonStyle="ButtonStyle.Primary" Disabled="@((Disabled && !_playing) || _recording)"
                           Click="@ToggleAsync" id="jam-play" />
+            @* Tinted when on, as Practice's click is; off leaves the guitar alone, to play the bass part over. *@
+            <RadzenButton Text="Bass" Icon="graphic_eq"
+                          ButtonStyle="@(_bassOn ? ButtonStyle.Primary : ButtonStyle.Light)"
+                          Variant="@(_bassOn ? Variant.Flat : Variant.Filled)"
+                          Shade="@(_bassOn ? Shade.Lighter : Shade.Default)"
+                          aria-pressed="@(_bassOn ? "true" : "false")" Click="@ToggleBassAsync" id="jam-bass"
+                          title="@(_bassOn ? "Bass line on: press to mute it and play the bass yourself" : "Bass line muted")" />
             @* Record: the song from the top with the microphone open, so a melody sung over it goes to the
                analyzer with these exact chords under it. Stop (or the song's end) ends the take. *@
             <RadzenButton Text="@(_recording ? (_playing ? "Stop recording" : "Get ready…") : "Record")"
@@ -63,6 +70,10 @@
                           title="Sing over the song from the top; the take is analysed for the mode your melody is in" />
         </div>
 
+        @if (_take is null && !_recording)
+        {
+            <VoiceTiming Id="jam-timing-prompt" Prompt="true" Ms="@_nudgeMs" MsChanged="@SetNudgeAsync" BeforeMeasure="@StopAsync" Disabled="@Disabled" />
+        }
         @if (_take is not null || _takeError is not null)
         {
             <div class="jam-take" role="status">
@@ -217,6 +228,10 @@
                             {
                                 <span class="jam-sound">@(section.Sound == "power" ? "Power chords" : "Barre chords")</span>
                             }
+                            @if (section.Bass is { } bassLine)
+                            {
+                                <span class="jam-bass" title="The bass line under this section">Bass: @bassLine.ToLowerInvariant()</span>
+                            }
                             <ol class="jam-slots" aria-label="@PatternLabel(section.Pattern)">
                                 @foreach (var slot in section.Pattern)
                                 {
@@ -306,6 +321,7 @@
         _settings = await Prefs.GetAsync(BrowserPrefs.JamSettingsKey, PrefsJsonContext.Default.ChordJamSettings) ?? new();
         _presets = await Prefs.GetAsync(BrowserPrefs.JamPresetsKey, PrefsJsonContext.Default.ListJamPreset) ?? [];
         _nudgeMs = await VoiceTiming.LoadAsync(Prefs);
+        _bassOn = await Prefs.GetAsync(BrowserPrefs.JamBassKey, PrefsJsonContext.Default.String) != "off";
         await NewAsync();
     }
 
@@ -355,7 +371,7 @@
         Func<ChordJamSettings, double> Get, Func<ChordJamSettings, double, ChordJamSettings> Set, Func<double, string> Reading);
 
     private static Knob Percent(string id, string label, Func<ChordJamSettings, double> get, Func<ChordJamSettings, double, ChordJamSettings> set, Func<double, string> reading)
-        => new(id, label, 0, 100, "10", settings => Math.Round(get(settings) * 100), (settings, value) => set(settings, value / 100), value => reading(value / 100));
+        => new(id, label, 0, 100, "10", settings => Math.Round(get(settings) * 100), (settings, value) => set(settings, value / 100), value => reading(value == 0 ? 0 : value / 100)); // a slider's -0 read as "-0%"
 
     private static string Third(double value, string low, string middle, string high) => value < 0.34 ? low : value < 0.67 ? middle : high;
 
@@ -380,6 +396,8 @@
         new("capo", "Capo", 0, 7, "1", s => s.Capo, (s, v) => s with { Capo = (int)v }, v => v == 0 ? "None" : $"Fret {v:0}"),
         Percent("strum-variety", "Strum variety", s => s.StrumVariety, (s, v) => s with { StrumVariety = v },
             v => v == 0 ? "Steady" : Third(v, "A few fills", "Some twists", "Restless")),
+        Percent("bass", "Bass line", s => s.Bass, (s, v) => s with { Bass = v },
+            v => v == 0 ? "Roots only" : Third(v, "Mostly roots", "Some wandering", "Adventurous")),
         Percent("slid", "Slid shapes", s => s.SlidChords, (s, v) => s with { SlidChords = v },
             v => v == 0 ? "None" : v < 0.45 ? "Now and then" : v < 0.8 ? "Often" : "Mostly"),
     ];
@@ -390,20 +408,20 @@
         new("Simple", new()),
         new("Campfire", new(Variety: 0.3, Mood: 0.8, Colour: 0.4, Busyness: 0.5, Tempo: 0.5, SlidChords: 0.5)),
         new("Sad ballad", new(Mood: 0, Tempo: 0.1, Busyness: 0.1, ChangeSpeed: 0, Colour: 0.7, Smoothness: 0.9)),
-        new("Rock", new(OpenChords: 0.2, Mood: 0.6, Difficulty: 0.6, Colour: 0.1, Busyness: 0.9, Tempo: 0.75, Position: 0.4, StrumVariety: 0.4)),
+        new("Rock", new(Bass: 0.15, OpenChords: 0.2, Mood: 0.6, Difficulty: 0.6, Colour: 0.1, Busyness: 0.9, Tempo: 0.75, Position: 0.4, StrumVariety: 0.4)),
         new("Pop with a lift", new(Variety: 0.5, Mood: 0.75, KeyChanges: 1, Busyness: 0.5, Tempo: 0.6, Length: 0.8)),
-        new("Wild ride", new(OpenChords: 0.5, Variety: 1, KeyChanges: 2, Difficulty: 0.7, Colour: 0.8, ChangeSpeed: 2, Borrowed: 0.7, Length: 0.8, StrumVariety: 0.8, SlidChords: 0.8)),
+        new("Wild ride", new(Bass: 0.9, OpenChords: 0.5, Variety: 1, KeyChanges: 2, Difficulty: 0.7, Colour: 0.8, ChangeSpeed: 2, Borrowed: 0.7, Length: 0.8, StrumVariety: 0.8, SlidChords: 0.8)),
         // Styles rather than artists: the sliders' reading of a sound, so each is a feeling to play toward.
         // Pop punk: power chords, plain triads, fast and driven, the ♭VII borrowed for the lift.
-        new("Pop punk", new(OpenChords: 0.1, Variety: 0.4, Mood: 0.65, Difficulty: 0.5, Colour: 0, Busyness: 1, Tempo: 1, Borrowed: 0.3, Smoothness: 0.4, Length: 0.6, Position: 0.3, StrumVariety: 0.2, SlidChords: 0)),
+        new("Pop punk", new(Bass: 0.1, OpenChords: 0.1, Variety: 0.4, Mood: 0.65, Difficulty: 0.5, Colour: 0, Busyness: 1, Tempo: 1, Borrowed: 0.3, Smoothness: 0.4, Length: 0.6, Position: 0.3, StrumVariety: 0.2, SlidChords: 0)),
         // Emo: open strings ringing against barre sections, sad, borrowed chords, restless strumming.
-        new("Emo", new(OpenChords: 0.6, Variety: 0.6, Mood: 0.15, Difficulty: 0.5, Colour: 0.5, Busyness: 0.7, Tempo: 0.55, Borrowed: 0.5, Smoothness: 0.8, Length: 0.7, Position: 0.4, StrumVariety: 0.5, SlidChords: 0.6)),
+        new("Emo", new(Bass: 0.5, OpenChords: 0.6, Variety: 0.6, Mood: 0.15, Difficulty: 0.5, Colour: 0.5, Busyness: 0.7, Tempo: 0.55, Borrowed: 0.5, Smoothness: 0.8, Length: 0.7, Position: 0.4, StrumVariety: 0.5, SlidChords: 0.6)),
         // Slow and spacious: two bars a chord, sparse, coloured chords drifting into one another, long.
-        new("Slow psychedelic", new(OpenChords: 0.8, Variety: 0.4, Mood: 0.3, Colour: 0.75, ChangeSpeed: 0, Busyness: 0.15, Tempo: 0.15, Borrowed: 0.4, Smoothness: 0.9, Length: 1, StrumVariety: 0.3, SlidChords: 0.4)),
+        new("Slow psychedelic", new(Bass: 0.7, OpenChords: 0.8, Variety: 0.4, Mood: 0.3, Colour: 0.75, ChangeSpeed: 0, Busyness: 0.15, Tempo: 0.15, Borrowed: 0.4, Smoothness: 0.9, Length: 1, StrumVariety: 0.3, SlidChords: 0.4)),
         // Indie folk: all open, capo up, bright with an ache, strings carried across every change.
         new("Indie folk", new(Variety: 0.3, Mood: 0.55, Colour: 0.4, Busyness: 0.45, Tempo: 0.45, Smoothness: 0.9, Length: 0.6, Capo: 2, StrumVariety: 0.2, SlidChords: 0.5)),
         // Bittersweet anthem: between sad and happy, a key change to lift the last chorus, building long.
-        new("Bittersweet anthem", new(OpenChords: 0.7, Variety: 0.5, Mood: 0.45, KeyChanges: 1, Difficulty: 0.3, Colour: 0.5, Busyness: 0.6, Tempo: 0.6, Borrowed: 0.4, Smoothness: 0.8, Length: 0.8, StrumVariety: 0.3, SlidChords: 0.4)),
+        new("Bittersweet anthem", new(Bass: 0.4, OpenChords: 0.7, Variety: 0.5, Mood: 0.45, KeyChanges: 1, Difficulty: 0.3, Colour: 0.5, Busyness: 0.6, Tempo: 0.6, Borrowed: 0.4, Smoothness: 0.8, Length: 0.8, StrumVariety: 0.3, SlidChords: 0.4)),
     ];
 
     private List<JamPreset> _presets = [];
@@ -582,7 +600,7 @@
                 for (var i = 0; i < section.Chords.Count; i++)
                 {
                     var chord = section.Chords[i];
-                    chords.Add(new { midi = chord.Midi, beats = chord.Beats, frets = chord.Frets, box = first + i, pattern = chord.Pattern ?? section.Pattern });
+                    chords.Add(new { midi = chord.Midi, beats = chord.Beats, frets = chord.Frets, box = first + i, pattern = chord.Pattern ?? section.Pattern, bass = chord.Bass });
                     _timeline.Add(new(f, first + i, (round * section.Chords.Count) + i, chord.Beats));
                 }
             }
@@ -590,13 +608,27 @@
         // The last chord lights the box that already shows the same shape, if one does.
         var ending = jam.Sections.SelectMany(section => section.Chords).ToList()
             .FindIndex(chord => chord.Symbol == jam.Ending.Symbol && chord.Frets.SequenceEqual(jam.Ending.Frets));
-        chords.Add(new { midi = jam.Ending.Midi, beats = jam.Ending.Beats, frets = jam.Ending.Frets, box = ending, pattern = "D-------" });
+        chords.Add(new { midi = jam.Ending.Midi, beats = jam.Ending.Beats, frets = jam.Ending.Frets, box = ending, pattern = "D-------", bass = jam.Ending.Bass });
         _timeline.Add(new(jam.Form.Count, ending));
 
         _current = Math.Clamp(from, 0, _timeline.Count - 1);
         _wiped = -1;
         _playing = true;
+        await _strum.InvokeVoidAsync("setBass", _bassOn);
         await _strum.InvokeVoidAsync("play", chords, _bpm, jam.Sections[0].Pattern, _self, true, _current);
+    }
+
+    /// <summary>The bass line plays under the strum; muted, the guitar plays alone. Kept in this browser.</summary>
+    private bool _bassOn = true;
+
+    private async Task ToggleBassAsync()
+    {
+        _bassOn = !_bassOn;
+        await Prefs.SetAsync(BrowserPrefs.JamBassKey, _bassOn ? "on" : "off", PrefsJsonContext.Default.String);
+        if (_strum is not null)
+        {
+            await _strum.InvokeVoidAsync("setBass", _bassOn);
+        }
     }
 
     /// <summary>A new tempo carries on from the chord sounding now rather than going back to the top.</summary>

@@ -8,6 +8,32 @@
    off what it does report, and this is the rest. It belongs to the device rather than the take, so it
    is kept in this browser and every page that records a take shares it. Measure finds it from claps on
    a click, through whatever the singer is listening on. *@
+@if (Prompt)
+{
+    @* The one-time offer, before a first take: calibrating comes before the take it would fix, and
+       asking once (not on every visit) keeps it out of the way of a singer on speakers. *@
+    @if (_showPrompt)
+    {
+        <div class="voice-timing-prompt" role="status">
+            @if (_note is null || _measuring)
+            {
+                <span class="voice-timing-prompt-text">Singing with headphones? Measure their delay once, so your takes land on the beat.</span>
+                <RadzenButton Text="@(_measuring ? "Clap on the clicks…" : "Measure")" Icon="hearing" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                              Disabled="@(Disabled || _measuring)" Click="@MeasureAsync" class="voice-timing-measure"
+                              title="Listen through what you sing with: four clicks, then clap on the next eight" />
+                <RadzenButton Text="Not now" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                              Disabled="@_measuring" Click="@DismissAsync" class="voice-timing-dismiss" />
+            }
+            else
+            {
+                <span class="voice-timing-prompt-text">@_note</span>
+                <RadzenButton Text="@(_failed ? "Try again" : "Done")" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                              Click="@(_failed ? MeasureAsync : DismissAsync)" class="voice-timing-dismiss" />
+            }
+        </div>
+    }
+    return;
+}
 <div class="voice-timing">
     <span class="pm-label voice-timing-label" id="@($"{Id}-label")">Voice timing</span>
     <RadzenSlider TValue="int" Min="@Min" Max="@Max" Step="10" Value="@Ms" Change="@(value => SetAsync(value))"
@@ -37,9 +63,31 @@
     /// <summary>Raised before measuring, so the page can stop whatever it is playing.</summary>
     [Parameter] public EventCallback BeforeMeasure { get; set; }
 
+    /// <summary>Render the one-time offer to measure instead of the control, and only until the singer
+    /// has measured, set the timing, or said not now.</summary>
+    [Parameter] public bool Prompt { get; set; }
+
     private bool _measuring;
+    private bool _failed;
+    private bool _showPrompt;
     private string? _note;
     private IJSObjectReference? _hum;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Prompt)
+        {
+            _showPrompt = await Prefs.GetAsync(BrowserPrefs.VoiceTimingAskedKey, PrefsJsonContext.Default.String) is null;
+        }
+    }
+
+    private async Task MarkAskedAsync() => await Prefs.SetAsync(BrowserPrefs.VoiceTimingAskedKey, "1", PrefsJsonContext.Default.String);
+
+    private async Task DismissAsync()
+    {
+        _showPrompt = false;
+        await MarkAskedAsync();
+    }
 
     private string Reading => Ms switch
     {
@@ -55,6 +103,7 @@
     private async Task SetAsync(int ms)
     {
         await Prefs.SetAsync(BrowserPrefs.VoiceTimingKey, ms, PrefsJsonContext.Default.Int32);
+        await MarkAskedAsync(); // a timing chosen either way is an answer to the offer
         await MsChanged.InvokeAsync(ms);
     }
 
@@ -63,7 +112,7 @@
     private async Task MeasureAsync()
     {
         await BeforeMeasure.InvokeAsync();
-        (_measuring, _note) = (true, null);
+        (_measuring, _note, _failed) = (true, null, true);
         StateHasChanged();
         try
         {
@@ -80,7 +129,9 @@
             else
             {
                 var ms = Math.Clamp((int)Math.Round(result.NudgeMs / 10.0) * 10, Min, Max);
-                _note = $"Measured {result.TotalMs} ms in all ({result.ReportedMs} ms the browser already knew of), from {result.Heard} claps.";
+                _note = $"Measured {result.TotalMs} ms in all ({result.ReportedMs} ms the browser already knew of), from {result.Heard} claps."
+                    + (Prompt ? $" Takes will be moved {ms} ms earlier; change it under any take." : "");
+                _failed = false;
                 await SetAsync(ms);
             }
         }
