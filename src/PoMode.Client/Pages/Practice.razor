@@ -140,6 +140,8 @@
                                               Click="@AnalyzeTakeAsync" id="practice-analyze" />
                                 <RadzenButton Text="Redo" Icon="delete" ButtonStyle="ButtonStyle.Light"
                                               Disabled="@_sending" Click="@DiscardTakeAsync" id="practice-redo" />
+                                <VoiceTiming Id="practice-timing" Ms="@_nudgeMs" MsChanged="@SetNudgeAsync"
+                                             BeforeMeasure="@StopEverythingAsync" Disabled="@_sending" />
                                 break;
                         }
                         @* A beat to sing against, not only chord changes: it plays under the preview, the take and

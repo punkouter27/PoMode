@@ -1,0 +1,110 @@
+@using PoMode.Client.Services
+@inject BrowserPrefs Prefs
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@* How far a sung take is moved earlier to land on the chords it was sung over. Headphones (Bluetooth
+   most of all) and the microphone delay the voice by more than the browser reports; the recorder takes
+   off what it does report, and this is the rest. It belongs to the device rather than the take, so it
+   is kept in this browser and every page that records a take shares it. Measure finds it from claps on
+   a click, through whatever the singer is listening on. *@
+<div class="voice-timing">
+    <span class="pm-label voice-timing-label" id="@($"{Id}-label")">Voice timing</span>
+    <RadzenSlider TValue="int" Min="@Min" Max="@Max" Step="10" Value="@Ms" Change="@(value => SetAsync(value))"
+                  Disabled="@(Disabled || _measuring)" aria-labelledby="@($"{Id}-label")" class="voice-timing-slider" id="@Id" />
+    <span class="voice-timing-value">@Reading</span>
+    <RadzenButton Text="@(_measuring ? "Clap on the clicks…" : "Measure")" Icon="hearing" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                  Disabled="@(Disabled || _measuring)" Click="@MeasureAsync" class="voice-timing-measure"
+                  title="Listen through what you sing with: four clicks, then clap on the next eight" />
+    @if (_note is not null)
+    {
+        <span class="voice-timing-note" role="status">@_note</span>
+    }
+</div>
+
+@code {
+    private const int Min = -200;
+    private const int Max = 500;
+    private const int Claps = 8;
+
+    [Parameter, EditorRequired] public string Id { get; set; } = "";
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>Milliseconds the voice is moved earlier (later when negative).</summary>
+    [Parameter] public int Ms { get; set; }
+    [Parameter] public EventCallback<int> MsChanged { get; set; }
+
+    /// <summary>Raised before measuring, so the page can stop whatever it is playing.</summary>
+    [Parameter] public EventCallback BeforeMeasure { get; set; }
+
+    private bool _measuring;
+    private string? _note;
+    private IJSObjectReference? _hum;
+
+    private string Reading => Ms switch
+    {
+        0 => "As recorded",
+        > 0 => $"{Ms} ms earlier",
+        _ => $"{-Ms} ms later",
+    };
+
+    /// <summary>The saved timing, for a page to use before this control is on screen.</summary>
+    public static async Task<int> LoadAsync(BrowserPrefs prefs)
+        => await prefs.GetAsync(BrowserPrefs.VoiceTimingKey, PrefsJsonContext.Default.Int32);
+
+    private async Task SetAsync(int ms)
+    {
+        await Prefs.SetAsync(BrowserPrefs.VoiceTimingKey, ms, PrefsJsonContext.Default.Int32);
+        await MsChanged.InvokeAsync(ms);
+    }
+
+    private sealed record Measurement(int TotalMs, int ReportedMs, int NudgeMs, int Heard);
+
+    private async Task MeasureAsync()
+    {
+        await BeforeMeasure.InvokeAsync();
+        (_measuring, _note) = (true, null);
+        StateHasChanged();
+        try
+        {
+            _hum ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/capture/hum-recorder.js");
+            var result = await _hum.InvokeAsync<Measurement?>("measureDelay", 100, 4, Claps);
+            if (result is null)
+            {
+                _note = "The microphone could not be opened.";
+            }
+            else if (result.Heard < Claps / 2)
+            {
+                _note = $"Heard {result.Heard} of {Claps} claps. Clap louder, or nearer the microphone, and measure again.";
+            }
+            else
+            {
+                var ms = Math.Clamp((int)Math.Round(result.NudgeMs / 10.0) * 10, Min, Max);
+                _note = $"Measured {result.TotalMs} ms in all ({result.ReportedMs} ms the browser already knew of), from {result.Heard} claps.";
+                await SetAsync(ms);
+            }
+        }
+        catch (JSException)
+        {
+            _note = "The microphone could not be opened. Check the browser's permission for this site.";
+        }
+        finally
+        {
+            _measuring = false;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_hum is not null)
+            {
+                await _hum.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+}

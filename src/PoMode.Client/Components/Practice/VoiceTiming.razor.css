@@ -1,0 +1,30 @@
+/* Takes the row's leftover width; wraps under the buttons on a phone. */
+.voice-timing {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pm-space-2);
+    flex: 1 1 18rem;
+    min-width: 0;
+}
+
+.voice-timing-label {
+    white-space: nowrap;
+}
+
+.voice-timing ::deep .voice-timing-slider {
+    flex: 1 1 6rem;
+    min-width: 6rem;
+}
+
+.voice-timing-value {
+    flex: none;
+    font-size: var(--pm-text-sm);
+    font-variant-numeric: tabular-nums;
+}
+
+.voice-timing-note {
+    flex: 1 1 100%;
+    font-size: var(--pm-text-sm);
+    color: var(--pm-fg-muted);
+}

@@ -137,6 +137,7 @@ public partial class Practice
         // Before the first await: the page first renders while this loads, and the tabs take their
         // starting tab from that render, before OnParametersSetAsync has run.
         _tab = TabFromAddress;
+        _nudgeMs = await Components.Practice.VoiceTiming.LoadAsync(Prefs);
         try
         {
             _progressions = await Analysis.GetModalProgressionsAsync() ?? [];
@@ -473,7 +474,7 @@ public partial class Practice
         {
             // finishCapture reads the player's downbeat to trim the take to bar one, so it has to run
             // while the transport is still going.
-            var take = _hum is null ? [] : await _hum.InvokeAsync<byte[]>("finishCapture");
+            var take = _hum is null ? [] : await _hum.InvokeAsync<byte[]>("finishCapture", null, _nudgeMs / 1000.0);
             await StopEverythingAsync();
 
             // Empty covers both "the microphone gave us nothing" and "the take was all count-in" —
@@ -564,6 +565,36 @@ public partial class Practice
         finally
         {
             _sending = false;
+        }
+    }
+
+    /// <summary>How far the voice is moved earlier to undo this device's headphone and microphone delay
+    /// (see <see cref="Components.Practice.VoiceTiming"/>), shared with the guitar jam.</summary>
+    private int _nudgeMs;
+
+    /// <summary>Re-cuts the take at the new timing from its raw recording and, if it was playing back,
+    /// plays it again so the change is heard.</summary>
+    private async Task SetNudgeAsync(int ms)
+    {
+        _nudgeMs = ms;
+        if (_take is null || _hum is null)
+        {
+            return;
+        }
+        var wasReviewing = _reviewing;
+        await StopEverythingAsync();
+        var take = await _hum.InvokeAsync<byte[]>("retrim", ms / 1000.0);
+        if (take.Length == 0)
+        {
+            _error = "That timing leaves nothing of the take; move the slider back.";
+            return;
+        }
+        (_take, _error) = (take, null);
+        // 16-bit mono WAV: the sample rate at byte 24, the samples after the 44-byte header.
+        _takeSec = Math.Round((take.Length - 44) / 2.0 / Math.Max(1, BitConverter.ToInt32(take, 24)), 1);
+        if (wasReviewing)
+        {
+            await ToggleReviewAsync();
         }
     }
 

@@ -17,7 +17,6 @@ dotnet test tests/PoMode.E2EUI           # Playwright browser tests (boots the r
 dotnet test tests/PoMode.Unit --filter "FullyQualifiedName~TempoEstimator"   # single test/class
 pwsh scripts/test-caps.ps1              # fails if a suite is over its cap (100/50/25/25); CI runs it too
 dotnet format whitespace PoMode.slnx     # fixes spacing; CI fails on anything it would change
-node tests/js/loop-cut.check.mjs            # the drum-loop splice (player/loop-cut.js); CI runs it too
 pwsh scripts/get-models.ps1              # pre-fetch every ONNX/browser model into models/ (warms the E2EUI cache)
 dotnet run scripts/layout-audit.cs -- capture before        # app running: screenshot + audit every route, phone and desktop
 dotnet run scripts/layout-audit.cs -- compare before after notes.md name   # one annotated SCREENSHOTS/name.html

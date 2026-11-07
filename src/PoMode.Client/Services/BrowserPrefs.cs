@@ -22,6 +22,8 @@ public sealed class BrowserPrefs(IJSRuntime js)
     public const string SavedJamsKey = "pm-jam-saved";
     public const string JamSettingsKey = "pm-jam-settings";
     public const string JamPresetsKey = "pm-jam-presets";
+    /// <summary>How far, in ms, a sung take is moved earlier to undo this device's headphone and mic delay.</summary>
+    public const string VoiceTimingKey = "pm-voice-timing";
 
     public async Task<T?> GetAsync<T>(string key, JsonTypeInfo<T> type)
     {
@@ -87,4 +89,5 @@ public sealed record JamPreset(string Name, ChordJamSettings Settings);
 [JsonSerializable(typeof(AdvancedTools))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(string))]
+[JsonSerializable(typeof(int))]
 internal sealed partial class PrefsJsonContext : JsonSerializerContext;

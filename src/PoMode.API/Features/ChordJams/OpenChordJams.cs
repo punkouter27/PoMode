@@ -93,13 +93,17 @@ public static class OpenChordJams
 
     private static Sound SoundOf(Voicing voicing) => !voicing.Closed ? Sound.Open : voicing.Power ? Sound.Power : Sound.Barre;
 
-    /// <summary>How many times round a four-chord section goes each time it comes up, one setting per
-    /// song: twice, or (as often as variety allows) drawn as once, twice or four times.</summary>
+    /// <summary>How many times round a section goes each time it comes up, one setting per song: twice,
+    /// or (as often as variety allows) drawn as mostly twice, sometimes four times, rarely once — a verse
+    /// heard once has hardly been heard.</summary>
     private static int PickRounds(Random random, double variety)
-        => random.NextDouble() >= variety * RoundsChance ? 2 : random.NextDouble() switch { < 0.3 => 1, < 0.7 => 2, _ => 4 };
+        => random.NextDouble() >= variety * RoundsChance ? 2 : random.NextDouble() switch { < 0.1 => 1, < 0.7 => 2, _ => 4 };
 
-    /// <summary>A longer section, or a pre-chorus (there to build, not to settle), goes round half as often.</summary>
-    private static int Repeats(int rounds, string name, int steps) => name == "Pre-chorus" || steps > 4 ? Math.Max(1, rounds / 2) : rounds;
+    /// <summary>A pre-chorus (there to build, not to settle), or a longer bridge, goes round half as often.
+    /// A verse or chorus keeps its count however many chords it has: it is the song's body, and halving
+    /// an eight-chord verse left it played once.</summary>
+    private static int Repeats(int rounds, string name, int steps)
+        => name == "Pre-chorus" || (steps > 4 && name is not ("Verse" or "Chorus")) ? Math.Max(1, rounds / 2) : rounds;
 
     /// <summary>One open-position chord as fingered, low E string first. A rare one is a shape most
     /// players never meet (a maj9, a 6 with the open B, a slash bass): it comes up now and then, not as

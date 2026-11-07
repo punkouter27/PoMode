@@ -69,10 +69,20 @@
                 @if (_take is not null)
                 {
                     <span class="jam-take-text">Take recorded: @($"{_takeSeconds / 60:0}:{_takeSeconds % 60:00}") over “@(_takeSong?.Title ?? _takeSong?.Key)”.</span>
+                    @* Hear it before deciding: the take over the song it was sung over, from bar one, then
+                       keep it (find its mode) or sing it again. *@
+                    <RadzenButton Text="@(_reviewing ? "Stop" : "Hear it back")" Icon="@(_reviewing ? "stop" : "replay")"
+                                  ButtonStyle="ButtonStyle.Light" Disabled="@_sendingTake"
+                                  Click="@ToggleHearTakeAsync" id="jam-take-hear"
+                                  title="Your take over the song it was sung over" />
                     <RadzenButton Text="@(_sendingTake ? "Sending…" : "Find my melody's mode")" Icon="insights" ButtonStyle="ButtonStyle.Primary"
                                   Disabled="@_sendingTake" Click="@AnalyzeTakeAsync" id="jam-take-analyze" />
+                    <RadzenButton Text="Record again" Icon="mic" ButtonStyle="ButtonStyle.Light" Disabled="@_sendingTake"
+                                  Click="@ToggleRecordAsync" id="jam-take-retry"
+                                  title="Throw this take away and sing over the song again from the top" />
                     <RadzenButton Text="Discard" Icon="delete" ButtonStyle="ButtonStyle.Light" Disabled="@_sendingTake"
-                                  Click="@DiscardTake" id="jam-take-discard" />
+                                  Click="@DiscardAsync" id="jam-take-discard" />
+                    <VoiceTiming Id="jam-take-timing" Ms="@_nudgeMs" MsChanged="@SetNudgeAsync" BeforeMeasure="@StopAsync" Disabled="@_sendingTake" />
                 }
                 @if (_takeError is not null)
                 {
@@ -295,6 +305,7 @@
         _saved = await Prefs.GetAsync(BrowserPrefs.SavedJamsKey, PrefsJsonContext.Default.ListSavedJam) ?? [];
         _settings = await Prefs.GetAsync(BrowserPrefs.JamSettingsKey, PrefsJsonContext.Default.ChordJamSettings) ?? new();
         _presets = await Prefs.GetAsync(BrowserPrefs.JamPresetsKey, PrefsJsonContext.Default.ListJamPreset) ?? [];
+        _nudgeMs = await VoiceTiming.LoadAsync(Prefs);
         await NewAsync();
     }
 
@@ -382,6 +393,17 @@
         new("Rock", new(OpenChords: 0.2, Mood: 0.6, Difficulty: 0.6, Colour: 0.1, Busyness: 0.9, Tempo: 0.75, Position: 0.4, StrumVariety: 0.4)),
         new("Pop with a lift", new(Variety: 0.5, Mood: 0.75, KeyChanges: 1, Busyness: 0.5, Tempo: 0.6, Length: 0.8)),
         new("Wild ride", new(OpenChords: 0.5, Variety: 1, KeyChanges: 2, Difficulty: 0.7, Colour: 0.8, ChangeSpeed: 2, Borrowed: 0.7, Length: 0.8, StrumVariety: 0.8, SlidChords: 0.8)),
+        // Styles rather than artists: the sliders' reading of a sound, so each is a feeling to play toward.
+        // Pop punk: power chords, plain triads, fast and driven, the ♭VII borrowed for the lift.
+        new("Pop punk", new(OpenChords: 0.1, Variety: 0.4, Mood: 0.65, Difficulty: 0.5, Colour: 0, Busyness: 1, Tempo: 1, Borrowed: 0.3, Smoothness: 0.4, Length: 0.6, Position: 0.3, StrumVariety: 0.2, SlidChords: 0)),
+        // Emo: open strings ringing against barre sections, sad, borrowed chords, restless strumming.
+        new("Emo", new(OpenChords: 0.6, Variety: 0.6, Mood: 0.15, Difficulty: 0.5, Colour: 0.5, Busyness: 0.7, Tempo: 0.55, Borrowed: 0.5, Smoothness: 0.8, Length: 0.7, Position: 0.4, StrumVariety: 0.5, SlidChords: 0.6)),
+        // Slow and spacious: two bars a chord, sparse, coloured chords drifting into one another, long.
+        new("Slow psychedelic", new(OpenChords: 0.8, Variety: 0.4, Mood: 0.3, Colour: 0.75, ChangeSpeed: 0, Busyness: 0.15, Tempo: 0.15, Borrowed: 0.4, Smoothness: 0.9, Length: 1, StrumVariety: 0.3, SlidChords: 0.4)),
+        // Indie folk: all open, capo up, bright with an ache, strings carried across every change.
+        new("Indie folk", new(Variety: 0.3, Mood: 0.55, Colour: 0.4, Busyness: 0.45, Tempo: 0.45, Smoothness: 0.9, Length: 0.6, Capo: 2, StrumVariety: 0.2, SlidChords: 0.5)),
+        // Bittersweet anthem: between sad and happy, a key change to lift the last chorus, building long.
+        new("Bittersweet anthem", new(OpenChords: 0.7, Variety: 0.5, Mood: 0.45, KeyChanges: 1, Difficulty: 0.3, Colour: 0.5, Busyness: 0.6, Tempo: 0.6, Borrowed: 0.4, Smoothness: 0.8, Length: 0.8, StrumVariety: 0.3, SlidChords: 0.4)),
     ];
 
     private List<JamPreset> _presets = [];
@@ -493,6 +515,17 @@
     /// <summary>Stops the strumming; Practice calls this before it plays chords of its own.</summary>
     public async Task StopAsync()
     {
+        if (_reviewing)
+        {
+            _reviewing = false;
+            try
+            {
+                await _hum!.InvokeVoidAsync("stopReview");
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
         if (!_playing)
         {
             return;
@@ -593,6 +626,22 @@
         {
             await FinishTakeAsync();
         }
+        if (_reviewing)
+        {
+            await StopAsync(); // the song is over; the take's last moment goes with it
+        }
+        StateHasChanged();
+    }
+
+    /// <summary>The take ran out before the song did (it was stopped early): the song stops with it.</summary>
+    [JSInvokable]
+    public async Task OnJamTakeEnded()
+    {
+        if (_reviewing)
+        {
+            _reviewing = false;
+            await StopAsync();
+        }
         StateHasChanged();
     }
 
@@ -610,8 +659,88 @@
     private string? _takeError;
     private IJSObjectReference? _hum;
 
-    /// <summary>Anything that would change the song under a take is held while one is open or waiting.</summary>
-    private bool Taking => _recording || _sendingTake;
+    /// <summary>The take is playing back over its song.</summary>
+    private bool _reviewing;
+
+    /// <summary>Anything that would change the song under a take is held while one is open, playing
+    /// back (a new tempo would slide the chords out from under the voice) or waiting.</summary>
+    private bool Taking => _recording || _sendingTake || _reviewing;
+
+    /// <summary>Plays the take over the song it was sung over, at the tempo it was sung at: the song from
+    /// bar one, the take started on the same instant, since the take was trimmed to that bar.</summary>
+    private async Task ToggleHearTakeAsync()
+    {
+        if (_reviewing)
+        {
+            await StopAsync();
+            return;
+        }
+        if (_take is null || _takeSong is null || _hum is null)
+        {
+            return;
+        }
+        await StopAsync();
+        await Started.InvokeAsync();
+        _takeError = null;
+        if (!ReferenceEquals(_jam, _takeSong) && _heard.IndexOf(_takeSong) is >= 0 and var index)
+        {
+            await ShowAsync(index);
+        }
+        _bpm = _takeBpm;
+        _reviewing = true;
+        try
+        {
+            await StartAsync(0);
+            var start = _strum is null ? null : await _strum.InvokeAsync<double?>("songStart");
+            if (await _hum.InvokeAsync<double>("playTake", _take, start, _self) <= 0)
+            {
+                await StopAsync();
+                _takeError = "The take could not be played back.";
+            }
+        }
+        catch (JSException)
+        {
+            await StopAsync();
+            _takeError = "The take could not be played back.";
+        }
+    }
+
+    /// <summary>How far the voice is moved earlier, in ms, past the latency the browser reports: this
+    /// device's headphones and microphone, so it is kept between visits.</summary>
+    private int _nudgeMs;
+
+    /// <summary>Re-cuts the take at the new timing (from its raw recording, nothing is sung again) and,
+    /// if it was playing back, plays it again from the top so the change can be heard.</summary>
+    private async Task SetNudgeAsync(int ms)
+    {
+        _nudgeMs = ms;
+        if (_take is null || _hum is null)
+        {
+            return;
+        }
+        var wasReviewing = _reviewing;
+        await StopAsync();
+        var take = await _hum.InvokeAsync<byte[]>("retrim", ms / 1000.0);
+        if (take.Length == 0)
+        {
+            _takeError = "That timing leaves nothing of the take; move the slider back.";
+            return;
+        }
+        (_take, _takeSeconds, _takeError) = (take, WavSeconds(take), null);
+        if (wasReviewing)
+        {
+            await ToggleHearTakeAsync();
+        }
+    }
+
+    /// <summary>16-bit mono WAV: the sample rate sits at byte 24 of the header, the samples after byte 44.</summary>
+    private static double WavSeconds(byte[] wav) => Math.Round((wav.Length - 44) / 2.0 / Math.Max(1, BitConverter.ToInt32(wav, 24)));
+
+    private async Task DiscardAsync()
+    {
+        await StopAsync();
+        DiscardTake();
+    }
 
     private async Task ToggleRecordAsync()
     {
@@ -670,7 +799,7 @@
                 return;
             }
             var start = _strum is null ? null : await _strum.InvokeAsync<double?>("songStart");
-            var take = await _hum.InvokeAsync<byte[]>("finishCapture", start);
+            var take = await _hum.InvokeAsync<byte[]>("finishCapture", start, _nudgeMs / 1000.0);
             await StopAsync();
             if (take.Length == 0)
             {
@@ -678,8 +807,7 @@
                 return;
             }
             (_take, _takeSong, _takeBpm) = (take, _jam, _bpm);
-            // 16-bit mono WAV: the sample rate sits at byte 24 of the header, the samples after byte 44.
-            _takeSeconds = Math.Round((take.Length - 44) / 2.0 / Math.Max(1, BitConverter.ToInt32(take, 24)));
+            _takeSeconds = WavSeconds(take);
         }
         catch (JSDisconnectedException)
         {
@@ -698,6 +826,7 @@
         {
             return;
         }
+        await StopAsync();
         _sendingTake = true;
         _takeError = null;
         try
@@ -888,6 +1017,10 @@
                 if (_recording)
                 {
                     await _hum.InvokeVoidAsync("cancelCapture");
+                }
+                if (_reviewing)
+                {
+                    await _hum.InvokeVoidAsync("stopReview");
                 }
                 await _hum.DisposeAsync();
             }
