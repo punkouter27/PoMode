@@ -229,6 +229,7 @@ public class OpenChordJamsTests
         var (unevenPlain, unevenWild, sectionCount) = (0, 0, 0);
         var (colour, rare, height, carried) = (new int[2], new int[2], new double[2], new double[2]);
         var (adventurous, bassSections) = (0, 0);
+        var (slow, fast) = (new List<double>(), new List<double>());
         for (var seed = 0; seed < 200; seed++)
         {
             Assert.All(OpenChordJams.Generate(seed, new(OpenChords: 0)).Sections, section => Assert.NotEqual("open", section.Sound));
@@ -308,11 +309,23 @@ public class OpenChordJamsTests
             Assert.Equal(4, OpenChordJams.Generate(seed, new(Length: 0)).Form.Count);
             Assert.Equal(7, OpenChordJams.Generate(seed, new(Length: 1)).Form.Count);
 
-            // Sparse strumming strikes at most four times a bar, busy at least six; tempo sits low or high.
+            // Sparse strumming strikes at most four times a bar, busy at least six. The tempo leans the way
+            // the slider says, but the words have the last say: a typical line sits at 2 to 3.2
+            // syllables a second however slow or fast the slider asked for.
             Assert.True(OpenChordJams.Generate(seed, new(Busyness: 0)).Sections[0].Pattern.Count(slot => slot != '-') <= 4);
             Assert.True(OpenChordJams.Generate(seed, new(Busyness: 1)).Sections[0].Pattern.Count(slot => slot != '-') >= 6);
-            Assert.InRange(OpenChordJams.Generate(seed, new(Tempo: 0)).Bpm, 50, 76);
-            Assert.InRange(OpenChordJams.Generate(seed, new(Tempo: 1)).Bpm, 108, 140);
+            foreach (var tempoEnd in new[] { 0, 1 })
+            {
+                var paced = OpenChordJams.Generate(seed, new(Tempo: tempoEnd));
+                (tempoEnd == 0 ? slow : fast).Add(paced.Bpm);
+                var perBeat = paced.Form.SelectMany((entry, f) => paced.Lyrics![f].Select((line, l) =>
+                        (Beats: paced.Sections[entry].Chords[l % paced.Sections[entry].Chords.Count].Beats, Syllables: JamTempo.Syllables(line))))
+                    .Where(x => x.Beats is > 2 and < 8 && x.Syllables >= 3).Select(x => (double)x.Syllables / x.Beats).Order().ToList();
+                if (perBeat.Count > 0)
+                {
+                    Assert.InRange(perBeat[perBeat.Count / 2] * paced.Bpm / 60, 1.9, 3.3);
+                }
+            }
 
             // A capo leaves the shapes and moves the sound: every note up by its frets.
             var capo = OpenChordJams.Generate(seed, new(Capo: 3));
@@ -359,6 +372,7 @@ public class OpenChordJamsTests
         Assert.InRange(unevenPlain, sectionCount / 20, sectionCount * 2 / 5);
         Assert.True(unevenWild > unevenPlain * 1.5, $"uneven sections {unevenPlain} plain → {unevenWild} wild");
         Assert.InRange(adventurous, bassSections * 3 / 4, bassSections);
+        Assert.True(fast.Average() > slow.Average() + 25, $"tempo slider: {slow.Average():0} BPM at the left, {fast.Average():0} at the right");
         Assert.Equal(0, slid[0]);
         Assert.True(slid[1] > 400, $"only {slid[1]} slid-shape chords with the slider at the top");
         Assert.True(colour[1] > colour[0] * 1.5, $"colour {colour[0]} → {colour[1]}");

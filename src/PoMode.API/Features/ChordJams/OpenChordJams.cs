@@ -380,7 +380,9 @@ public static class OpenChordJams
             && c.Borrowed == 0 && c.ChangeSpeed == 1 && c.Length is >= 0.34 and < 0.67;
         var jam = WithCapo(JamBass.Write(slide ? Slide(seed, random, c) : Song(seed, random, c), seed, c.Bass), c.Capo);
         var (title, theme, lyrics) = JamLyrics.Write(seed, c.Mood, jam);
-        return jam with { Title = title, Theme = theme, Lyrics = lyrics };
+        // The words decide the pace last: the tempo the slider asked for, moved only as far as it takes
+        // for the lines to sit comfortably against their chords.
+        return jam with { Title = title, Theme = theme, Lyrics = lyrics, Bpm = JamTempo.Singable(jam, lyrics) };
     }
 
     private static ChordJamDto Song(int seed, Random random, ChordJamSettings c)
