@@ -15,10 +15,12 @@
          theme toggle (js/theme.js) overrides by rewriting these links' media attributes, which is
          why they carry ids. Without the dark base, Radzen cards stay white while app.css flips to
          light text — unreadable. -->
-    <link id="radzen-light" rel="stylesheet" href="_content/Radzen.Blazor/css/material-base.css"
+    <link id="radzen-light" rel="stylesheet" href="_content/Radzen.Blazor/css/material-base.css?v=12.1.12"
           media="(prefers-color-scheme: light)" />
-    <link id="radzen-dark" rel="stylesheet" href="_content/Radzen.Blazor/css/material-dark-base.css"
+    <link id="radzen-dark" rel="stylesheet" href="_content/Radzen.Blazor/css/material-dark-base.css?v=12.1.12"
           media="(prefers-color-scheme: dark)" />
+    <link rel="stylesheet" href="css/po-tokens.css" />
+    <link rel="stylesheet" href="css/po-motion.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="stylesheet" href="PoMode.Client.styles.css" />
     <!-- Installable, and a share target for audio on Android: a voice memo can be shared straight
@@ -37,7 +39,7 @@
         // Dark on a light-OS machine never sees a light flash. Mirrors js/theme.js's apply().
         (function () {
             var mode = null;
-            try { mode = localStorage.getItem('pm-theme'); } catch (e) { }
+            try { mode = localStorage.getItem('pomode:theme'); } catch (e) { }
             if (mode === 'light' || mode === 'dark') {
                 document.documentElement.dataset.theme = mode;
                 document.getElementById('radzen-light').media = mode === 'light' ? 'all' : 'not all';
@@ -49,7 +51,7 @@
 <body>
     <div id="app">Loading…</div>
     <script src="_framework/blazor.webassembly.js"></script>
-    <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=12.1.12"></script>
     <script type="module">
         // Registered from a module so a browser without service workers simply skips it, and after
         // load so registration never competes with the WASM runtime the user is waiting on.

@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
-using PoMode.API.Audio;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Infrastructure;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SoundSearch;
+namespace PoMode.Api.Features.SoundSearch;
 
 /// <summary>A song's CLAP embedding, kept beside its analysis as <c>sound.json</c>. The model key is
 /// stored so a change of checkpoint is seen as "not indexed" rather than compared across spaces.</summary>

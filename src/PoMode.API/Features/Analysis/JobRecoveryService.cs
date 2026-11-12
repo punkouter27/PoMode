@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>
 /// Re-enqueues jobs a restart interrupted. The pipeline is already restart-safe (it skips

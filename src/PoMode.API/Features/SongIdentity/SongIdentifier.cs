@@ -1,7 +1,7 @@
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongIdentity;
+namespace PoMode.Api.Features.SongIdentity;
 
 /// <summary>
 /// What a finished upload is, for the library and the song page, and so its lyrics can be looked up

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using PoMode.Shared.Account;
 
-namespace PoMode.API.Features.Auth;
+namespace PoMode.Api.Features.Auth;
 
 public static class AuthEndpoints
 {

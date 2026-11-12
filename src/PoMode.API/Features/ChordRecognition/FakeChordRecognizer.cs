@@ -1,7 +1,7 @@
-using PoMode.API.Pipeline;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ChordRecognition;
+namespace PoMode.Api.Features.ChordRecognition;
 
 /// <summary>Phase-2 stand-in: a fixed C / Am / F / G progression, two seconds per chord.</summary>
 public sealed class FakeChordRecognizer : IChordRecognizer

@@ -3,7 +3,7 @@ using Azure.Identity;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 public enum BlobMirrorStatus { Disabled, Connected, Unreachable }
 

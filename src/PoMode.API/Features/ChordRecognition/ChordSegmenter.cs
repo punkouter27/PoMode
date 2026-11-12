@@ -1,7 +1,7 @@
-using PoMode.API.Audio;
+using PoMode.Api.Audio;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ChordRecognition;
+namespace PoMode.Api.Features.ChordRecognition;
 
 /// <summary>
 /// Turns a per-frame chord label sequence into clean <see cref="ChordSpan"/>s: median-smooths
@@ -178,12 +178,11 @@ public static class ChordSegmenter
         for (var i = start; i <= end; i++)
         {
             var candidate = labels[i];
-            if (!counts.ContainsKey(candidate))
+            if (!counts.TryGetValue(candidate, out var count))
             {
-                counts[candidate] = 0;
                 firstSeenOrder.Add(candidate);
             }
-            counts[candidate]++;
+            counts[candidate] = count + 1;
         }
 
         var maxCount = counts.Values.Max();

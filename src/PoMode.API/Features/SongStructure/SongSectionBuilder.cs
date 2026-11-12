@@ -1,8 +1,8 @@
-using PoMode.API.Features.ChordRecognition;
-using PoMode.API.Features.ModalAnalysis;
+using PoMode.Api.Features.ChordRecognition;
+using PoMode.Api.Features.ModalAnalysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongStructure;
+namespace PoMode.Api.Features.SongStructure;
 
 /// <summary>
 /// Splits a song into structural sections — the verse/chorus shape, lettered A, B, A, C — from the

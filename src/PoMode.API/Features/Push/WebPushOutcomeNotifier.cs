@@ -3,10 +3,10 @@ using System.Net;
 using System.Text.Json;
 using Lib.Net.Http.WebPush;
 using Lib.Net.Http.WebPush.Authentication;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Push;
+namespace PoMode.Api.Features.Push;
 
 /// <summary>
 /// Sends a Web Push notification to a job's owner when it finishes, on every browser they opted in

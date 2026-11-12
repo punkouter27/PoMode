@@ -1,4 +1,4 @@
-namespace PoMode.API.Audio;
+namespace PoMode.Api.Audio;
 
 /// <summary>A tempo estimate in beats per minute with a confidence score normalised into [0,1].</summary>
 public sealed record TempoEstimate(double Bpm, double Confidence);

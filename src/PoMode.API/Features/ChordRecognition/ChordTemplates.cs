@@ -1,6 +1,6 @@
-using PoMode.API.Features.ModalAnalysis;
+using PoMode.Api.Features.ModalAnalysis;
 
-namespace PoMode.API.Features.ChordRecognition;
+namespace PoMode.Api.Features.ChordRecognition;
 
 /// <summary>A single chord label: its display symbol, root pitch-class name, triad quality, and root pitch class.</summary>
 public sealed record ChordCandidate(string Symbol, string Root, string Quality, int RootPitchClass);

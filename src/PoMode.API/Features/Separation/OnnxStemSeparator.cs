@@ -1,10 +1,10 @@
 using Microsoft.ML.OnnxRuntime;
-using PoMode.API.Audio;
-using PoMode.API.Infrastructure;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Infrastructure;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Separation;
+namespace PoMode.Api.Features.Separation;
 
 /// <summary>
 /// Real vocal/instrumental separation via the HTDemucs v4 ONNX model on the CPU execution provider —
@@ -21,7 +21,7 @@ namespace PoMode.API.Features.Separation;
 /// wall-clock timing (varies with machine load; roughly real-time to a few times real-time on the
 /// reference dev machine, well down from the feasibility spike's more heavily-loaded ~3.4x estimate).
 /// </summary>
-public sealed class OnnxStemSeparator(ModelRegistry registry, ILogger<OnnxStemSeparator> logger) : IStemSeparator
+public sealed class OnnxStemSeparator(ModelRegistry registry, ILogger<OnnxStemSeparator> logger) : IStemSeparator, IDisposable
 {
     /// <summary>
     /// Stem order is fixed by the model's own training/export convention, not discoverable from ONNX
@@ -247,5 +247,16 @@ public sealed class OnnxStemSeparator(ModelRegistry registry, ILogger<OnnxStemSe
             window[windowSamples - 1 - i] = ramp;
         }
         return window;
+    }
+
+    public void Dispose()
+    {
+        lock (_sessionGate)
+        {
+            _evictionTimer?.Dispose();
+            _evictionTimer = null;
+            _session?.Dispose();
+            _session = null;
+        }
     }
 }

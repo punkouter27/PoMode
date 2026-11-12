@@ -1,4 +1,4 @@
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>Why an upload was rejected; each endpoint renders its own message text.</summary>
 public enum UploadRejection

@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace PoMode.API.Audio;
+namespace PoMode.Api.Audio;
 
 /// <summary>In-place iterative radix-2 Cooley-Tukey FFT.</summary>
 public static class Fft

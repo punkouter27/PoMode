@@ -4,7 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Infrastructure;
 using Xunit;
 
 namespace PoMode.Integration;
@@ -15,7 +15,7 @@ namespace PoMode.Integration;
 /// A test-only catalog override lets these tests exercise the real download path without ever
 /// touching the real (large) models in <see cref="ModelCatalog"/>.
 /// </summary>
-public sealed class ModelWarmupServiceTests : IAsyncLifetime
+public sealed class ModelWarmupServiceTests : IAsyncLifetime, IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"pomode-warmup-{Guid.NewGuid():N}");
     private readonly byte[] _payload = Encoding.UTF8.GetBytes("pretend-onnx-bytes-for-warmup");
@@ -52,9 +52,14 @@ public sealed class ModelWarmupServiceTests : IAsyncLifetime
 
     public Task DisposeAsync()
     {
-        _listener.Stop();
+        Dispose();
         if (Directory.Exists(_root)) Directory.Delete(_root, recursive: true);
         return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _listener?.Close();
     }
 
     private string Sha256Hex => Convert.ToHexString(SHA256.HashData(_payload)).ToLowerInvariant();

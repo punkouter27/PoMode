@@ -24,6 +24,9 @@ public sealed class SessionState(HttpClient http)
     /// two components asking at once cause one round trip rather than two guests.</summary>
     public Task<SessionDto> EnsureAsync() => _ready ??= ResolveAsync();
 
+    /// <summary>Re-queries the server session (for example after switching dev persona).</summary>
+    public Task<SessionDto> RefreshAsync() => _ready = ResolveAsync();
+
     /// <summary>Ends the session and starts a fresh guest one, so the page never sits signed out.</summary>
     public async Task SignOutAsync()
     {

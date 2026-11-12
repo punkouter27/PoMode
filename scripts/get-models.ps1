@@ -9,7 +9,7 @@
     on first Tier 2 request). This script exists so a fresh clone can pre-fetch them in one step —
     and so the E2EUI suite's repo-root models/ cache is warm before its first run.
 
-    URLs and hashes are parsed straight out of src/PoMode.API/Infrastructure/ModelCatalog.cs, which
+    URLs and hashes are parsed straight out of src/PoMode.Api/Infrastructure/ModelCatalog.cs, which
     stays the single source of truth. Nothing is duplicated here, so the script cannot drift from it.
 
 .PARAMETER Destination
@@ -38,7 +38,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 if (-not $Destination) { $Destination = Join-Path $repoRoot 'models' }
 
-$catalogPath = Join-Path $repoRoot 'src/PoMode.API/Infrastructure/ModelCatalog.cs'
+$catalogPath = Join-Path $repoRoot 'src/PoMode.Api/Infrastructure/ModelCatalog.cs'
 if (-not (Test-Path $catalogPath)) {
     throw "Cannot find the model catalog at $catalogPath. Run this script from inside the PoMode repo."
 }

@@ -1,4 +1,4 @@
-namespace PoMode.API.Features.Diagnostics;
+namespace PoMode.Api.Features.Diagnostics;
 
 public static class DiagnosticsEndpoints
 {

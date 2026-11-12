@@ -1,12 +1,12 @@
 using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Core;
-using PoMode.API.Features.ChordRecognition;
+using PoMode.Api.Features.ChordRecognition;
 using PoMode.Shared.Analysis;
 // Melanchall.DryWetMidi.Core also defines a NoteEvent (base class of NoteOnEvent/NoteOffEvent),
 // which collides with PoMode.Shared.Analysis.NoteEvent. Alias ours to disambiguate.
 using VocalNoteEvent = PoMode.Shared.Analysis.NoteEvent;
 
-namespace PoMode.API.Features.Export;
+namespace PoMode.Api.Features.Export;
 
 /// <summary>Builds a Standard MIDI File (Type 1) per spec §8. Tempo comes from the analysis result.</summary>
 public static class MidiFileBuilder

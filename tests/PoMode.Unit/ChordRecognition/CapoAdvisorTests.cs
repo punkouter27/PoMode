@@ -1,4 +1,4 @@
-using PoMode.API.Features.ChordShapes;
+using PoMode.Api.Features.ChordShapes;
 using PoMode.Shared.Analysis;
 using Xunit;
 

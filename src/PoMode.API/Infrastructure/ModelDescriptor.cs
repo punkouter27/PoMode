@@ -1,4 +1,4 @@
-namespace PoMode.API.Infrastructure;
+namespace PoMode.Api.Infrastructure;
 
 /// <summary>
 /// Describes an ONNX model that <see cref="ModelRegistry"/> can download and verify on first use.

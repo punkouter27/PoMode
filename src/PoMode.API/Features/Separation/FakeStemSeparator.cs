@@ -1,7 +1,7 @@
-using PoMode.API.Pipeline;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Separation;
+namespace PoMode.Api.Features.Separation;
 
 /// <summary>Phase-2 stand-in: copies the input as both stems so downstream stages have real files.</summary>
 public sealed class FakeStemSeparator : IStemSeparator

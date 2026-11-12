@@ -1,9 +1,9 @@
 using System.Buffers.Binary;
-using PoMode.API.Features.ChordRecognition;
-using PoMode.API.Features.ModalAnalysis;
+using PoMode.Api.Features.ChordRecognition;
+using PoMode.Api.Features.ModalAnalysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ModalMelodies;
+namespace PoMode.Api.Features.ModalMelodies;
 
 /// <summary>
 /// High-fidelity PCM WAV audio synthesizer that renders multi-track Concert Flute melody lead

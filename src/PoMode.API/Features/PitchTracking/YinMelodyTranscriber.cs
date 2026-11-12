@@ -1,7 +1,7 @@
-using PoMode.API.Audio;
+using PoMode.Api.Audio;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.PitchTracking;
+namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
 /// Free, model-less monophonic melody transcription: the classic YIN pitch estimator

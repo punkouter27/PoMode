@@ -1,10 +1,10 @@
 using Microsoft.ML.OnnxRuntime;
-using PoMode.API.Audio;
-using PoMode.API.Infrastructure;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Infrastructure;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Separation;
+namespace PoMode.Api.Features.Separation;
 
 /// <summary>
 /// UVR's MDX-Net Voc_FT on the server: the model the browser tier already runs, through the same
@@ -18,7 +18,7 @@ namespace PoMode.API.Features.Separation;
 /// tier's is. UVR asks apps that ship its models to credit it: this is Ultimate Vocal Remover's work
 /// (github.com/Anjok07/ultimatevocalremovergui), and the executor picker names it so.
 /// </remarks>
-public sealed class MdxStemSeparator(ModelRegistry registry, ILogger<MdxStemSeparator> logger) : IStemSeparator
+public sealed class MdxStemSeparator(ModelRegistry registry, ILogger<MdxStemSeparator> logger) : IStemSeparator, IDisposable
 {
     private static readonly TimeSpan SessionKeepAlive = TimeSpan.FromMinutes(10);
 
@@ -109,6 +109,17 @@ public sealed class MdxStemSeparator(ModelRegistry registry, ILogger<MdxStemSepa
                     _sessionPath = null;
                 }
             }, null, SessionKeepAlive, Timeout.InfiniteTimeSpan);
+        }
+    }
+
+    public void Dispose()
+    {
+        lock (_sessionGate)
+        {
+            _evictionTimer?.Dispose();
+            _evictionTimer = null;
+            _session?.Dispose();
+            _session = null;
         }
     }
 }

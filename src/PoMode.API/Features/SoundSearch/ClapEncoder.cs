@@ -2,10 +2,10 @@ using System.Collections.Concurrent;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Tokenizers;
-using PoMode.API.Audio;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Audio;
+using PoMode.Api.Infrastructure;
 
-namespace PoMode.API.Features.SoundSearch;
+namespace PoMode.Api.Features.SoundSearch;
 
 /// <summary>
 /// CLAP (LAION's music-and-speech checkpoint, Apache-2.0): a song and a sentence go into the same

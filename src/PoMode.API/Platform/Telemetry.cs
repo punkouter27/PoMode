@@ -1,7 +1,7 @@
 using Azure.Identity;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 
-namespace PoMode.API.Platform;
+namespace PoMode.Api.Platform;
 
 /// <summary>
 /// Traces, metrics and logs to the shared Application Insights component, through the Azure Monitor

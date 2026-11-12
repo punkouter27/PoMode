@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Xunit;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Infrastructure;
 
 namespace PoMode.Integration;
 

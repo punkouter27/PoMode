@@ -1,0 +1,280 @@
+/* The analysis card's wash: the colour of the mode of the section under the playhead, set by
+   canvas.js as a token reference. Registered as a colour so a change of section is a cross-fade the
+   browser animates; an unregistered property would snap. */
+@property --pm-section-tint {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: transparent;
+}
+
+:root {
+    transition: --pm-section-tint 900ms ease;
+}
+
+/* An inset shadow rather than a pseudo-element: the card's ::before and ::after are its specular
+   line and noise veil already. */
+.rz-card.song-main-card {
+    box-shadow: var(--pm-shadow), inset 0 9rem 9rem -7rem color-mix(in srgb, var(--pm-section-tint) 22%, transparent);
+}
+
+:root[data-fx="off"] .rz-card.song-main-card {
+    box-shadow: var(--pm-shadow);
+}
+
+/* The library-to-analysis morph (js/shell/transitions.js): the song's key moves from its row into
+   the headline. Only the named element travels; the rest of the page cuts over almost at once. */
+.pm-morph-key {
+    view-transition-name: pm-key;
+}
+
+::view-transition-group(pm-key) {
+    animation-duration: 420ms;
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 160ms;
+}
+
+:root[data-fx="off"] .pm-morph-key {
+    view-transition-name: none;
+}
+
+/* Typography: a gently fluid base size, calm heading rhythm, and lining tabular figures so
+   times, percentages and BPM readouts never wobble as they tick. */
+body {
+    margin: 0;
+    background: var(--pm-bg);
+    color: var(--pm-fg);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    font-size: clamp(0.95rem, 0.9rem + 0.25vw, 1.05rem);
+    line-height: 1.55;
+    font-variant-numeric: tabular-nums lining-nums;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* The shell fills the viewport, so a short page (the empty home page) can centre itself in the
+   space under the header instead of leaving the bottom half of the screen blank. */
+#app {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6,
+.rz-text-h5, .rz-text-h6 {
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+}
+
+code, pre, kbd {
+    font-family: var(--pm-font-mono);
+}
+
+/* Nothing replaceable is allowed to be wider than the column it sits in. Canvases are the ones that
+   matter here: every visualization in the app is a <canvas> sized in JS from its container, and one
+   that measures itself a frame early used to be the widest box on a phone. */
+img, svg, video, canvas {
+    max-width: 100%;
+}
+
+/* Accessible focus: one visible ring for every interactive element, keyboard-only. */
+:focus-visible {
+    outline: 2px solid var(--pm-accent);
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+}
+
+/* Glassmorphism cards over the reactive background.
+   Four layers, because plain blur is not glass: the blur itself, a saturate() that stops the
+   shader wash behind from going grey, a specular highlight along the top edge where real glass
+   catches light, and a faint noise veil that breaks up the banding a large blur radius produces
+   over a smooth gradient — most visible, and most worth fixing, in the dark theme.
+   The key-tinted edge is where the detected key colours the chrome. */
+.rz-card {
+    position: relative;
+    background: var(--pm-surface-glass);
+    -webkit-backdrop-filter: blur(var(--pm-glass-blur)) saturate(var(--pm-glass-sat));
+    backdrop-filter: blur(var(--pm-glass-blur)) saturate(var(--pm-glass-sat));
+    border: 1px solid var(--pm-border);
+    border-top: 2px solid var(--pm-key-edge);
+    border-radius: 0.75rem;
+    box-shadow: var(--pm-shadow);
+}
+
+/* The specular line. A pseudo-element rather than a second border so it can fade out toward the
+   corners the way a real highlight does; pointer-events are off so it never eats a click. */
+.rz-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: 0.75rem 0.75rem 0 0;
+    background: linear-gradient(90deg, transparent, var(--pm-glass-specular) 22%, var(--pm-glass-specular) 78%, transparent);
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+/* The noise veil, generated rather than fetched — a tiny inline SVG turbulence costs no request
+   and no cache entry, which matters for a network-first service worker. */
+.pm-grain::after,
+.rz-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: var(--pm-glass-noise);
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+    .rz-card,
+    .pm-panel {
+        background: var(--pm-surface);
+    }
+}
+
+/* A surface that is not a Radzen card but has to read as one. The Mode Lab is built from strips
+   rather than cards — a transport bar, a mode strip, a ribbon — and before this they were flat
+   6px-radius boxes sitting inside an app whose every other surface was a 12px glass card, which is
+   why that page looked like a different product. Same ground, same border, same corner; no
+   specular or noise pseudo-layer, because these strips stack four deep and the cost is per-element. */
+.pm-panel {
+    background: var(--pm-surface-glass);
+    -webkit-backdrop-filter: blur(var(--pm-glass-blur)) saturate(var(--pm-glass-sat));
+    backdrop-filter: blur(var(--pm-glass-blur)) saturate(var(--pm-glass-sat));
+    border: 1px solid var(--pm-border);
+    border-radius: 0.75rem;
+    box-shadow: var(--pm-shadow);
+}
+
+:root[data-fx="off"] .pm-panel {
+    background: var(--pm-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+/* Effect level. 'subtle' keeps the glass but stops paying for a wide blur and a noise pass on every
+   card; 'off' drops the whole treatment to a flat opaque surface, which is also the cheapest thing
+   the browser can composite. Driven by the data-fx stamp from js/shell/prefs.js. */
+:root[data-fx="subtle"] {
+    --pm-glass-blur: 8px;
+    --pm-glass-sat: 120%;
+    --pm-glass-noise: 0;
+}
+
+:root[data-fx="off"] .rz-card {
+    background: var(--pm-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+:root[data-fx="off"] .rz-card::before,
+:root[data-fx="off"] .rz-card::after,
+:root[data-fx="off"] .pm-grain::after {
+    display: none;
+}
+
+/* Motion tokens. One spring for every press and tilt, so a button and a song tile give the same way:
+   the curve runs past its end and comes back, which is what reads as springy rather than eased. */
+:root {
+    --pm-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --pm-dur-press: 180ms;
+}
+
+/* A press the hand can see: a Radzen button gives under the pointer and springs back past its rest.
+   The fact it animates is the press landing. Only where the effect level allows motion; the reduced
+   motion rule below holds it still unless Full was chosen explicitly. Radzen's own colour and shadow
+   transitions are kept beside the transform. */
+:root[data-fx="full"] .rz-button,
+:root[data-fx="subtle"] .rz-button {
+    transition: transform var(--pm-dur-press) var(--pm-ease-spring),
+        background-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+:root[data-fx="full"] .rz-button:not(:disabled):not(.rz-state-disabled):active {
+    transform: scale(0.97);
+}
+
+:root[data-fx="subtle"] .rz-button:not(:disabled):not(.rz-state-disabled):active {
+    transform: scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root:not([data-fx="full"]) .rz-button:active {
+        transform: none;
+    }
+}
+
+/* A key-tinted glow for the element the user should be looking at — the active take, the card the
+   playhead is inside. One class so "this is live" looks the same everywhere. */
+.pm-keyed {
+    border-color: var(--pm-key-edge) !important;
+    box-shadow: var(--pm-shadow), 0 0 0 1px var(--pm-key-edge), 0 0 28px -6px var(--pm-key-glow);
+}
+
+/* Skeleton shimmer for loading states; collapses to a static block under reduced motion. */
+.pm-skeleton {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    background: var(--pm-chord-block);
+    min-height: 1rem;
+}
+
+.pm-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.18) 50%, transparent 70%);
+    transform: translateX(-100%);
+    animation: pm-shimmer 1.4s infinite;
+}
+
+@keyframes pm-shimmer {
+    to { transform: translateX(100%); }
+}
+
+/* Motion accessibility: kill decorative animation everywhere in one move.
+   Two triggers, matching js/shell/prefs.js exactly. The OS preference still switches this on by
+   default, but an explicit "Full" choice in the app's own effects control overrides it — the user
+   has answered the question more directly there than the OS setting did. Choosing "Off" in the app
+   applies it whatever the OS says. */
+@media (prefers-reduced-motion: reduce) {
+    :root:not([data-fx="full"]) *,
+    :root:not([data-fx="full"]) *::before,
+    :root:not([data-fx="full"]) *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+:root[data-fx="off"] *,
+:root[data-fx="off"] *::before,
+:root[data-fx="off"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+}
+
+/* Fingers, not cursors. The 24px floor is sized for a pointer; on a touch screen the full-size
+   buttons and every disclosure get the 44px a thumb needs. Small and extra-small buttons sit in
+   dense rows that carry their own phone layout, so they are left to it. */
+@media (pointer: coarse) {
+    .rz-button:not(.rz-button-sm):not(.rz-button-xs),
+    summary {
+        min-height: 2.75rem;
+    }
+}
+
+/* A figure the pipeline never measured reads as a dash, so it cannot be quoted as one. */
+.song-badge-unknown {
+    color: var(--pm-fg-muted);
+}

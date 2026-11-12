@@ -1,4 +1,4 @@
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>Single-concurrency job consumer — GPU stages must not share VRAM.</summary>
 public sealed class AnalysisWorker(

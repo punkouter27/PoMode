@@ -1,8 +1,8 @@
-using PoMode.API.Audio;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.VoiceProfile;
+namespace PoMode.Api.Features.VoiceProfile;
 
 /// <summary>
 /// Measures a job's intonation once and keeps it as <c>intonation.json</c>. Unlike <c>/stats</c>,

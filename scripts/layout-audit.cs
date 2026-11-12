@@ -153,6 +153,7 @@ static async Task CaptureAsync(string outDir, string baseUrl)
                     axe.AddRange(violations.Select(v => $"a11y ({scheme.ToString().ToLowerInvariant()}): {v}"));
                 }
                 await page.EmulateMediaAsync(new() { ColorScheme = ColorScheme.Light });
+                await page.WaitForTimeoutAsync(250);
             }
             catch (PlaywrightException ex)
             {
@@ -192,12 +193,12 @@ static void Compare(string beforeDir, string afterDir, string notesPath, string 
         @media (max-width:640px){.pair{grid-template-columns:1fr}}</style></head><body>
         <h1>PoMode before and after</h1>
         """);
-    html.Append($"<p class=\"tag\">Generated {DateTime.Now:yyyy-MM-dd HH:mm} by scripts/layout-audit.cs</p>");
-    html.Append($"<div class=\"notes\">{Escape(File.Exists(notesPath) ? File.ReadAllText(notesPath) : "")}</div>");
+    html.Append(System.Globalization.CultureInfo.InvariantCulture, $"<p class=\"tag\">Generated {DateTime.Now:yyyy-MM-dd HH:mm} by scripts/layout-audit.cs</p>");
+    html.Append(System.Globalization.CultureInfo.InvariantCulture, $"<div class=\"notes\">{Escape(File.Exists(notesPath) ? File.ReadAllText(notesPath) : "")}</div>");
     foreach (var shot in after)
     {
         var old = before.FirstOrDefault(b => b.Route == shot.Route && b.Viewport == shot.Viewport);
-        html.Append($"<h2>{Escape(shot.Route)} · {shot.Viewport} <span class=\"tag\">{Escape(shot.Path)}</span></h2><div class=\"pair\">");
+        html.Append(System.Globalization.CultureInfo.InvariantCulture, $"<h2>{Escape(shot.Route)} · {shot.Viewport} <span class=\"tag\">{Escape(shot.Path)}</span></h2><div class=\"pair\">");
         html.Append(Panel("Before", beforeDir, old, null));
         html.Append(Panel("After", afterDir, shot, old));
         html.Append("</div>");
@@ -219,13 +220,13 @@ static void Compare(string beforeDir, string afterDir, string notesPath, string 
         var items = new StringBuilder();
         foreach (var finding in shot.Findings)
         {
-            items.Append($"<li class=\"bad\">{Escape(finding)}</li>");
+            items.Append(System.Globalization.CultureInfo.InvariantCulture, $"<li class=\"bad\">{Escape(finding)}</li>");
         }
         if (previous is not null)
         {
             foreach (var fixedOne in previous.Findings.Where(f => !shot.Findings.Contains(f)))
             {
-                items.Append($"<li class=\"good\">resolved: {Escape(fixedOne)}</li>");
+                items.Append(System.Globalization.CultureInfo.InvariantCulture, $"<li class=\"good\">resolved: {Escape(fixedOne)}</li>");
             }
         }
         var list = items.Length > 0 ? $"<ul>{items}</ul>" : "<ul><li class=\"good\">no findings</li></ul>";
@@ -245,4 +246,4 @@ static string FindRepoRoot()
     return dir?.FullName ?? throw new InvalidOperationException("Run from inside the PoMode repository.");
 }
 
-record PageResult(string Route, string Path, string Viewport, string File, string[] Findings);
+sealed record PageResult(string Route, string Path, string Viewport, string File, string[] Findings);

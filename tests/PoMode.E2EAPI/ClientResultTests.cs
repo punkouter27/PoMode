@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using PoMode.API.Features.PitchTracking;
+using PoMode.Api.Features.PitchTracking;
 using PoMode.Shared.Analysis;
 using Xunit;
 

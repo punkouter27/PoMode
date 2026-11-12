@@ -1,7 +1,7 @@
 using System.Numerics;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ModalAnalysis;
+namespace PoMode.Api.Features.ModalAnalysis;
 
 /// <summary>Deterministic modal derivation (spec §6). Pure function over Phase-2 artifacts — no audio, no models.</summary>
 public static class ModalAnalysisEngine

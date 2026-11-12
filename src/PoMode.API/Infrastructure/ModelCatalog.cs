@@ -1,4 +1,4 @@
-namespace PoMode.API.Infrastructure;
+namespace PoMode.Api.Infrastructure;
 
 /// <summary>
 /// The fixed set of ONNX models PoMode's local inference pipeline can download and run. Descriptors

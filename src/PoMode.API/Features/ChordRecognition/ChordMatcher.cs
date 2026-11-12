@@ -1,4 +1,4 @@
-namespace PoMode.API.Features.ChordRecognition;
+namespace PoMode.Api.Features.ChordRecognition;
 
 /// <summary>Matches a single chroma frame against the 24-triad template vocabulary.</summary>
 public static class ChordMatcher

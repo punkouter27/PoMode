@@ -182,7 +182,7 @@ public sealed class AnalysisClient(HttpClient http)
     public async Task<SongLoopDto?> GetSongLoopAsync(string jobId)
     {
         using var response = await http.GetAsync($"api/analysis/{jobId}/loop");
-        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync(Json.SongLoopDto) : null;
+        return response.StatusCode == HttpStatusCode.OK ? await response.Content.ReadFromJsonAsync(Json.SongLoopDto) : null;
     }
 
     /// <summary>Published songs on the same chords (Hooktheory); null when it could not be asked.</summary>
@@ -289,6 +289,10 @@ public sealed class AnalysisClient(HttpClient http)
     /// plain sentence rather than a status code.</summary>
     private static async Task<string> ReasonAsync(HttpResponseMessage response)
     {
+        if (await ProblemDetailsParser.TryReadAsync(response) is { Detail: { Length: > 0 } detail })
+        {
+            return detail;
+        }
         try
         {
             if (await response.Content.ReadFromJsonAsync(Json.String) is { Length: > 0 } reason)

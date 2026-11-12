@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
-using PoMode.API.Features.Demo;
+using PoMode.Api.Features.Demo;
 using PoMode.Shared.Analysis;
 using Xunit;
 

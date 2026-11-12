@@ -1,9 +1,11 @@
 @using System.Text.Json.Nodes
+@using FluentValidation
 @using PoMode.Shared.Analysis
 @using PoMode.Client.Services
 @inject AnalysisClient Client
 @inject IJSRuntime JS
 @inject BrowserPrefs Prefs
+@inject IValidator<SongQuestionRequest> QuestionValidator
 @implements IAsyncDisposable
 
 @* ---- One conversation ----
@@ -473,6 +475,13 @@
         var asked = question.Trim();
         if (_asking || asked.Length == 0)
         {
+            return;
+        }
+
+        var validation = await QuestionValidator.ValidateAsync(new SongQuestionRequest(asked, _conversation, ServerInterpreter));
+        if (!validation.IsValid)
+        {
+            _askError = validation.Errors[0].ErrorMessage;
             return;
         }
 

@@ -1,4 +1,4 @@
-namespace PoMode.API.Features.Separation;
+namespace PoMode.Api.Features.Separation;
 
 /// <summary>
 /// MDX-Net vocal separation, the signal processing around the model: the C# twin of the browser's

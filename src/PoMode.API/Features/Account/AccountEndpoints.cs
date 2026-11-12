@@ -1,10 +1,10 @@
 using System.IO.Compression;
 using Microsoft.AspNetCore.Http.HttpResults;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.Auth;
-using PoMode.API.Features.Push;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.Auth;
+using PoMode.Api.Features.Push;
 
-namespace PoMode.API.Features.Account;
+namespace PoMode.Api.Features.Account;
 
 /// <summary>
 /// What the caller can do with everything stored under their name: take a copy, or have it gone.

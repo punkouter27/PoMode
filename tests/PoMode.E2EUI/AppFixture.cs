@@ -4,7 +4,7 @@ using Xunit;
 
 namespace PoMode.E2EUI;
 
-/// <summary>Boots the real PoMode.API (which hosts the WASM client) for browser tests.</summary>
+/// <summary>Boots the real PoMode.Api (which hosts the WASM client) for browser tests.</summary>
 public class AppFixture : IAsyncLifetime
 {
     private readonly int _port;
@@ -44,7 +44,7 @@ public class AppFixture : IAsyncLifetime
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"run --no-build --project src/PoMode.API --urls {BaseUrl}",
+            Arguments = $"run --no-build --project src/PoMode.Api --urls {BaseUrl}",
             WorkingDirectory = repoRoot,
             UseShellExecute = false,
             CreateNoWindow = true,
@@ -78,7 +78,7 @@ public class AppFixture : IAsyncLifetime
             },
         };
         ConfigureEnvironment(startInfo.Environment);
-        _server = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start PoMode.API");
+        _server = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start PoMode.Api");
 
         using var http = new HttpClient();
         for (var attempt = 0; attempt < 120; attempt++)
@@ -94,7 +94,7 @@ public class AppFixture : IAsyncLifetime
             }
             await Task.Delay(500);
         }
-        throw new TimeoutException("PoMode.API did not become healthy within 60s.");
+        throw new TimeoutException("PoMode.Api did not become healthy within 60s.");
     }
 
     public Task DisposeAsync()

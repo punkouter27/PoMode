@@ -1,19 +1,21 @@
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.HttpResults;
-using PoMode.API.Audio;
-using PoMode.API.Features.ChordRecognition;
-using PoMode.API.Features.PitchTracking;
-using PoMode.API.Features.Separation;
-using PoMode.API.Features.Auth;
-using PoMode.API.Features.Uploads;
-using PoMode.API.Pipeline;
-using PoMode.API.Platform;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.ChordRecognition;
+using PoMode.Api.Features.PitchTracking;
+using PoMode.Api.Features.Separation;
+using PoMode.Api.Features.Auth;
+using PoMode.Api.Features.Uploads;
+using PoMode.Api.Pipeline;
+using PoMode.Api.Platform;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 public static class AnalysisEndpoints
 {
+    private static readonly string[] StemNames = ["vocals", "instrumental"];
+
     /// <summary>The rate the browser separator works at: MDX-Net Voc_FT was trained at 44.1 kHz.</summary>
     private const int ClientStemRate = 44100;
 
@@ -169,10 +171,12 @@ public static class AnalysisEndpoints
         group.MapGet("/{jobId}/notes-chords", async Task<Results<Ok<IReadOnlyList<NoteEvent>>, NotFound>> (
             string jobId, JobStore store, CancellationToken ct) =>
         {
+            if (await store.LoadAsync(jobId, ct) is null)
+            {
+                return TypedResults.NotFound();
+            }
             var chords = await store.ReadArtifactListAsync<ChordSpan>(jobId, "chords.json", ct);
-            return chords.Count == 0
-                ? TypedResults.NotFound()
-                : TypedResults.Ok(ChordPadBuilder.Build(chords));
+            return TypedResults.Ok<IReadOnlyList<NoteEvent>>(chords.Count == 0 ? [] : ChordPadBuilder.Build(chords));
         });
 
         // Tier 2's return path (spec §4 step 3). The notes come from a browser, so they are untrusted:
@@ -286,7 +290,7 @@ public static class AnalysisEndpoints
                 return TypedResults.NotFound();
             }
             var present = new List<string>();
-            foreach (var name in new[] { "vocals", "instrumental" })
+            foreach (var name in StemNames)
             {
                 if (await store.GetArtifactPathAsync(jobId, $"{name}.wav", ct) is not null)
                 {
@@ -323,7 +327,7 @@ public static class AnalysisEndpoints
                         return TypedResults.NotFound();
                     }
                     fileName = Path.GetFileName(store.InputPath(state));
-                    contentType = Path.GetExtension(fileName).ToLowerInvariant() == ".mp3"
+                    contentType = string.Equals(Path.GetExtension(fileName), ".mp3", StringComparison.OrdinalIgnoreCase)
                         ? "audio/mpeg"
                         : "audio/wav";
                     break;

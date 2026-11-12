@@ -10,7 +10,7 @@ namespace PoMode.Client.Services;
 /// </summary>
 public sealed class MockDataState
 {
-    public bool IsMockData { get; private set; } = false;
+    public bool IsMockData { get; private set; }
 
     public event Action? Changed;
 

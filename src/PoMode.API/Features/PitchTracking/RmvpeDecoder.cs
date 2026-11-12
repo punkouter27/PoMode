@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.PitchTracking;
+namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
 /// Turns RMVPE's per-frame pitch salience into <see cref="NoteEvent"/>s. Pure function — no model,

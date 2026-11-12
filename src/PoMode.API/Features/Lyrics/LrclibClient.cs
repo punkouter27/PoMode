@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Infrastructure;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Lyrics;
+namespace PoMode.Api.Features.Lyrics;
 
 /// <summary>
 /// A song's published, timed lyrics from LRCLIB (<c>GET lrclib.net/api/get</c>, free and keyless), for

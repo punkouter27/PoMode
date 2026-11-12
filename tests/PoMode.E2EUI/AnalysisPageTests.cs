@@ -57,7 +57,7 @@ public class AnalysisPageTests(AppFixture app)
     {
         var context = await browser.NewContextAsync();
         // The window inspector is one of the tools Settings switches on (FeatureFlags); these tests are about it.
-        await context.AddInitScriptAsync("localStorage.setItem('pm-advanced-tools', JSON.stringify({ WindowInspector: true }))");
+        await context.AddInitScriptAsync("localStorage.setItem('pomode:advanced-tools', JSON.stringify({ WindowInspector: true }))");
         var page = await context.NewPageAsync();
         await page.GotoAsync($"{baseUrl}/");
 
@@ -83,6 +83,7 @@ public class AnalysisPageTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await AnalysedPageAsync(browser, app.BaseUrl, ProgressionWithMelody());
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         // The key badge is the one headline now; the old HUD card repeated it under the player.
         await Assertions.Expect(page.GetByText("Key & Mode")).ToBeVisibleAsync(Visible);
@@ -100,6 +101,7 @@ public class AnalysisPageTests(AppFixture app)
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await AnalysedPageAsync(browser, app.BaseUrl, Progression(
             (0, "maj", 2.0), (9, "min", 2.0), (5, "maj", 2.0), (7, "maj", 2.0)));
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await Assertions.Expect(page.GetByText("Click a chord block on the timeline to inspect a window."))
             .ToBeVisibleAsync(Visible);
@@ -113,6 +115,7 @@ public class AnalysisPageTests(AppFixture app)
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await AnalysedPageAsync(browser, app.BaseUrl, Progression(
             (0, "maj", 2.0), (9, "min", 2.0), (5, "maj", 2.0), (7, "maj", 2.0)));
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         // 12.5% across the ~8 s track lands inside the first chord.
         await CanvasTests.ClickCanvasAsync(page.Locator("canvas.analysis-canvas"), 0.125f, 0.85f);
@@ -129,6 +132,7 @@ public class AnalysisPageTests(AppFixture app)
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await AnalysedPageAsync(browser, app.BaseUrl, Progression(
             (0, "maj", 2.0), (9, "min", 2.0), (5, "maj", 2.0), (7, "maj", 2.0)));
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         // FakePitchTracker's eight notes all land near the start of the track, so the later windows
         // genuinely have fewer than the three distinct sung pitch classes spec §6 requires.
@@ -150,6 +154,7 @@ public class AnalysisPageTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await AnalysedPageAsync(browser, app.BaseUrl, TestAudio.MakeWav(seconds: 0.5));
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await Assertions.Expect(page.GetByText("Key & Mode")).ToBeVisibleAsync(Visible);
         await Assertions.Expect(page.Locator(".song-badge-value").First).ToContainTextAsync("nothing detected");

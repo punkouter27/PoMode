@@ -1,10 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using PoMode.API.Features.BeatTracking;
-using PoMode.API.Features.PitchTracking;
-using PoMode.API.Infrastructure;
-using PoMode.API.Pipeline;
+using PoMode.Api.Features.BeatTracking;
+using PoMode.Api.Features.PitchTracking;
+using PoMode.Api.Infrastructure;
+using PoMode.Api.Pipeline;
 using PoMode.TestCommon;
 using Xunit;
 
@@ -73,7 +73,7 @@ public sealed class NeuralExecutorTests : IDisposable
         var result = await tracker.TrackBeatsAsync(new StageContext("job", _dir, path), CancellationToken.None);
 
         Console.WriteLine($"{result.Grid.Bpm} BPM, confidence {result.Grid.Confidence}, downbeats "
-            + string.Join(", ", result.Grid.Downbeats?.Select(d => d.ToString("0.00")) ?? []));
+            + string.Join(", ", result.Grid.Downbeats?.Select(d => d.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)) ?? []));
         Assert.Equal(nameof(BeatThisBeatTracker), result.Grid.Tracker);
         Assert.InRange(result.Grid.Bpm, 104 * 0.98, 104 * 1.02);
         Assert.NotNull(result.Grid.Downbeats);
@@ -91,7 +91,7 @@ public sealed class NeuralExecutorTests : IDisposable
         var services = new ServiceCollection();
         services.AddHttpClient();
         var provider = services.BuildServiceProvider();
-        var apiBin = Path.Combine(TestPaths.RepoRoot(), "src", "PoMode.API", "bin");
+        var apiBin = Path.Combine(TestPaths.RepoRoot(), "src", "PoMode.Api", "bin");
         var appModels = Directory.Exists(apiBin)
             ? Directory.GetDirectories(apiBin, "models", SearchOption.AllDirectories)
                 .FirstOrDefault(dir => File.Exists(Path.Combine(dir, wanted.FileName)))

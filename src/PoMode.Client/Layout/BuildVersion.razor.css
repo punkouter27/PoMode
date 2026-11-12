@@ -1,0 +1,16 @@
+.build-watermark {
+    position: fixed;
+    right: var(--pm-space-2);
+    bottom: var(--pm-space-1);
+    color: var(--pm-fg-muted);
+    font-size: var(--pm-text-xs);
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@media (max-width: 640px) {
+    .build-watermark {
+        bottom: calc(3.75rem + env(safe-area-inset-bottom));
+    }
+}

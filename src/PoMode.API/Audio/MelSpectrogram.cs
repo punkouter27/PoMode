@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace PoMode.API.Audio;
+namespace PoMode.Api.Audio;
 
 /// <summary>
 /// The spectrogram front ends the neural executors expect, reproduced exactly from their reference

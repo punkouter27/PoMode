@@ -1,6 +1,6 @@
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Features.SongStructure;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Features.SongStructure;
 using PoMode.Shared.Analysis;
 using Xunit;
 

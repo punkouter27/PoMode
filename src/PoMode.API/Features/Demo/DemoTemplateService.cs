@@ -1,8 +1,8 @@
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.ModalMelodies;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.ModalMelodies;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Demo;
+namespace PoMode.Api.Features.Demo;
 
 /// <summary>
 /// Builds the demo template once, through the real pipeline, as an ordinary queued job under a fixed

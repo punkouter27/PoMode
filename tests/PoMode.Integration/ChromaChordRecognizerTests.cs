@@ -1,5 +1,5 @@
-using PoMode.API.Features.ChordRecognition;
-using PoMode.API.Pipeline;
+using PoMode.Api.Features.ChordRecognition;
+using PoMode.Api.Pipeline;
 using PoMode.TestCommon;
 using Xunit;
 

@@ -1,13 +1,13 @@
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.Push;
-using PoMode.API.Features.SongStatistics;
-using PoMode.API.Infrastructure;
-using PoMode.API.Pipeline;
-using PoMode.API.Platform;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.Push;
+using PoMode.Api.Features.SongStatistics;
+using PoMode.Api.Infrastructure;
+using PoMode.Api.Pipeline;
+using PoMode.Api.Platform;
 using PoMode.Shared.Analysis;
 using PoMode.Shared.Diagnostics;
 
-namespace PoMode.API.Features.Diagnostics;
+namespace PoMode.Api.Features.Diagnostics;
 
 /// <summary>Builds the /diag report. Reports secret PRESENCE only — never values.</summary>
 public sealed class DiagnosticsService(

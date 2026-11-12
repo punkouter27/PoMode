@@ -1,10 +1,10 @@
 using System.Globalization;
 using AcoustID;
-using PoMode.API.Audio;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Audio;
+using PoMode.Api.Infrastructure;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongIdentity;
+namespace PoMode.Api.Features.SongIdentity;
 
 /// <summary>
 /// Names a recording from its sound: a Chromaprint fingerprint of the first two minutes (AcoustID.NET,

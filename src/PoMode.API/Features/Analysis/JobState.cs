@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>Persisted per-job state (jobs/{id}/job.json). Mutable: the pipeline updates it as stages run.</summary>
 public sealed class JobState

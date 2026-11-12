@@ -8,6 +8,7 @@ namespace PoMode.E2EAPI;
 
 public sealed class VisualEndpointTests : IDisposable
 {
+    private static readonly string[] ExpectedPeakSources = ["vocals", "mix"];
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"pomode-visual-{Guid.NewGuid():N}");
     private readonly string _modelsRoot = Path.Combine(Path.GetTempPath(), $"pomode-visual-models-{Guid.NewGuid():N}");
 
@@ -86,7 +87,7 @@ public sealed class VisualEndpointTests : IDisposable
         Assert.Equal(System.Net.HttpStatusCode.NotFound, structure.StatusCode);
         var peaks = await client.GetFromJsonAsync<WaveformPeaksDto>($"/api/analysis/{jobId}/peaks");
         Assert.NotNull(peaks);
-        Assert.Contains(peaks.Source, new[] { "vocals", "mix" });
+        Assert.Contains(peaks.Source, ExpectedPeakSources);
         Assert.Equal(1024, peaks.Peaks.Count);
         Assert.True(peaks.DurationSec > 0);
         Assert.All(peaks.Peaks, value => Assert.InRange(value, -0.01f, 0.01f));

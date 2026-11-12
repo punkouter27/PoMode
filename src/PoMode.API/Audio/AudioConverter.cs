@@ -1,4 +1,4 @@
-namespace PoMode.API.Audio;
+namespace PoMode.Api.Audio;
 
 /// <summary>
 /// Stereo-aware conversions <see cref="AudioDecoder"/> deliberately doesn't provide (its

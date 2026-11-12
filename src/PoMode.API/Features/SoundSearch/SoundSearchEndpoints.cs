@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.Auth;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.Auth;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SoundSearch;
+namespace PoMode.Api.Features.SoundSearch;
 
 /// <summary>
 /// <c>GET /api/library/sound?q=dark acoustic</c>: the caller's songs whose sound is nearest the words,

@@ -1,9 +1,9 @@
-using PoMode.API.Features.Analysis;
-using PoMode.API.Audio;
-using PoMode.API.Features.ModalAnalysis;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.ModalAnalysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ModalMelodies;
+namespace PoMode.Api.Features.ModalMelodies;
 
 /// <summary>
 /// Prepares a hum take for the normal pipeline by handing it the two things it would otherwise have

@@ -1,4 +1,4 @@
-using PoMode.API.Features.ChordRecognition;
+using PoMode.Api.Features.ChordRecognition;
 using Xunit;
 
 namespace PoMode.Unit.ChordRecognition;
@@ -20,7 +20,7 @@ public class ChordSegmenterTests
         return frames;
     }
 
-    private static PoMode.API.Audio.BeatGrid Grid(double bpm = 120.0, double firstBeatSec = 0.0)
+    private static PoMode.Api.Audio.BeatGrid Grid(double bpm = 120.0, double firstBeatSec = 0.0)
         => new(bpm, firstBeatSec, Confidence: 1.0);
 
     [Fact]

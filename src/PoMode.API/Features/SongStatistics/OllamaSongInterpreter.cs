@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Infrastructure;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongStatistics;
+namespace PoMode.Api.Features.SongStatistics;
 
 /// <summary>
 /// The local LLM tier: talks to an Ollama server on the user's own machine, so nothing about the

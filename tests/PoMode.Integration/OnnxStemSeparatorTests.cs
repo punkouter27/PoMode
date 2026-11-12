@@ -2,10 +2,10 @@ using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using PoMode.API.Audio;
-using PoMode.API.Features.Separation;
-using PoMode.API.Infrastructure;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.Separation;
+using PoMode.Api.Infrastructure;
+using PoMode.Api.Pipeline;
 using PoMode.TestCommon;
 using Xunit;
 

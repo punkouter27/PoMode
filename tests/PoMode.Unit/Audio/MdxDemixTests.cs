@@ -1,4 +1,4 @@
-using PoMode.API.Features.Separation;
+using PoMode.Api.Features.Separation;
 using Xunit;
 
 namespace PoMode.Unit.Audio;

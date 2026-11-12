@@ -13,6 +13,8 @@ public class UploadFlowTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await (await browser.NewContextAsync()).NewPageAsync();
+        await using var guard = PlaywrightErrorGuard.Watch(page);
+        guard.AllowHttp(System.Net.HttpStatusCode.NotFound, "/api/analysis/");
         await page.GotoAsync(app.BaseUrl);
 
         var wavPath = Path.Combine(Path.GetTempPath(), $"pomode-upload-{Guid.NewGuid():N}.wav");

@@ -23,8 +23,10 @@ public sealed class BasicPitchFixture
     public static string ReadJson()
         => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, FileName));
 
+    private static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);
+
     public static BasicPitchFixture Load()
-        => JsonSerializer.Deserialize<BasicPitchFixture>(ReadJson(), new JsonSerializerOptions(JsonSerializerDefaults.Web))
+        => JsonSerializer.Deserialize<BasicPitchFixture>(ReadJson(), WebJson)
            ?? throw new InvalidOperationException($"{FileName} deserialized to null.");
 
     /// <summary>The decoder takes rectangular arrays; JSON can only hold jagged ones.</summary>

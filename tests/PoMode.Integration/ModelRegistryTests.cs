@@ -4,12 +4,12 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Infrastructure;
 using Xunit;
 
 namespace PoMode.Integration;
 
-public sealed class ModelRegistryTests : IAsyncLifetime
+public sealed class ModelRegistryTests : IAsyncLifetime, IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"pomode-models-{Guid.NewGuid():N}");
     private readonly byte[] _payload = Encoding.UTF8.GetBytes("pretend-onnx-bytes");
@@ -46,9 +46,14 @@ public sealed class ModelRegistryTests : IAsyncLifetime
 
     public Task DisposeAsync()
     {
-        _listener.Stop();
+        Dispose();
         if (Directory.Exists(_root)) Directory.Delete(_root, recursive: true);
         return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _listener?.Close();
     }
 
     private string Sha256Hex => Convert.ToHexString(SHA256.HashData(_payload)).ToLowerInvariant();

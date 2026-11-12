@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ChordShapes;
+namespace PoMode.Api.Features.ChordShapes;
 
 /// <summary>
 /// <c>GET /api/analysis/{jobId}/shapes</c>: the song's chords as a player would finger them, with the

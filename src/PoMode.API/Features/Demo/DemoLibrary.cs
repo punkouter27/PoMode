@@ -1,7 +1,7 @@
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Demo;
+namespace PoMode.Api.Features.Demo;
 
 /// <summary>
 /// Gives each user one copy of the finished demo, once.
@@ -18,7 +18,7 @@ public sealed class DemoLibrary(
     JobStore store,
     JobBlobStorage blobs,
     IConfiguration configuration,
-    ILogger<DemoLibrary> logger)
+    ILogger<DemoLibrary> logger) : IDisposable
 {
     /// <summary>Blob prefix for the ledger's mirror. Not a job id, so no job sweep ever touches it.</summary>
     private const string LedgerBlobPrefix = "_demo";
@@ -97,4 +97,6 @@ public sealed class DemoLibrary(
             ? [.. (await File.ReadAllLinesAsync(LedgerPath, ct)).Where(line => line.Length > 0)]
             : [];
     }
+
+    public void Dispose() => _gate.Dispose();
 }

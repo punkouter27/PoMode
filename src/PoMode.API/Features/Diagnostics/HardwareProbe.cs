@@ -1,7 +1,7 @@
-using PoMode.API.Infrastructure;
+using PoMode.Api.Infrastructure;
 using PoMode.Shared.Hardware;
 
-namespace PoMode.API.Features.Diagnostics;
+namespace PoMode.Api.Features.Diagnostics;
 
 /// <summary>Runtime capability probe feeding /diag and (in later phases) executor availability.</summary>
 public sealed class HardwareProbe(ModelRegistry modelRegistry)

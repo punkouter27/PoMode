@@ -1,4 +1,4 @@
-namespace PoMode.API.Features.ModalAnalysis;
+namespace PoMode.Api.Features.ModalAnalysis;
 
 public static class PitchNames
 {

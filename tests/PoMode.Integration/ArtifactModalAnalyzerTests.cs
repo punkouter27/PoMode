@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Pipeline;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 using Xunit;
 

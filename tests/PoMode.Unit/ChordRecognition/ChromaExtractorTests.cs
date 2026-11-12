@@ -1,5 +1,5 @@
-using PoMode.API.Audio;
-using PoMode.API.Features.ChordRecognition;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.ChordRecognition;
 using PoMode.TestCommon;
 using Xunit;
 

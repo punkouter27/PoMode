@@ -1,11 +1,11 @@
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using PoMode.API.Audio;
-using PoMode.API.Infrastructure;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Infrastructure;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.PitchTracking;
+namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
 /// Vocal-specialised melody tracking with RMVPE, a model trained to follow a singing voice (and

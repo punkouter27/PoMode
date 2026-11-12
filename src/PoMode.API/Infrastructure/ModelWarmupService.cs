@@ -1,4 +1,4 @@
-namespace PoMode.API.Infrastructure;
+namespace PoMode.Api.Infrastructure;
 
 /// <summary>
 /// Downloads <see cref="ModelCatalog"/> models sequentially in the background after the host has

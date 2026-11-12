@@ -1,10 +1,10 @@
-using PoMode.API.Audio;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Infrastructure;
 using PoMode.Shared.Analysis;
 using Whisper.net;
 
-namespace PoMode.API.Features.Lyrics;
+namespace PoMode.Api.Features.Lyrics;
 
 /// <summary>
 /// The words of a song, read off its separated vocal by Whisper (base.en, through Whisper.net), and

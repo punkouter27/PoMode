@@ -42,6 +42,7 @@ public class CanvasTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await (await browser.NewContextAsync()).NewPageAsync();
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         var canvas = await UploadAndGetCanvasAsync(page, app.BaseUrl);
 
@@ -70,6 +71,7 @@ public class CanvasTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await (await browser.NewContextAsync()).NewPageAsync();
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         var canvas = await UploadAndGetCanvasAsync(page, app.BaseUrl);
         Assert.Equal(0.0, await PlayheadAsync(canvas), precision: 3);
@@ -96,11 +98,11 @@ public class CanvasTests(AppFixture app)
 
     private static async Task<(double Start, double End, double Span)> SpanAsync(ILocator canvas)
     {
-        var start = double.Parse(await canvas.GetAttributeAsync("data-view-start") ?? "0");
-        var end = double.Parse(await canvas.GetAttributeAsync("data-view-end") ?? "0");
+        var start = double.Parse(await canvas.GetAttributeAsync("data-view-start") ?? "0", System.Globalization.CultureInfo.InvariantCulture);
+        var end = double.Parse(await canvas.GetAttributeAsync("data-view-end") ?? "0", System.Globalization.CultureInfo.InvariantCulture);
         return (start, end, end - start);
     }
 
     private static async Task<double> PlayheadAsync(ILocator canvas)
-        => double.Parse(await canvas.GetAttributeAsync("data-playhead") ?? "0");
+        => double.Parse(await canvas.GetAttributeAsync("data-playhead") ?? "0", System.Globalization.CultureInfo.InvariantCulture);
 }

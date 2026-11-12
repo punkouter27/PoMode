@@ -1,5 +1,5 @@
 using Xunit;
-using PoMode.API.Pipeline;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
 namespace PoMode.Unit.Pipeline;

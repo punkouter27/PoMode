@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using PoMode.API.Features.PitchTracking;
-using PoMode.API.Infrastructure;
-using PoMode.API.Pipeline;
+using PoMode.Api.Features.PitchTracking;
+using PoMode.Api.Infrastructure;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 using PoMode.TestCommon;
 using Xunit;

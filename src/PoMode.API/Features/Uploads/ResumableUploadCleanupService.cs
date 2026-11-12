@@ -1,4 +1,4 @@
-namespace PoMode.API.Features.Uploads;
+namespace PoMode.Api.Features.Uploads;
 
 /// <summary>Hourly sweep of abandoned partial uploads. A phone that lost signal and never came back
 /// leaves up to 100 MB behind; the sliding expiry decides when it counts as abandoned.</summary>

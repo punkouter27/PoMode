@@ -1,7 +1,7 @@
-using PoMode.API.Pipeline;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>
 /// The one path from "validated audio stream" to "queued job": persist, plan, enqueue.

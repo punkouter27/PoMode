@@ -1,9 +1,9 @@
-using PoMode.API.Features.Analysis;
-using PoMode.API.Audio;
-using PoMode.API.Pipeline;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Audio;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ModalAnalysis;
+namespace PoMode.Api.Features.ModalAnalysis;
 
 /// <summary>Stage 4: reads notes.json + chords.json, runs the deterministic engine, writes result.json.</summary>
 public sealed class ArtifactModalAnalyzer(JobStore store, ILogger<ArtifactModalAnalyzer> logger)

@@ -2,10 +2,10 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using PoMode.API.Features.SongStatistics;
+using PoMode.Api.Features.SongStatistics;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ModalMelodies;
+namespace PoMode.Api.Features.ModalMelodies;
 
 /// <summary>
 /// The Mode Lab set by describing what you want to hear: "darker and slower", "more Phrygian",
@@ -199,7 +199,7 @@ public sealed partial class ModeLabDescriber(IEnumerable<ISongInterpreter> inter
     }
 
     private static int Count(string text, string alternatives)
-        => Regex.Matches(text, $@"\b({alternatives})\b").Count;
+        => Regex.Count(text, $@"\b({alternatives})\b");
 
     private static int? PitchClassOf(string name)
     {

@@ -64,7 +64,7 @@ public sealed class SongStatsInterpretationTests : IDisposable
         {
             var poll = await client.GetFromJsonAsync<JobStatusDto>($"/api/analysis/{status.JobId}");
             if (poll is { Stage: JobStage.Complete }) return status.JobId;
-            if (poll is { Stage: JobStage.Failed }) throw new Exception($"Job failed: {poll.Error}");
+            if (poll is { Stage: JobStage.Failed }) throw new InvalidOperationException($"Job failed: {poll.Error}");
             await Task.Delay(200);
         }
 

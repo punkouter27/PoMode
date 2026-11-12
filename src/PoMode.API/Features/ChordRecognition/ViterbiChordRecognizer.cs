@@ -1,8 +1,8 @@
-using PoMode.API.Audio;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ChordRecognition;
+namespace PoMode.Api.Features.ChordRecognition;
 
 /// <summary>
 /// The free alternative chord recognizer: the same chroma front end as

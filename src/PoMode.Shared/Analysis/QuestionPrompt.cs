@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace PoMode.Shared.Analysis;
@@ -88,8 +89,8 @@ public static class QuestionPrompt
             text.AppendLine("The conversation so far:");
             foreach (var turn in recent)
             {
-                text.AppendLine($"Q: {Clean(turn.Question)}");
-                text.AppendLine($"A: {Clean(turn.Answer)}");
+                text.AppendLine(CultureInfo.InvariantCulture, $"Q: {Clean(turn.Question)}");
+                text.AppendLine(CultureInfo.InvariantCulture, $"A: {Clean(turn.Answer)}");
             }
         }
 

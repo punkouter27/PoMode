@@ -8,8 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```powershell
 docker compose up -d                     # one shared Azurite (blob emulator) for all PoMode* repos
-dotnet build                             # builds PoMode.slnx (kill any running PoMode.API first — it locks DLLs)
-dotnet run --project src/PoMode.API      # serves API + Blazor client at http://localhost:5000 / https://localhost:5001
+dotnet build                             # builds PoMode.slnx (kill any running PoMode.Api first — it locks DLLs)
+dotnet run --project src/PoMode.Api      # serves API + Blazor client at http://localhost:5000 / https://localhost:5001
 dotnet test tests/PoMode.Unit            # pure business logic, fast
 dotnet test tests/PoMode.Integration     # needs Azurite running
 dotnet test tests/PoMode.E2EAPI          # HTTP contract tests (in-process app)
@@ -48,7 +48,7 @@ These override any default instinct. Where one contradicts a habit, the rule win
 ### Verifying a change
 
 - **Build, restart, then check the restart actually worked.** After a code change: `dotnet build`,
-  then restart `PoMode.API` and confirm it came up — `/health/ready` answering is the check, not the
+  then restart `PoMode.Api` and confirm it came up — `/health/ready` answering is the check, not the
   absence of a crash in the first second. Kill any running instance before building; it locks the DLLs.
 - **Run only the tests that cover what you changed**, with `--filter`. Never the whole suite, and
   never all four suites — a full run costs minutes on every edit and tells you almost nothing about a
@@ -98,7 +98,7 @@ These override any default instinct. Where one contradicts a habit, the rule win
 
 ## Architecture
 
-One process: `PoMode.API` hosts the Blazor WASM client (`PoMode.Client`), the REST endpoints, a SignalR
+One process: `PoMode.Api` hosts the Blazor WASM client (`PoMode.Client`), the REST endpoints, a SignalR
 hub (`/hubs/analysis`) and the background analysis worker; `PoMode.Shared` holds the DTOs, the
 source-generated `PoModeJsonContext` and the few pure lookups both sides need. The rest is in `docs/`:
 

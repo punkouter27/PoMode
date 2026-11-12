@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.ChordRecognition;
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Features.PitchTracking;
-using PoMode.API.Features.Separation;
-using PoMode.API.Pipeline;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.ChordRecognition;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Features.PitchTracking;
+using PoMode.Api.Features.Separation;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 using PoMode.TestCommon;
 

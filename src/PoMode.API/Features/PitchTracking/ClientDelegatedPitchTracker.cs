@@ -1,8 +1,8 @@
-using PoMode.API.Features.Analysis;
-using PoMode.API.Pipeline;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.PitchTracking;
+namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
 /// Tier 2 (spec §4): hands pitch tracking to the user's browser. Free, and the audio never leaves the

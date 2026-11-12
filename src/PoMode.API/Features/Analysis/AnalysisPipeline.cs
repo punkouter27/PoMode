@@ -1,8 +1,8 @@
-using PoMode.API.Audio;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>Runs the 4-stage pipeline for one job: restart-safe, tier-fallback on failure, cancellable.</summary>
 public sealed class AnalysisPipeline(

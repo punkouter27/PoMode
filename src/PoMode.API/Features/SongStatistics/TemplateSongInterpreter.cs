@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongStatistics;
+namespace PoMode.Api.Features.SongStatistics;
 
 /// <summary>
 /// The no-model interpreter: expands the computed statistics into prose with fixed rules. Always

@@ -2,7 +2,7 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Playwright;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Infrastructure;
 using PoMode.Shared.Analysis;
 using PoMode.TestCommon;
 using Xunit;
@@ -84,6 +84,7 @@ public class ClientDelegatedFlowTests(ClientDelegatedAppFixture app)
 {
     /// <summary>Model download + first WASM inference in a cold browser can be slow; be generous.</summary>
     private const float FlowTimeoutMs = 180000f;
+    private static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);
 
     [Fact]
     public async Task The_browser_transcribes_the_vocals_and_the_job_completes_on_the_client_tier()
@@ -91,6 +92,7 @@ public class ClientDelegatedFlowTests(ClientDelegatedAppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await (await browser.NewContextAsync()).NewPageAsync();
+        await using var guard = PlaywrightErrorGuard.Watch(page);
         // The worker module deliberately swallows its own errors (the server timeout owns failure
         // handling), so the console is the only witness when delegation breaks — collect it.
         var console = new List<string>();
@@ -120,7 +122,7 @@ public class ClientDelegatedFlowTests(ClientDelegatedAppFixture app)
             // The upload itself must have declared the capability, or the plan below proves nothing.
             Assert.Contains("clientCanInfer=true", uploadResponse.Url);
             var status = JsonSerializer.Deserialize<JobStatusDto>(
-                await uploadResponse.TextAsync(), new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                await uploadResponse.TextAsync(), WebJson);
             Assert.NotNull(status);
             jobId = status.JobId;
 

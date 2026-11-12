@@ -15,19 +15,19 @@ namespace PoMode.Client.Services;
 /// </summary>
 public sealed class BrowserPrefs(IJSRuntime js)
 {
-    public const string LibraryFiltersKey = "pm-library-filters";
-    public const string ExecutorPinsKey = "pm-executor-pins";
-    public const string PracticeBackingKey = "pm-practice-backing";
-    public const string InterpreterKey = "pm-interpreter";
-    public const string SavedJamsKey = "pm-jam-saved";
-    public const string JamSettingsKey = "pm-jam-settings";
-    public const string JamPresetsKey = "pm-jam-presets";
+    public const string LibraryFiltersKey = "pomode:library-filters";
+    public const string ExecutorPinsKey = "pomode:executor-pins";
+    public const string PracticeBackingKey = "pomode:practice-backing";
+    public const string InterpreterKey = "pomode:interpreter";
+    public const string SavedJamsKey = "pomode:jam-saved";
+    public const string JamSettingsKey = "pomode:jam-settings";
+    public const string JamPresetsKey = "pomode:jam-presets";
     /// <summary>"off" once the jam's bass line has been muted; absent means on.</summary>
-    public const string JamBassKey = "pm-jam-bass";
+    public const string JamBassKey = "pomode:jam-bass";
     /// <summary>How far, in ms, a sung take is moved earlier to undo this device's headphone and mic delay.</summary>
-    public const string VoiceTimingKey = "pm-voice-timing";
+    public const string VoiceTimingKey = "pomode:voice-timing";
     /// <summary>Set once the singer has measured, set or waved off the voice timing, so it is offered once.</summary>
-    public const string VoiceTimingAskedKey = "pm-voice-timing-asked";
+    public const string VoiceTimingAskedKey = "pomode:voice-timing-asked";
 
     public async Task<T?> GetAsync<T>(string key, JsonTypeInfo<T> type)
     {

@@ -1,11 +1,11 @@
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using PoMode.API.Audio;
-using PoMode.API.Infrastructure;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Infrastructure;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.PitchTracking;
+namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
 /// Real note detection via the Spotify Basic Pitch ONNX model on the CPU execution provider
@@ -14,7 +14,7 @@ namespace PoMode.API.Features.PitchTracking;
 /// <see cref="ExecutionPlanner"/> when the model has not been downloaded yet.
 /// </summary>
 public sealed class OnnxPitchTracker(ModelRegistry registry, ILogger<OnnxPitchTracker> logger)
-    : IPitchTracker, IFileTranscriber
+    : IPitchTracker, IFileTranscriber, IDisposable
 {
     /// <summary>Basic Pitch's audio front end always expects 22.05 kHz mono (not exposed via ONNX metadata).</summary>
     private const int TargetSampleRate = 22050;
@@ -211,6 +211,15 @@ public sealed class OnnxPitchTracker(ModelRegistry registry, ILogger<OnnxPitchTr
                 _sessionModelKey = key;
             }
             return _session;
+        }
+    }
+
+    public void Dispose()
+    {
+        lock (_sessionGate)
+        {
+            _session?.Dispose();
+            _session = null;
         }
     }
 }

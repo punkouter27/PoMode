@@ -1,10 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Account;
 
-namespace PoMode.API.Features.Push;
+namespace PoMode.Api.Features.Push;
 
 /// <summary>One browser's subscription, as stored.</summary>
 public sealed record StoredPushSubscription(string Endpoint, string P256dh, string Auth, DateTimeOffset CreatedAt);
@@ -18,7 +18,7 @@ public sealed record StoredPushSubscription(string Endpoint, string P256dh, stri
 /// <para>Files are named by a hash of the owner id: ids carry a colon ("guest:…", "ms:…") that no
 /// Windows file name may contain, and the hash keeps account ids out of blob names besides.</para>
 /// </summary>
-public sealed class PushSubscriptionStore(JobStore jobs, TimeProvider time, JobBlobStorage? blobs = null)
+public sealed class PushSubscriptionStore(JobStore jobs, TimeProvider time, JobBlobStorage? blobs = null) : IDisposable
 {
     /// <summary>The blob "folder" these files mirror into. Not a job id, so no job purge touches it.</summary>
     private const string BlobPrefix = "push-subscriptions";
@@ -153,4 +153,6 @@ public sealed class PushSubscriptionStore(JobStore jobs, TimeProvider time, JobB
             await blobs.MirrorFileAsync(BlobPrefix, fileName, path, ct);
         }
     }
+
+    public void Dispose() => _gate.Dispose();
 }

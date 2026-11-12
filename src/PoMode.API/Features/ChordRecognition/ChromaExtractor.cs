@@ -1,7 +1,7 @@
 using System.Numerics;
-using PoMode.API.Audio;
+using PoMode.Api.Audio;
 
-namespace PoMode.API.Features.ChordRecognition;
+namespace PoMode.Api.Features.ChordRecognition;
 
 /// <summary>A sequence of 12-bin chroma vectors sampled at a fixed hop rate.</summary>
 public sealed record ChromaGram(float[][] Frames, double FramesPerSecond);

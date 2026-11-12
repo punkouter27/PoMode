@@ -1,10 +1,10 @@
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Features.SongStatistics;
-using PoMode.API.Features.VoiceProfile;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Features.SongStatistics;
+using PoMode.Api.Features.VoiceProfile;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ModalMelodies;
+namespace PoMode.Api.Features.ModalMelodies;
 
 /// <summary>
 /// What a singer's earlier hum takes say, read back to them: which modes their melodies came out in

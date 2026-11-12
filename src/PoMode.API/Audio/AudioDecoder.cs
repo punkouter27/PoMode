@@ -1,9 +1,9 @@
 using NAudio.Wave;
 using NLayer.NAudioSupport;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Infrastructure;
 
-namespace PoMode.API.Audio;
+namespace PoMode.Api.Audio;
 
 /// <summary>Decodes uploads to normalised float PCM. Format is sniffed from content, never the extension.</summary>
 public static class AudioDecoder

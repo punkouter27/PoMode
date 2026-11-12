@@ -1,15 +1,15 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Text;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.Auth;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.Auth;
 using PoMode.Shared.Analysis;
 using tusdotnet.Models;
 using tusdotnet.Models.Configuration;
 using tusdotnet.Models.Expiration;
 using tusdotnet.Stores;
 
-namespace PoMode.API.Features.Uploads;
+namespace PoMode.Api.Features.Uploads;
 
 /// <summary>What handing a finished upload to the analyzer came to.</summary>
 public abstract record UploadHandoff

@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Infrastructure;
 using PoMode.Shared.Account;
 
-namespace PoMode.API.Features.Auth;
+namespace PoMode.Api.Features.Auth;
 
 /// <summary>Whether Microsoft sign-in is wired on this server. Guest sign-in always is.</summary>
 public sealed record PoAuthOptions(bool MicrosoftAvailable);

@@ -1,4 +1,4 @@
-using PoMode.API.Features.VoiceProfile;
+using PoMode.Api.Features.VoiceProfile;
 using PoMode.Shared.Analysis;
 using Xunit;
 

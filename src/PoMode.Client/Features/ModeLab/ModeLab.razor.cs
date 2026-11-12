@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Radzen;
-using PoMode.Client.Components.ModeLab;
+using PoMode.Client.Features.ModeLab;
 using PoMode.Client.Services;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.Client.Pages;
+namespace PoMode.Client.Features.ModeLab;
 
 public partial class ModeLab
 {
@@ -32,7 +32,7 @@ public partial class ModeLab
     }
 
     private List<ChordProgressionDefinition> _progressions = [];
-    private int _selectedTonic = 0; // C
+    private int _selectedTonic; // C
     private string _selectedProgressionId = "pop-axis";
     private ScaleMode _selectedMode = ScaleMode.Ionian;
     private MelodyStyle _selectedStyle = MelodyStyle.Lyrical;
@@ -628,6 +628,7 @@ public partial class ModeLab
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         try
         {
             if (_drums is not null)

@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.PitchTracking;
+namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
 /// Converts Basic Pitch's raw onset/frame posterior arrays into discrete <see cref="NoteEvent"/>s.

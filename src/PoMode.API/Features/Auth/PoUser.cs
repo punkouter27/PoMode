@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using PoMode.Shared.Account;
 
-namespace PoMode.API.Features.Auth;
+namespace PoMode.Api.Features.Auth;
 
 /// <summary>
 /// "Who is calling?" in one place. Every sign-in path stamps the same two claims — a guest cookie

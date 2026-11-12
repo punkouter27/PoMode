@@ -1,8 +1,8 @@
 using System.Globalization;
-using PoMode.API.Features.ChordRecognition;
+using PoMode.Api.Features.ChordRecognition;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ModalAnalysis;
+namespace PoMode.Api.Features.ModalAnalysis;
 
 /// <summary>
 /// Answers "why this mode?" for a finished analysis: which tone separates the primary mode from the

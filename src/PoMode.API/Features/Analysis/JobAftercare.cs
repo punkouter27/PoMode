@@ -1,11 +1,11 @@
 using System.Threading.Channels;
-using PoMode.API.Audio;
-using PoMode.API.Features.Lyrics;
-using PoMode.API.Features.SongIdentity;
-using PoMode.API.Features.SongStatistics;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.Lyrics;
+using PoMode.Api.Features.SongIdentity;
+using PoMode.Api.Features.SongStatistics;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>
 /// Work worth doing for a finished song before anyone asks for it, so opening it is instant: the

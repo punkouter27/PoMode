@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 public sealed class JobCancellationRegistry
 {

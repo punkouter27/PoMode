@@ -6,14 +6,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NAudio.MediaFoundation;
 using NAudio.Wave;
-using PoMode.API.Features.BeatTracking;
-using PoMode.API.Features.ChordRecognition;
-using PoMode.API.Features.Demo;
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Features.ModalMelodies;
-using PoMode.API.Features.PitchTracking;
-using PoMode.API.Infrastructure;
-using PoMode.API.Pipeline;
+using PoMode.Api.Features.BeatTracking;
+using PoMode.Api.Features.ChordRecognition;
+using PoMode.Api.Features.Demo;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Features.ModalMelodies;
+using PoMode.Api.Features.PitchTracking;
+using PoMode.Api.Infrastructure;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 using PoMode.TestCommon;
 using Xunit;
@@ -320,7 +320,7 @@ public sealed class ModelAccuracyReportTests : IDisposable
         var services = new ServiceCollection();
         services.AddHttpClient();
         var provider = services.BuildServiceProvider();
-        var apiBin = Path.Combine(TestPaths.RepoRoot(), "src", "PoMode.API", "bin");
+        var apiBin = Path.Combine(TestPaths.RepoRoot(), "src", "PoMode.Api", "bin");
         var appModels = Directory.Exists(apiBin)
             ? Directory.GetDirectories(apiBin, "models", SearchOption.AllDirectories)
                 .FirstOrDefault(dir => File.Exists(Path.Combine(dir, ModelCatalog.BasicPitch.FileName)))
@@ -340,10 +340,10 @@ public sealed class ModelAccuracyReportTests : IDisposable
     /// with the pad mixed in 18 dB down as separation bleed.</summary>
     private static byte[] SungStem()
     {
-        var voice = PoMode.API.Audio.AudioDecoder.Decode(WriteTemp(TestAudio.MakeSungLine(
+        var voice = PoMode.Api.Audio.AudioDecoder.Decode(WriteTemp(TestAudio.MakeSungLine(
             SongSeconds, [.. TruthMelody.Select(n => (n.Midi, n.StartSec, TruthNoteSeconds))],
             noiseLevel: 0.01, sampleRate: SampleRate)));
-        var pad = PoMode.API.Audio.AudioDecoder.Decode(WriteTemp(TestAudio.MakeSong(SongSeconds,
+        var pad = PoMode.Api.Audio.AudioDecoder.Decode(WriteTemp(TestAudio.MakeSong(SongSeconds,
             [.. TruthChords.SelectMany(c => c.PadMidis.Select(m => (m, c.StartSec, c.EndSec - c.StartSec, 1.0)))],
             SampleRate)));
         var bleed = Math.Pow(10, -18 / 20.0);
@@ -514,7 +514,7 @@ public sealed class ModelAccuracyReportTests : IDisposable
         Directory.CreateDirectory(jobDir);
         var context = new StageContext("real", jobDir, path);
 
-        var decoded = PoMode.API.Audio.AudioDecoder.Decode(path);
+        var decoded = PoMode.Api.Audio.AudioDecoder.Decode(path);
         var duration = decoded.DurationSeconds;
 
         // One chord run feeds the modal engine for every tracker, so the reported keys differ only
@@ -535,7 +535,7 @@ public sealed class ModelAccuracyReportTests : IDisposable
             stopwatch.Stop();
             first ??= notes;
 
-            var modal = PoMode.API.Features.ModalAnalysis.ModalAnalysisEngine.Analyze(notes, chromaChords);
+            var modal = PoMode.Api.Features.ModalAnalysis.ModalAnalysisEngine.Analyze(notes, chromaChords);
             var range = notes.Count == 0
                 ? "—"
                 : $"{PitchLabel(notes.Min(n => n.MidiPitch))}–{PitchLabel(notes.Max(n => n.MidiPitch))}";

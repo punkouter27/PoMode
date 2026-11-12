@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ChordJams;
+namespace PoMode.Api.Features.ChordJams;
 
 /// <summary>
 /// A bass line under a written jam, one style per section. Most sections hold the ground: the root
@@ -153,12 +153,14 @@ public static class JamBass
     /// <summary>The chord's third above the bass root (major or minor as the chord sounds it, the fourth
     /// for a sus chord, the fifth for a power chord), and one colour note above the triad if it has one
     /// (a seventh, a ninth, a sixth), in the octave above the root.</summary>
+    private static readonly int[] ColourPriority = [10, 11, 2, 9, 6];
+
     private static (int Third, int? Colour) Tones(JamChordDto chord, int root)
     {
         var rootPc = RootPc(chord.Symbol);
         var intervals = chord.Midi.Select(midi => ((midi % 12) - rootPc + 12) % 12).ToHashSet();
         var third = intervals.Contains(4) ? 4 : intervals.Contains(3) ? 3 : intervals.Contains(5) ? 5 : intervals.Contains(2) ? 2 : 7;
-        int? colour = new[] { 10, 11, 2, 9, 6 }.Where(intervals.Contains).Select(i => (int?)i).FirstOrDefault();
+        int? colour = ColourPriority.Where(intervals.Contains).Select(i => (int?)i).FirstOrDefault();
         var shift = (rootPc - (root % 12) + 12) % 12; // the root's offset when a slash bass stands under it
         return (root + shift + third, colour is { } c ? root + shift + c + (c < third ? 12 : 0) : null);
     }

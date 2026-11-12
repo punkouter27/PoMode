@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Pipeline;
+namespace PoMode.Api.Pipeline;
 
 /// <summary>Per-job stage inputs. <paramref name="OnProgress"/> is an optional 0..1 in-stage
 /// progress hint for long stages (stem separation); executors may ignore it.</summary>

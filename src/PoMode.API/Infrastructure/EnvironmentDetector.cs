@@ -1,4 +1,4 @@
-namespace PoMode.API.Infrastructure;
+namespace PoMode.Api.Infrastructure;
 
 public static class EnvironmentDetector
 {

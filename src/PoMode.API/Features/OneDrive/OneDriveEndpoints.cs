@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Graph;
 using Microsoft.Identity.Web;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.Auth;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.Auth;
 using PoMode.Shared.Account;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.OneDrive;
+namespace PoMode.Api.Features.OneDrive;
 
 /// <summary>
 /// Songs from the person's own OneDrive, for someone signed in with Microsoft: a list of the audio

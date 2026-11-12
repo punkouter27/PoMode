@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongStructure;
+namespace PoMode.Api.Features.SongStructure;
 
 public static class SongStructureEndpoints
 {

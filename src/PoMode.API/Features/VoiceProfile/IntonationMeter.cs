@@ -1,8 +1,8 @@
-using PoMode.API.Audio;
-using PoMode.API.Features.PitchTracking;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.PitchTracking;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.VoiceProfile;
+namespace PoMode.Api.Features.VoiceProfile;
 
 /// <summary>
 /// How well each transcribed note was actually sung. notes.json keeps whole semitones — right for a

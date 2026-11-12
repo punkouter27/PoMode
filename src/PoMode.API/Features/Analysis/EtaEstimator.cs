@@ -1,7 +1,7 @@
-using PoMode.API.Audio;
+using PoMode.Api.Audio;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>
 /// How long a running analysis has left, from how long the same executors took on earlier songs on
@@ -10,7 +10,7 @@ namespace PoMode.API.Features.Analysis;
 /// length, less what the current stage has already spent. When any remaining executor has never been
 /// timed here there is no estimate: a guess would be a figure the server did not measure.
 /// </summary>
-public sealed class EtaEstimator(JobStore store, TimeProvider time)
+public sealed class EtaEstimator(JobStore store, TimeProvider time) : IDisposable
 {
     /// <summary>The samples are re-read at most this often; a new song's stages join after that.</summary>
     private static readonly TimeSpan Refresh = TimeSpan.FromMinutes(5);
@@ -92,4 +92,6 @@ public sealed class EtaEstimator(JobStore store, TimeProvider time)
         var middle = values.Count / 2;
         return values.Count % 2 == 1 ? values[middle] : (values[middle - 1] + values[middle]) / 2;
     }
+
+    public void Dispose() => _gate.Dispose();
 }

@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ChordShapes;
+namespace PoMode.Api.Features.ChordShapes;
 
 /// <summary>
 /// Which chords a song asks a guitarist for, and the capo that turns most of its playing time into

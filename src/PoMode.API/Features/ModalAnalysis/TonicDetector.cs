@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ModalAnalysis;
+namespace PoMode.Api.Features.ModalAnalysis;
 
 public sealed record TonicEstimate(int PitchClass, double Confidence);
 

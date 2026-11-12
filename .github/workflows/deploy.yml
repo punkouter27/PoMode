@@ -21,7 +21,7 @@ env:
   DOTNET_VERSION: '10.0.x'
   AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
   AZURE_WEBAPP_URL: https://${{ vars.AZURE_WEBAPP_NAME }}.azurewebsites.net
-  API_PROJECT_PATH: src/PoMode.API/PoMode.API.csproj
+  API_PROJECT_PATH: src/PoMode.Api/PoMode.Api.csproj
   BICEP_VERSION: v0.30.23
 
 jobs:

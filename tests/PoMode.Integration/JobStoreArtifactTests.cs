@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Configuration;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 using PoMode.TestCommon;
 using Xunit;
@@ -20,7 +20,7 @@ public sealed class JobStoreArtifactTests : IDisposable
         if (Directory.Exists(_root)) Directory.Delete(_root, recursive: true);
     }
 
-    private async Task<string> NewJobAsync(JobStore store)
+    private static async Task<string> NewJobAsync(JobStore store)
     {
         using var content = new MemoryStream(TestAudio.MakeWav());
         return (await store.CreateAsync("song.wav", content, CancellationToken.None)).JobId;

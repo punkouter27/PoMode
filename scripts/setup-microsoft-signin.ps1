@@ -11,7 +11,7 @@
     declared on the registration for that consent prompt to be allowed.
 
     Writes:
-      - the registration's client id into src/PoMode.API/appsettings.json (PoMode:AzureAd:ClientId)
+      - the registration's client id into src/PoMode.Api/appsettings.json (PoMode:AzureAd:ClientId)
       - a client secret into Key Vault as PoMode--AzureAd--ClientSecret (never into a file)
 
     Needs: az CLI signed in with rights to create app registrations and set Key Vault secrets.
@@ -66,7 +66,7 @@ if ($RotateSecret -or -not $hasSecret) {
 }
 
 # The client id is not a secret: it goes in appsettings, where PoAuth reads it.
-$settingsPath = Join-Path $PSScriptRoot '..' 'src' 'PoMode.API' 'appsettings.json'
+$settingsPath = Join-Path $PSScriptRoot '..' 'src' 'PoMode.Api' 'appsettings.json'
 $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json -AsHashtable
 if (-not $settings.ContainsKey('PoMode')) { $settings['PoMode'] = @{} }
 if (-not $settings['PoMode'].ContainsKey('AzureAd')) { $settings['PoMode']['AzureAd'] = [ordered]@{} }

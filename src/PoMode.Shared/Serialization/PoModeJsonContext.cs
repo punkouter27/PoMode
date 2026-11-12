@@ -3,11 +3,13 @@ using PoMode.Shared.Account;
 using PoMode.Shared.Analysis;
 using PoMode.Shared.Diagnostics;
 using PoMode.Shared.Hardware;
+using PoMode.Shared.Validation;
 
 namespace PoMode.Shared.Serialization;
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(DiagnosticsReport))]
+[JsonSerializable(typeof(ProblemDetailsDto))]
 [JsonSerializable(typeof(SessionDto))]
 [JsonSerializable(typeof(PushConfigDto))]
 [JsonSerializable(typeof(PushSubscriptionDto))]

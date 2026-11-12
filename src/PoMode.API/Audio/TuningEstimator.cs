@@ -1,8 +1,8 @@
 using System.Numerics;
-using PoMode.API.Features.ChordRecognition;
+using PoMode.Api.Features.ChordRecognition;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Audio;
+namespace PoMode.Api.Audio;
 
 /// <summary>
 /// How far a recording sits from concert A=440, in cents, with a measure of how much the evidence

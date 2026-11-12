@@ -1,5 +1,5 @@
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Features.ModalMelodies;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Features.ModalMelodies;
 using PoMode.Shared.Analysis;
 using Xunit;
 
@@ -7,6 +7,7 @@ namespace PoMode.Unit.ModalAnalysis;
 
 public sealed class ModalMelodyGeneratorTests
 {
+    private static readonly int[] CMajorPitchClasses = [0, 2, 4, 5, 7, 9, 11];
     private readonly ModalMelodyGenerator _generator = new();
 
     [Fact]
@@ -37,7 +38,7 @@ public sealed class ModalMelodyGeneratorTests
             Assert.NotEmpty(result.Chords);
             Assert.True(result.ModePercentage is >= 50.0 and <= 100.0);
 
-            var allowedPitchClasses = new[] { 0, 2, 4, 5, 7, 9, 11 }.ToHashSet();
+            var allowedPitchClasses = CMajorPitchClasses.ToHashSet();
             foreach (var note in result.MelodyNotes)
             {
                 var pitchClass = ((note.MidiPitch % 12) + 12) % 12;

@@ -8,7 +8,7 @@ namespace PoMode.Client.Services;
 /// </summary>
 public sealed class FeatureFlags(BrowserPrefs prefs)
 {
-    public const string Key = "pm-advanced-tools";
+    public const string Key = "pomode:advanced-tools";
 
     private Task? _load;
 

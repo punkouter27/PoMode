@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using tusdotnet.Interfaces;
 
-namespace PoMode.API.Features.Uploads;
+namespace PoMode.Api.Features.Uploads;
 
 /// <summary>
 /// Upload ids that carry their owner: 16 hex characters of a hash of the owner id, then 32 random

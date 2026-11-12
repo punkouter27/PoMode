@@ -2,8 +2,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
-using PoMode.API.Features.Diagnostics;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Features.Diagnostics;
+using PoMode.Api.Infrastructure;
 
 namespace PoMode.Integration;
 

@@ -1,8 +1,8 @@
-using PoMode.API.Audio;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.PitchTracking;
+namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
 /// The free classic-DSP pitch tracker: <see cref="YinMelodyTranscriber"/> behind the

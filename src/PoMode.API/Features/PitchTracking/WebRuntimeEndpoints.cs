@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Infrastructure;
 
-namespace PoMode.API.Features.PitchTracking;
+namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
 /// Serves the browser inference runtime (onnxruntime-web + the Basic Pitch model) from our own

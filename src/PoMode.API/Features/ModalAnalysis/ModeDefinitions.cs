@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ModalAnalysis;
+namespace PoMode.Api.Features.ModalAnalysis;
 
 /// <summary>
 /// The modal engine's scoring data: characteristic-degree weights layered over the interval sets,

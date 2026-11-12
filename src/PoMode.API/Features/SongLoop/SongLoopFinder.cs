@@ -1,8 +1,8 @@
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Features.SongStructure;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Features.SongStructure;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongLoop;
+namespace PoMode.Api.Features.SongLoop;
 
 /// <summary>
 /// The chord cycle a song comes back to most, one chord per bar, so the Mode Lab and Practice can play

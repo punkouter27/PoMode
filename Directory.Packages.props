@@ -27,7 +27,9 @@
     <PackageVersion Include="NAudio" Version="3.0.0" />
     <PackageVersion Include="NAudio.Wasapi" Version="3.3.0" />
     <PackageVersion Include="NLayer.NAudioSupport" Version="3.0.0" />
-    <PackageVersion Include="Radzen.Blazor" Version="11.5.1" />
+    <PackageVersion Include="Radzen.Blazor" Version="12.1.12" />
+    <PackageVersion Include="FluentValidation" Version="11.12.0" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.12.0" />
     <!-- Pinned transitively: Microsoft.Identity.Web drags 10.0.7 of both, which have published advisories, into
          the non-web test projects (the web SDK prunes it from the API itself). -->
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />

@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.Auth;
-using PoMode.API.Features.Demo;
-using PoMode.API.Features.SoundSearch;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.Auth;
+using PoMode.Api.Features.Demo;
+using PoMode.Api.Features.SoundSearch;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Library;
+namespace PoMode.Api.Features.Library;
 
 public static class LibraryEndpoints
 {

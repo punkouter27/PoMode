@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 
-namespace PoMode.API.Infrastructure;
+namespace PoMode.Api.Infrastructure;
 
 /// <summary>Verifies the job artifact root is writable and reports the blob mirror's reachability.</summary>
 public sealed class JobStorageHealthCheck(JobStore store, JobBlobStorage? blobs = null) : IHealthCheck

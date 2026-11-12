@@ -1,12 +1,12 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.Auth;
-using PoMode.API.Features.ModalMelodies;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.Auth;
+using PoMode.Api.Features.ModalMelodies;
 using PoMode.Shared.Analysis;
 using PoMode.Shared.Serialization;
 
-namespace PoMode.API.Features.ChordJams;
+namespace PoMode.Api.Features.ChordJams;
 
 /// <summary><c>GET /api/chord-jams/random</c>: Practice's Guitar jam tab, a song to play.
 /// <c>POST /api/chord-jams/take</c>: a take sung over one, queued for analysis against its chords.</summary>
@@ -38,10 +38,11 @@ public static class ChordJamEndpoints
             {
                 return TypedResults.BadRequest("No recording uploaded.");
             }
-            if (form.Files.FirstOrDefault() is not { } file)
+            if (form.Files.Count == 0)
             {
                 return TypedResults.BadRequest("No recording uploaded.");
             }
+            var file = form.Files[0];
             if (await AudioFormatValidator.ValidateAsync(file, ct) is { } rejection)
             {
                 return TypedResults.BadRequest(rejection == UploadRejection.TooLarge

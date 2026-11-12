@@ -3,7 +3,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\PoMode.API\PoMode.API.csproj" />
+    <ProjectReference Include="..\..\src\PoMode.Api\PoMode.Api.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />

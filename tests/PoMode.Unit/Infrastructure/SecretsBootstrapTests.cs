@@ -1,4 +1,4 @@
-using PoMode.API.Infrastructure;
+using PoMode.Api.Infrastructure;
 using Xunit;
 
 namespace PoMode.Unit.Infrastructure;
@@ -10,11 +10,11 @@ public class SecretsBootstrapTests
     {
         // No vault uri means environment variables without fallback flag
         {
-            var infoNull = SecretsBootstrap.Decide(null, tryConnectKeyVault: () => throw new Exception("must not be called"));
+            var infoNull = SecretsBootstrap.Decide(null, tryConnectKeyVault: () => throw new InvalidOperationException("must not be called"));
             Assert.Equal(SecretSource.EnvironmentVariables, infoNull.Source);
             Assert.False(infoNull.FellBack);
 
-            var infoBlank = SecretsBootstrap.Decide("   ", tryConnectKeyVault: () => throw new Exception("must not be called"));
+            var infoBlank = SecretsBootstrap.Decide("   ", tryConnectKeyVault: () => throw new InvalidOperationException("must not be called"));
             Assert.Equal(SecretSource.EnvironmentVariables, infoBlank.Source);
             Assert.False(infoBlank.FellBack);
         }

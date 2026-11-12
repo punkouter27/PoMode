@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using System.Net;
-using PoMode.API.Infrastructure;
+using PoMode.Api.Infrastructure;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongLoop;
+namespace PoMode.Api.Features.SongLoop;
 
 /// <summary>
 /// Published songs built on the same chords as a song's loop, from Hooktheory's TheoryTab
@@ -16,7 +16,7 @@ namespace PoMode.API.Features.SongLoop;
 /// ten requests per ten seconds. Each song keeps its TheoryTab link, and the page links back.
 /// The sign-in token lasts about an hour; a 401 signs in again once.
 /// </remarks>
-public sealed class HooktheoryClient(IHttpClientFactory http, IConfiguration configuration, TimeProvider time, ILogger<HooktheoryClient> logger)
+public sealed class HooktheoryClient(IHttpClientFactory http, IConfiguration configuration, TimeProvider time, ILogger<HooktheoryClient> logger) : IDisposable
 {
     public const string HttpClientName = "Hooktheory";
     public static readonly Uri BaseAddress = new("https://api.hooktheory.com/v1/");
@@ -148,4 +148,6 @@ public sealed class HooktheoryClient(IHttpClientFactory http, IConfiguration con
     internal sealed record SignIn(string Username, string Password);
 
     internal sealed record SignedIn(string? Activkey);
+
+    public void Dispose() => _gate.Dispose();
 }

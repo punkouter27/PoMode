@@ -17,9 +17,9 @@
 // subscriber is notified on change so running shaders can downgrade or stop in place rather than
 // waiting for a reload.
 
-const LEVEL_KEY = 'pm-fx';
-const MUTE_KEY = 'pm-fx-muted';
-const SPATIAL_KEY = 'pm-spatial';
+const LEVEL_KEY = 'pomode:fx';
+const MUTE_KEY = 'pomode:fx-muted';
+const SPATIAL_KEY = 'pomode:spatial';
 const LEVELS = ['full', 'subtle', 'off'];
 
 /// Callbacks registered by the effect modules. A Set so a module that subscribes twice (a component

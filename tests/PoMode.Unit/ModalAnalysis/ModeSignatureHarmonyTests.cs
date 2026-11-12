@@ -1,6 +1,6 @@
-using PoMode.API.Features.ChordRecognition;
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Features.ModalMelodies;
+using PoMode.Api.Features.ChordRecognition;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Features.ModalMelodies;
 using PoMode.Shared.Analysis;
 using Xunit;
 

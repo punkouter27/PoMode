@@ -1,8 +1,8 @@
-using PoMode.API.Audio;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ChordJams;
+namespace PoMode.Api.Features.ChordJams;
 
 /// <summary>
 /// Prepares a take sung over a guitar jam song for the normal pipeline, the way

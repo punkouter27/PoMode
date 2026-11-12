@@ -1,5 +1,5 @@
-using PoMode.API.Features.BeatTracking;
-using PoMode.API.Features.ModalAnalysis;
+using PoMode.Api.Features.BeatTracking;
+using PoMode.Api.Features.ModalAnalysis;
 using PoMode.Shared.Analysis;
 using Xunit;
 

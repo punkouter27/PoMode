@@ -1,11 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using PoMode.API.Features.Lyrics;
-using PoMode.API.Features.SongIdentity;
-using PoMode.API.Features.SongLoop;
+using PoMode.Api.Features.Lyrics;
+using PoMode.Api.Features.SongIdentity;
+using PoMode.Api.Features.SongLoop;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Infrastructure;
+namespace PoMode.Api.Infrastructure;
 
 /// <summary>
 /// The shapes of the outside services the server reads (AcoustID, LRCLIB, Hooktheory), generated at

@@ -1,0 +1,324 @@
+/* PoMode Design Tokens & Fonts (Rule 5 & Rule 6) */
+@font-face {
+    font-family: 'Inter';
+    src: url('/_content/Radzen.Blazor/fonts/InterVariable.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Material Symbols Outlined';
+    src: url('/_content/Radzen.Blazor/fonts/MaterialSymbolsOutlined.woff2') format('woff2');
+    font-weight: 100 700;
+    font-style: normal;
+    font-display: block;
+}
+
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 20px;
+    line-height: 1;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+}
+
+:root {
+    color-scheme: light dark;
+    --po-error-border: light-dark(#e5a3a3, #6b2626);
+    --po-error-bg: light-dark(#fff5f5, #2a1414);
+}
+
+/* Theme tokens. Light is the base on :root; dark applies twice — once for the OS preference
+   (guarded so an explicit light choice wins) and once for the explicit data-theme="dark" set by
+   the header's theme toggle (js/theme.js). Never define a colour only inside one of the dark
+   blocks: every token below has its light value on bare :root. */
+:root {
+    --pm-bg: #ffffff;
+    --pm-surface: #f5f5f7;
+    --pm-surface-glass: rgb(245 245 247 / 0.72);
+    --pm-fg: #1a1a1a;
+    --pm-fg-muted: #4c4c57;
+    --pm-border: #d9d9e0;
+    --pm-accent: #6750a4;
+    /* Text on a filled accent ground (primary buttons). */
+    --pm-on-accent: #ffffff;
+    --pm-warn-bg: #b45309;
+    --pm-warn-fg: #ffffff;
+    --pm-shadow: 0 8px 24px rgb(20 20 40 / 0.08);
+
+    /* Hue of the detected key (0-360), set at runtime by the analysis page; 262 matches the
+       neutral accent so nothing changes until a song is analyzed. */
+    --pm-key-hue: 262;
+
+    /* Derived key colours. Every surface that wants to carry the detected key reads one of these
+       rather than rebuilding the hsl() itself, so retuning the tint is one edit and light and dark
+       stay in step. The lightness values differ per theme (see the dark blocks); only the hue is
+       runtime data. */
+    --pm-key: hsl(var(--pm-key-hue) 58% 52%);
+    --pm-key-soft: hsl(var(--pm-key-hue) 58% 52% / 0.14);
+    --pm-key-edge: hsl(var(--pm-key-hue) 62% 58% / 0.42);
+    --pm-key-glow: hsl(var(--pm-key-hue) 70% 60% / 0.28);
+
+    /* Glass. Blur alone bands badly over a gradient and washes out saturated art behind it, so the
+       system is blur + saturate + a specular top edge + a noise veil; each is a token because the
+       reduced-effect levels turn them down rather than off. */
+    --pm-glass-blur: 16px;
+    --pm-glass-sat: 165%;
+    --pm-glass-specular: rgb(255 255 255 / 0.55);
+    --pm-glass-noise: 0.025;
+
+    /* Spacing rhythm: gaps and paddings snap to this 8px-based scale. */
+    --pm-space-1: 0.25rem;
+    --pm-space-2: 0.5rem;
+    --pm-space-3: 1rem;
+    --pm-space-4: 1.5rem;
+
+    /* Type scale. --pm-text-xs is the floor: 12px is the smallest size this app will render text
+       at, because below it the note letters and badge captions stop being readable on a phone and
+       start being decoration. Anything that wants to be smaller shortens its label instead. */
+    --pm-text-xs: 0.75rem;
+    /* The rest of the scale breathes with the viewport and never drops under the floor: a phone gets
+       the low end, a wide desktop the high end, and nothing between them needs its own rule. */
+    --pm-text-sm: clamp(0.75rem, 0.72rem + 0.14vw, 0.84rem);
+    --pm-text-md: clamp(0.8125rem, 0.78rem + 0.18vw, 0.92rem);
+    --pm-text-lg: clamp(1rem, 0.94rem + 0.3vw, 1.2rem);
+    --pm-text-xl: clamp(1.15rem, 1.02rem + 0.6vw, 1.5rem);
+
+    /* A second surface level, for a control sitting on top of --pm-surface. Previously every use
+       site wrote `var(--pm-surface-alt, rgba(255,255,255,0.05))` against a token that was never
+       defined, so the fallback always won — and a white veil is invisible on a light ground. */
+    --pm-surface-alt: #ececf1;
+    --pm-accent-soft: rgb(103 80 164 / 0.12);
+    --pm-font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+    /* Status palette. Each pair is a foreground and the tinted ground it is meant to sit on, chosen
+       so the pair clears 4.5:1 in this theme — a single hardcoded hex cannot, which is how the
+       Mode Lab ended up with 1.8:1 green-on-white transport buttons. */
+    --pm-ok: #14532d;
+    --pm-ok-bg: rgb(34 197 94 / 0.14);
+    --pm-ok-edge: #16a34a;
+    --pm-danger: #7f1d1d;
+    --pm-danger-bg: rgb(239 68 68 / 0.12);
+    --pm-danger-edge: #dc2626;
+    --pm-caution: #713f12;
+    --pm-caution-bg: rgb(234 179 8 / 0.16);
+    --pm-caution-edge: #ca8a04;
+    --pm-info: #0c4a6e;
+    --pm-info-bg: rgb(14 165 233 / 0.14);
+    --pm-info-edge: #0284c7;
+    --pm-hot: #831843;
+    --pm-hot-bg: rgb(236 72 153 / 0.12);
+    --pm-hot-edge: #db2777;
+    --pm-violet: #4c1d95;
+    --pm-violet-bg: rgb(124 58 237 / 0.12);
+    --pm-violet-edge: #7c3aed;
+
+    /* The seven church modes get one colour each, and it has to change with the theme for the same
+       reason the status palette does: these are used as *text* on the mode cards. */
+    --pm-mode-ionian: #92400e;
+    --pm-mode-dorian: #065f46;
+    --pm-mode-phrygian: #991b1b;
+    --pm-mode-lydian: #155e75;
+    --pm-mode-mixolydian: #9a3412;
+    --pm-mode-aeolian: #3730a3;
+    --pm-mode-locrian: #6b21a8;
+
+    /* ErrorBoundary fallback (shared Po convention). */
+    --po-error-border: #b3261e;
+    --po-error-bg: rgb(179 38 30 / 0.08);
+
+    /* Canvas palette. The JS module reads these with getComputedStyle, so the canvas follows
+       light/dark exactly like the rest of the UI and no colour is hard-coded in JS. */
+    --pm-lane-bg: #fbfbfd;
+    --pm-note-chord-tone: #2563eb;
+    --pm-note-in-mode: #059669;
+    --pm-note-characteristic: #d97706;
+    --pm-note-outside: #dc2626;
+    --pm-chord-block: #e4e4ed;
+    --pm-playhead: #e11d48;
+    --pm-tempo-line: #6366f1;
+    --pm-tempo-change: #d97706;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --pm-bg: #121214;
+        --pm-surface: #1d1d21;
+        --pm-surface-glass: rgb(29 29 33 / 0.72);
+        --pm-fg: #e8e8ec;
+        --pm-fg-muted: #a6a6b1;
+        --pm-border: #33333c;
+        --pm-accent: #cfbcff;
+    --pm-on-accent: #21005d;
+        --pm-warn-bg: #d97706;
+        --pm-warn-fg: #121214;
+        --pm-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+
+        --pm-lane-bg: #17171b;
+        --pm-note-chord-tone: #60a5fa;
+        --pm-note-in-mode: #34d399;
+        --pm-note-characteristic: #fbbf24;
+        --pm-note-outside: #f87171;
+        --pm-chord-block: #2a2a33;
+        --pm-playhead: #fb7185;
+        --pm-tempo-line: #818cf8;
+        --pm-tempo-change: #fbbf24;
+        
+        /* Glass over a near-black ground needs a dimmer specular edge and a touch more noise —
+           banding is far more visible in dark themes. */
+        --pm-key: hsl(var(--pm-key-hue) 70% 68%);
+        --pm-key-soft: hsl(var(--pm-key-hue) 70% 68% / 0.16);
+        --pm-key-edge: hsl(var(--pm-key-hue) 75% 70% / 0.38);
+        --pm-key-glow: hsl(var(--pm-key-hue) 80% 66% / 0.32);
+        --pm-glass-specular: rgb(255 255 255 / 0.14);
+        --pm-glass-noise: 0.04;
+
+        --pm-surface-alt: rgb(255 255 255 / 0.07);
+        --pm-accent-soft: rgb(207 188 255 / 0.16);
+
+        --pm-ok: #4ade80;
+        --pm-ok-bg: rgb(34 197 94 / 0.18);
+        --pm-ok-edge: #22c55e;
+        --pm-danger: #fca5a5;
+        --pm-danger-bg: rgb(239 68 68 / 0.18);
+        --pm-danger-edge: #ef4444;
+        --pm-caution: #fde047;
+        --pm-caution-bg: rgb(234 179 8 / 0.18);
+        --pm-caution-edge: #eab308;
+        --pm-info: #7dd3fc;
+        --pm-info-bg: rgb(56 189 248 / 0.18);
+        --pm-info-edge: #38bdf8;
+        --pm-hot: #f9a8d4;
+        --pm-hot-bg: rgb(244 114 182 / 0.16);
+        --pm-hot-edge: #f472b6;
+        --pm-violet: #c7d2fe;
+        --pm-violet-bg: rgb(129 140 248 / 0.18);
+        --pm-violet-edge: #818cf8;
+
+        --pm-mode-ionian: #f59e0b;
+        --pm-mode-dorian: #10b981;
+        --pm-mode-phrygian: #f87171;
+        --pm-mode-lydian: #22d3ee;
+        --pm-mode-mixolydian: #fb923c;
+        --pm-mode-aeolian: #818cf8;
+        --pm-mode-locrian: #c084fc;
+
+        --po-error-border: #f2b8b5;
+        --po-error-bg: rgb(242 184 181 / 0.10);
+    }
+}
+
+:root[data-theme="dark"] {
+    --pm-bg: #121214;
+    --pm-surface: #1d1d21;
+    --pm-surface-glass: rgb(29 29 33 / 0.72);
+    --pm-fg: #e8e8ec;
+    --pm-fg-muted: #a6a6b1;
+    --pm-border: #33333c;
+    --pm-accent: #cfbcff;
+    --pm-on-accent: #21005d;
+    --pm-warn-bg: #d97706;
+    --pm-warn-fg: #121214;
+    --pm-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+
+    --pm-lane-bg: #17171b;
+    --pm-note-chord-tone: #60a5fa;
+    --pm-note-in-mode: #34d399;
+    --pm-note-characteristic: #fbbf24;
+    --pm-note-outside: #f87171;
+    --pm-chord-block: #2a2a33;
+    --pm-playhead: #fb7185;
+    --pm-tempo-line: #818cf8;
+    --pm-tempo-change: #fbbf24;
+    
+    /* Glass over a near-black ground needs a dimmer specular edge and a touch more noise —
+       banding is far more visible in dark themes. */
+    --pm-key: hsl(var(--pm-key-hue) 70% 68%);
+    --pm-key-soft: hsl(var(--pm-key-hue) 70% 68% / 0.16);
+    --pm-key-edge: hsl(var(--pm-key-hue) 75% 70% / 0.38);
+    --pm-key-glow: hsl(var(--pm-key-hue) 80% 66% / 0.32);
+    --pm-glass-specular: rgb(255 255 255 / 0.14);
+    --pm-glass-noise: 0.04;
+
+    --pm-surface-alt: rgb(255 255 255 / 0.07);
+    --pm-accent-soft: rgb(207 188 255 / 0.16);
+
+    --pm-ok: #4ade80;
+    --pm-ok-bg: rgb(34 197 94 / 0.18);
+    --pm-ok-edge: #22c55e;
+    --pm-danger: #fca5a5;
+    --pm-danger-bg: rgb(239 68 68 / 0.18);
+    --pm-danger-edge: #ef4444;
+    --pm-caution: #fde047;
+    --pm-caution-bg: rgb(234 179 8 / 0.18);
+    --pm-caution-edge: #eab308;
+    --pm-info: #7dd3fc;
+    --pm-info-bg: rgb(56 189 248 / 0.18);
+    --pm-info-edge: #38bdf8;
+    --pm-hot: #f9a8d4;
+    --pm-hot-bg: rgb(244 114 182 / 0.16);
+    --pm-hot-edge: #f472b6;
+    --pm-violet: #c7d2fe;
+    --pm-violet-bg: rgb(129 140 248 / 0.18);
+    --pm-violet-edge: #818cf8;
+
+    --pm-mode-ionian: #f59e0b;
+    --pm-mode-dorian: #10b981;
+    --pm-mode-phrygian: #f87171;
+    --pm-mode-lydian: #22d3ee;
+    --pm-mode-mixolydian: #fb923c;
+    --pm-mode-aeolian: #818cf8;
+    --pm-mode-locrian: #c084fc;
+
+    --po-error-border: #f2b8b5;
+    --po-error-bg: rgb(242 184 181 / 0.10);
+}
+
+/* Radzen's own colours, pointed at the tokens above. Left alone, the Material theme brought its own
+   indigo and pink, and in dark mode put white text on a pale lavender primary at 2.65:1 — every
+   filled button in the app failed contrast. Defined once on :root: the tokens they read already
+   change per theme, and the hover shades are mixed from the accent rather than listed per theme. */
+:root {
+    --rz-primary: var(--pm-accent);
+    --rz-primary-light: color-mix(in srgb, var(--pm-accent) 85%, white);
+    --rz-primary-dark: color-mix(in srgb, var(--pm-accent) 85%, black);
+    --rz-primary-darker: color-mix(in srgb, var(--pm-accent) 70%, black);
+    --rz-primary-lighter: var(--pm-accent-soft);
+    --rz-on-primary: var(--pm-on-accent);
+    --rz-on-primary-light: var(--pm-on-accent);
+    --rz-on-primary-dark: var(--pm-on-accent);
+    --rz-on-primary-darker: var(--pm-on-accent);
+    --rz-on-primary-lighter: var(--pm-accent);
+
+    /* "Any key" / "Any mode" are the Library filters' resting state, read as text, not greyed out. */
+    --rz-input-placeholder-color: var(--pm-fg-muted);
+
+    /* Danger is a filled button (Stop), so it needs a ground white text clears in both themes. */
+    --rz-danger: #b91c1c;
+    --rz-danger-dark: #991b1b;
+    --rz-danger-darker: #7f1d1d;
+    --rz-on-danger: #ffffff;
+    --rz-on-danger-dark: #ffffff;
+    --rz-on-danger-darker: #ffffff;
+
+    /* Toasts use the status triples, which are picked to clear 4.5:1 on their own ground. */
+    --rz-notification-container-background-color: var(--pm-bg);
+    --rz-notification-success-color: var(--pm-ok);
+    --rz-notification-success-icon-color: var(--pm-ok);
+    --rz-notification-success-background-color: var(--pm-ok-bg);
+    --rz-notification-error-color: var(--pm-danger);
+    --rz-notification-error-icon-color: var(--pm-danger);
+    --rz-notification-error-background-color: var(--pm-danger-bg);
+    --rz-notification-warning-color: var(--pm-caution);
+    --rz-notification-warning-icon-color: var(--pm-caution);
+    --rz-notification-warning-background-color: var(--pm-caution-bg);
+    --rz-notification-info-color: var(--pm-info);
+    --rz-notification-info-icon-color: var(--pm-info);
+    --rz-notification-info-background-color: var(--pm-info-bg);
+}

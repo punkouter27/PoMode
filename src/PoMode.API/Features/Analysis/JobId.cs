@@ -1,4 +1,4 @@
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>Job and batch ids are 32 lowercase hex chars and are concatenated into file paths,
 /// so validity is a security boundary, not a formality.</summary>

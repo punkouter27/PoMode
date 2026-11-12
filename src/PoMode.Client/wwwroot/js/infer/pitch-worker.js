@@ -78,12 +78,17 @@ export async function runDelegated(jobId) {
 }
 
 async function fetchVocalsMono22k(jobId) {
-    let response = await fetch(`api/analysis/${jobId}/stems/vocals`);
-    if (response.status === 404) {
-        // No stems: a short clip skips separation, and then the upload is the vocal line, exactly
-        // as the server-side trackers read it.
-        response = await fetch(`api/analysis/${jobId}/stems/mix`);
+    let hasVocals = false;
+    try {
+        const stemsResponse = await fetch(`api/analysis/${jobId}/stems`);
+        if (stemsResponse.ok) {
+            const stems = await stemsResponse.json();
+            hasVocals = Array.isArray(stems) && stems.includes('vocals');
+        }
+    } catch {
+        hasVocals = false;
     }
+    const response = await fetch(`api/analysis/${jobId}/stems/${hasVocals ? 'vocals' : 'mix'}`);
     if (!response.ok) {
         throw new Error(`vocals stem fetch failed: ${response.status}`);
     }

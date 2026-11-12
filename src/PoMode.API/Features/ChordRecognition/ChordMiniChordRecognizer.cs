@@ -2,13 +2,13 @@ using System.Buffers.Binary;
 using System.Numerics;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using PoMode.API.Audio;
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Infrastructure;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Infrastructure;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ChordRecognition;
+namespace PoMode.Api.Features.ChordRecognition;
 
 /// <summary>
 /// Chord recognition with a trained model: ChordMini's ChordNet (a ~2.3 M-parameter transformer,

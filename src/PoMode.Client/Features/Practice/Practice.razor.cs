@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Radzen;
-using PoMode.Client.Components.Common;
-using PoMode.Client.Components.Practice;
+using PoMode.Client.Features.Shared;
+using PoMode.Client.Features.Practice;
 using PoMode.Client.Services;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.Client.Pages;
+namespace PoMode.Client.Features.Practice;
 
 public partial class Practice
 {
@@ -137,7 +137,7 @@ public partial class Practice
         // Before the first await: the page first renders while this loads, and the tabs take their
         // starting tab from that render, before OnParametersSetAsync has run.
         _tab = TabFromAddress;
-        _nudgeMs = await Components.Practice.VoiceTiming.LoadAsync(Prefs);
+        _nudgeMs = await VoiceTiming.LoadAsync(Prefs);
         try
         {
             _progressions = await Analysis.GetModalProgressionsAsync() ?? [];
@@ -739,6 +739,7 @@ public partial class Practice
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         try
         {
             // Before the player, so a take still running when the page is left releases the

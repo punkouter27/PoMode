@@ -40,6 +40,7 @@ public class ModeLabTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ModeLabPageAsync(browser);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await SampleButtonFor(page, "Dorian").First.ClickAsync();
 
@@ -54,6 +55,7 @@ public class ModeLabTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ModeLabPageAsync(browser);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await SampleButtonFor(page, "Dorian").First.ClickAsync();
         await Assertions.Expect(page.Locator("body[data-modal-player='playing']"))
@@ -91,6 +93,7 @@ public class ModeLabTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ModeLabPageAsync(browser);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         // Record every oscillator as (audio time it is due, clock reading when it was handed over).
         await page.EvaluateAsync(@"() => {
@@ -154,6 +157,7 @@ public class ModeLabTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ModeLabPageAsync(browser);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await Assertions.Expect(page.Locator("#match-harmony-toggle"))
             .ToHaveAttributeAsync("data-match-harmony", "on", new() { Timeout = AppFixture.ExpectTimeoutMs });
@@ -188,6 +192,7 @@ public class ModeLabTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ModeLabPageAsync(browser);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await page.Locator("#match-harmony-toggle").ClickAsync();
         await Assertions.Expect(page.Locator("#match-harmony-toggle"))

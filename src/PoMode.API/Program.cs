@@ -1,37 +1,46 @@
-using PoMode.API.Platform;
+using FluentValidation;
+using PoMode.Api.Platform;
+using PoMode.Shared.Validation;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.StaticFiles;
-using PoMode.API.Features.Account;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.Auth;
-using PoMode.API.Features.BeatTracking;
-using PoMode.API.Features.ChordJams;
-using PoMode.API.Features.ChordRecognition;
-using PoMode.API.Features.ChordShapes;
-using PoMode.API.Features.Demo;
-using PoMode.API.Features.Diagnostics;
-using PoMode.API.Features.Export;
-using PoMode.API.Features.Library;
-using PoMode.API.Features.Lyrics;
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Features.ModalMelodies;
-using PoMode.API.Features.OneDrive;
-using PoMode.API.Features.PitchTracking;
-using PoMode.API.Features.Push;
-using PoMode.API.Features.SongIdentity;
-using PoMode.API.Features.SongLoop;
-using PoMode.API.Features.SongStatistics;
-using PoMode.API.Features.Separation;
-using PoMode.API.Features.SoundSearch;
-using PoMode.API.Features.SongStructure;
-using PoMode.API.Features.VoiceProfile;
-using PoMode.API.Features.Uploads;
-using PoMode.API.Infrastructure;
-using PoMode.API.Pipeline;
+using PoMode.Api.Features.Account;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.Auth;
+using PoMode.Api.Features.BeatTracking;
+using PoMode.Api.Features.ChordJams;
+using PoMode.Api.Features.ChordRecognition;
+using PoMode.Api.Features.ChordShapes;
+using PoMode.Api.Features.Demo;
+using PoMode.Api.Features.Diagnostics;
+using PoMode.Api.Features.Export;
+using PoMode.Api.Features.Library;
+using PoMode.Api.Features.Lyrics;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Features.ModalMelodies;
+using PoMode.Api.Features.OneDrive;
+using PoMode.Api.Features.PitchTracking;
+using PoMode.Api.Features.Push;
+using PoMode.Api.Features.SongIdentity;
+using PoMode.Api.Features.SongLoop;
+using PoMode.Api.Features.SongStatistics;
+using PoMode.Api.Features.Separation;
+using PoMode.Api.Features.SoundSearch;
+using PoMode.Api.Features.SongStructure;
+using PoMode.Api.Features.VoiceProfile;
+using PoMode.Api.Features.Uploads;
+using PoMode.Api.Infrastructure;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Serialization;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (builder.Environment.IsEnvironment("Test"))
+{
+    builder.WebHost.UseStaticWebAssets();
+}
+
+builder.Services.AddValidatorsFromAssemblyContaining<SongQuestionRequestValidator>();
 
 builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestBodySize = AudioFormatValidator.MaxBytes);
@@ -185,7 +194,7 @@ if (secretSource.FellBack)
 app.Services.GetRequiredService<PushSettings>();
 
 app.UseForwardedHeaders();
-if (!app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Test"))
 {
     app.UseHsts();
 }
@@ -239,7 +248,7 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 // The API reference is a development aid; Production does not advertise its surface.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Test"))
 {
     app.MapOpenApi();
     app.MapScalarApiReference(); // serves /scalar

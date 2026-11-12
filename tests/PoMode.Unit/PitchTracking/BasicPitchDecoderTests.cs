@@ -1,4 +1,4 @@
-using PoMode.API.Features.PitchTracking;
+using PoMode.Api.Features.PitchTracking;
 using Xunit;
 
 namespace PoMode.Unit.PitchTracking;

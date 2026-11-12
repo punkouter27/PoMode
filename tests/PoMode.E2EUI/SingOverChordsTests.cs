@@ -77,6 +77,7 @@ public class SingOverChordsTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync(FakeMicLaunch);
         var page = await PracticePageAsync(browser);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await RecordATakeAsync(page);
 
@@ -99,6 +100,7 @@ public class SingOverChordsTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync(FakeMicLaunch);
         var page = await PracticePageAsync(browser);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await RecordATakeAsync(page);
         await Assertions.Expect(page.Locator("[data-practice-state='Captured']")).ToHaveCountAsync(1, Count);
@@ -121,6 +123,7 @@ public class SingOverChordsTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync(FakeMicLaunch);
         var page = await PracticePageAsync(browser);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await RecordATakeAsync(page);
         await Assertions.Expect(page.Locator("[data-practice-state='Captured']")).ToHaveCountAsync(1, Count);

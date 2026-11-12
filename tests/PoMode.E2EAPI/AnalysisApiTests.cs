@@ -134,12 +134,12 @@ public sealed class AnalysisApiTests : IDisposable
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/api/analysis/C%3Afoo")).StatusCode);
     }
 
-    private sealed class UnavailableStemSeparator : PoMode.API.Pipeline.IStemSeparator
+    private sealed class UnavailableStemSeparator : PoMode.Api.Pipeline.IStemSeparator
     {
         public string Name => nameof(UnavailableStemSeparator);
         public ExecutionTier Tier => ExecutionTier.Local;
         public Task<bool> IsAvailableAsync(CancellationToken ct) => Task.FromResult(false);
-        public Task SeparateAsync(PoMode.API.Pipeline.StageContext context, CancellationToken ct) => Task.CompletedTask;
+        public Task SeparateAsync(PoMode.Api.Pipeline.StageContext context, CancellationToken ct) => Task.CompletedTask;
     }
 
     [Fact]
@@ -147,8 +147,8 @@ public sealed class AnalysisApiTests : IDisposable
     {
         await using var factory = Factory().WithWebHostBuilder(b => b.ConfigureServices(services =>
         {
-            services.RemoveAll<PoMode.API.Pipeline.IStemSeparator>();
-            services.AddSingleton<PoMode.API.Pipeline.IStemSeparator, UnavailableStemSeparator>();
+            services.RemoveAll<PoMode.Api.Pipeline.IStemSeparator>();
+            services.AddSingleton<PoMode.Api.Pipeline.IStemSeparator, UnavailableStemSeparator>();
         }));
         using var client = factory.CreateClient();
 

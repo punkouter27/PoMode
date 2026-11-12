@@ -1,9 +1,9 @@
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Features.ModalMelodies;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Features.ModalMelodies;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Demo;
+namespace PoMode.Api.Features.Demo;
 
 /// <summary>
 /// The first-run example: a short piece synthesized from the Mode Lab's own generator, so its mode is

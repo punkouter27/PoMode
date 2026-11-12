@@ -1,9 +1,9 @@
 using System.Buffers.Text;
 using Microsoft.AspNetCore.Http.HttpResults;
-using PoMode.API.Features.Auth;
+using PoMode.Api.Features.Auth;
 using PoMode.Shared.Account;
 
-namespace PoMode.API.Features.Push;
+namespace PoMode.Api.Features.Push;
 
 public static class PushEndpoints
 {

@@ -1,9 +1,10 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Http.HttpResults;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Platform;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Platform;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongStatistics;
+namespace PoMode.Api.Features.SongStatistics;
 
 /// <summary>
 /// Song statistics and their written interpretation, derived on demand from the stored
@@ -59,17 +60,19 @@ public static class SongStatsEndpoints
         // an address, the conversation so far rides with it, and asking the same question twice is a
         // deliberate act rather than a browser reload to be served from cache.
         group.MapPost("/{jobId}/interpretation/ask",
-            async Task<Results<ServerSentEventsResult<InterpretationEvent>, Ok<SongAnswerDto>, NotFound, BadRequest<string>>> (
+            async Task<Results<ServerSentEventsResult<InterpretationEvent>, Ok<SongAnswerDto>, NotFound, ValidationProblem>> (
                 string jobId,
                 SongQuestionRequest request,
+                IValidator<SongQuestionRequest> validator,
                 HttpContext http,
                 JobStore store,
                 SongInterpreterSelector selector,
                 CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(request.Question))
+            var validation = await validator.ValidateAsync(request, ct);
+            if (!validation.IsValid)
             {
-                return TypedResults.BadRequest("Ask a question first.");
+                return TypedResults.ValidationProblem(validation.ToDictionary());
             }
 
             var stats = await BuildAsync(jobId, store, ct);

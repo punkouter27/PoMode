@@ -1,6 +1,6 @@
 using tusdotnet;
 
-namespace PoMode.API.Features.Uploads;
+namespace PoMode.Api.Features.Uploads;
 
 public static class ResumableUploadEndpoints
 {

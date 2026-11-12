@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 using PoMode.TestCommon;
 
@@ -10,7 +10,7 @@ namespace PoMode.Integration;
 public sealed class JobStoreTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"pomode-store-{Guid.NewGuid():N}");
-    private readonly FakeTimeProvider _clock = new(DateTimeOffset.Parse("2026-08-16T12:00:00Z"));
+    private readonly FakeTimeProvider _clock = new(DateTimeOffset.Parse("2026-08-16T12:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
 
     private JobStore Store => new(
         new ConfigurationBuilder().AddInMemoryCollection(

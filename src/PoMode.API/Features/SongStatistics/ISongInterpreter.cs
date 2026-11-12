@@ -1,7 +1,7 @@
-using PoMode.API.Pipeline;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongStatistics;
+namespace PoMode.Api.Features.SongStatistics;
 
 /// <summary>
 /// Turns the computed <see cref="SongStats"/> into prose a musician can read.

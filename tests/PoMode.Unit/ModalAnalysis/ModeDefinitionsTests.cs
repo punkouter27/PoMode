@@ -1,4 +1,4 @@
-using PoMode.API.Features.ModalAnalysis;
+using PoMode.Api.Features.ModalAnalysis;
 using PoMode.Shared.Analysis;
 using Xunit;
 

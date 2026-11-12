@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.ChordRecognition;
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Features.PitchTracking;
-using PoMode.API.Features.Separation;
-using PoMode.API.Pipeline;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.ChordRecognition;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Features.PitchTracking;
+using PoMode.Api.Features.Separation;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 using PoMode.TestCommon;
 using Xunit;
@@ -74,7 +74,7 @@ public sealed class ClientDelegatedFallbackTests : IDisposable
         => new(_registry, _store, _notifier,
             new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Tier2:TimeoutSeconds"] = timeoutSeconds.ToString(),
+                ["Tier2:TimeoutSeconds"] = timeoutSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture),
             }).Build(),
             NullLogger<ClientDelegatedPitchTracker>.Instance);
 
@@ -241,16 +241,16 @@ public sealed class ClientDelegatedFallbackTests : IDisposable
 
         // The browser answers with half the mix as "vocals": the other half must be the instrumental.
         var (answered, run) = await StartAsync();
-        var mix = PoMode.API.Audio.AudioDecoder.Decode(_store.InputPath(answered));
+        var mix = PoMode.Api.Audio.AudioDecoder.Decode(_store.InputPath(answered));
         var vocalsPath = Path.Combine(_store.JobDir(answered.JobId), "vocals.wav");
-        PoMode.API.Audio.WavWriter.Write(vocalsPath, mix with { Samples = [.. mix.Samples.Select(sample => sample / 2)] });
+        PoMode.Api.Audio.WavWriter.Write(vocalsPath, mix with { Samples = [.. mix.Samples.Select(sample => sample / 2)] });
         Assert.True(stems.TryComplete(answered.JobId, new ClientStems(vocalsPath)));
         await run;
 
         var final = await _store.LoadAsync(answered.JobId, CancellationToken.None);
         Assert.Equal(JobStage.Complete, final!.Stage);
         Assert.Equal(nameof(ClientDelegatedStemSeparator), final.Plan.Single(p => p.Stage == StageNames.Separating).Executor);
-        var instrumental = PoMode.API.Audio.AudioDecoder.Decode(Path.Combine(_store.JobDir(answered.JobId), "instrumental.wav"));
+        var instrumental = PoMode.Api.Audio.AudioDecoder.Decode(Path.Combine(_store.JobDir(answered.JobId), "instrumental.wav"));
         Assert.Equal(mix.Samples.Length, instrumental.Samples.Length);
         Assert.All(Enumerable.Range(0, mix.Samples.Length).Where(i => i % 97 == 0),
             i => Assert.Equal(mix.Samples[i] / 2, instrumental.Samples[i], 0.002));

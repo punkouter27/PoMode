@@ -1,4 +1,4 @@
-using PoMode.API.Features.ChordJams;
+using PoMode.Api.Features.ChordJams;
 using PoMode.Shared.Analysis;
 using Xunit;
 
@@ -10,6 +10,12 @@ namespace PoMode.Unit.ChordRecognition;
 /// the 4th fret unless it is a slid or closed shape), and a thousand jams are held to their key and to being a song.</summary>
 public class OpenChordJamsTests
 {
+    private static readonly int[] SectionBeatCounts = [16, 24, 32];
+    private static readonly string[] SimpleSectionOrder = ["Verse", "Chorus", "Bridge"];
+    private static readonly int[] ExpectedMeasureCounts = [4, 6, 8];
+    private static readonly int[] ExpectedRounds = [1, 2, 4];
+    private static readonly string[] RootBassStyles = ["Root notes", "Root and fifth", "Driving eighths"];
+
     private static readonly Dictionary<string, int[]> Qualities = new()
     {
         [""] = [0, 4, 7],
@@ -137,7 +143,7 @@ public class OpenChordJamsTests
             Assert.True(RootOf(jam.Ending.Symbol) == tonic && jam.Ending.Midi.Any(midi => (midi - tonic + 12) % 12 is 3 or 4), $"seed {seed}: ends on {jam.Ending.Symbol}");
             Assert.All(jam.Sections, section =>
             {
-                Assert.Contains(section.Chords.Sum(chord => chord.Beats), new[] { 16, 24, 32 });
+                Assert.Contains(section.Chords.Sum(chord => chord.Beats), SectionBeatCounts);
                 lengths.Add(section.Chords.Sum(chord => chord.Beats) / 4);
                 Assert.Equal(8, section.Pattern.Length);
                 Assert.All(section.Pattern, slot => Assert.Contains(slot, "DUB-"));
@@ -201,18 +207,18 @@ public class OpenChordJamsTests
         for (var seed = 0; seed < 50; seed++)
         {
             var simple = OpenChordJams.Generate(seed);
-            Assert.Equal(new[] { "Verse", "Chorus", "Bridge" }, simple.Sections.Select(section => section.Name));
+            Assert.Equal(SimpleSectionOrder, simple.Sections.Select(section => section.Name));
             Assert.All(simple.Sections, section => Assert.Equal(("open", 16), (section.Sound, section.Chords.Sum(chord => chord.Beats))));
             Assert.Equal((0, simple.Key), (simple.Capo, simple.SoundingKey));
         }
         Assert.True(keys.Count >= 15, $"only {keys.Count} keys came up");
         Assert.True(themes.Count >= 5, $"only {themes.Count} lyric themes came up");
         // Mostly four chords a section, sometimes six or eight; a pre-chorus in some songs, not most.
-        Assert.Equal(new[] { 4, 6, 8 }, lengths.Order());
+        Assert.Equal(ExpectedMeasureCounts, lengths.Order());
         Assert.InRange(preChoruses, 150, 500);
         // Some sections come back revoiced; a song's parts go round once, twice or four times.
         Assert.InRange(revoiced, 200, 900);
-        Assert.Equal(new[] { 1, 2, 4 }, rounds.Order());
+        Assert.Equal(ExpectedRounds, rounds.Order());
         Assert.InRange(allOpen, 200, 450);
     }
 
@@ -238,7 +244,7 @@ public class OpenChordJamsTests
             // A bass line under every chord, inside the chord's length and the bass register; at the
             // slider's bottom it only holds the ground; it changes nothing else about the song.
             var roots = OpenChordJams.Generate(seed, new(Bass: 0, Capo: seed % 3));
-            Assert.All(roots.Sections, section => Assert.Contains(section.Bass, new[] { "Root notes", "Root and fifth", "Driving eighths" }));
+            Assert.All(roots.Sections, section => Assert.Contains(section.Bass, RootBassStyles));
             Assert.All(roots.Sections.SelectMany(section => section.Chords).Append(roots.Ending), chord =>
             {
                 Assert.NotEmpty(chord.Bass!);
@@ -254,7 +260,7 @@ public class OpenChordJamsTests
             bassSections += wandering.Sections.Count;
 
             var plain = OpenChordJams.Generate(seed, new(Variety: 0));
-            Assert.Equal(new[] { "Verse", "Chorus", "Bridge" }, plain.Sections.Select(section => section.Name));
+            Assert.Equal(SimpleSectionOrder, plain.Sections.Select(section => section.Name));
             Assert.All(plain.Sections, section => Assert.Equal((2, 16), (section.Repeats, section.Chords.Sum(chord => chord.Beats))));
 
             Assert.DoesNotMatch("major|Lydian|Mixolydian", OpenChordJams.Generate(seed, new(Mood: 0)).Key);

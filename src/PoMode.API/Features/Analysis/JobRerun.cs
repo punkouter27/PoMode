@@ -1,7 +1,7 @@
-using PoMode.API.Pipeline;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>
 /// "Try another model" for one stage of a finished analysis: a new job beside the original, holding

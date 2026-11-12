@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using PoMode.Shared.Diagnostics;
 
-namespace PoMode.API.Features.SongStatistics;
+namespace PoMode.Api.Features.SongStatistics;
 
 /// <summary>
 /// How each interpreter has done since this instance started: replies that passed, replies sent back

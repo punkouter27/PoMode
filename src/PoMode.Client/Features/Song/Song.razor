@@ -8,7 +8,7 @@
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
-<PageTitle>@(_status?.FileName is { } name ? $"PoMode · {name}" : "PoMode · Song")</PageTitle>
+<PageTitle>@(_status?.FileName is { } name ? $"{name} · PoMode" : "Song · PoMode")</PageTitle>
 
 @* One song, from upload to result. This used to be the home page in another state (/?job=…), which
    left the header calling a finished analysis "Library" and one component switching between four

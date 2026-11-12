@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>
 /// Refuses new work when the analysis queue is already backed up.

@@ -1,7 +1,7 @@
-using PoMode.API.Features.ModalAnalysis;
+using PoMode.Api.Features.ModalAnalysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ChordRecognition;
+namespace PoMode.Api.Features.ChordRecognition;
 
 /// <summary>
 /// Turns the detected chord spans into a start-sorted synth-pad note list for the client mixer's

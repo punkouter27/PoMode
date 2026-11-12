@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ChordJams;
+namespace PoMode.Api.Features.ChordJams;
 
 /// <summary>
 /// Fits a jam's tempo to its words. Each lyric line is sung over one chord, so how comfortable a line
@@ -58,7 +58,7 @@ public static partial class JamTempo
         => Words().Matches(line.ToLowerInvariant()).Sum(word =>
         {
             var w = word.Value;
-            var count = Vowels().Matches(w).Count;
+            var count = Vowels().Count(w);
             if (w.Length > 2 && w.EndsWith('e') && !w.EndsWith("le", StringComparison.Ordinal) && count > 1)
             {
                 count--;

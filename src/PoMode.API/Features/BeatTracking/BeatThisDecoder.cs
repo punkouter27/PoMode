@@ -1,8 +1,8 @@
-using PoMode.API.Audio;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.BeatTracking;
+namespace PoMode.Api.Features.BeatTracking;
 
 /// <summary>
 /// Beat This!'s logits → beat and downbeat times → the pipeline's beat grid and tempo map. Pure

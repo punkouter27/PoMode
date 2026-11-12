@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
-using PoMode.API.Features.Auth;
+using PoMode.Api.Features.Auth;
 
-namespace PoMode.API.Platform;
+namespace PoMode.Api.Platform;
 
 /// <summary>
 /// Admission control for the two things on this server that cost real resources: queueing an

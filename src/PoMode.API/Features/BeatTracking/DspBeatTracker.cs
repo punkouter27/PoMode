@@ -1,8 +1,8 @@
-using PoMode.API.Audio;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.BeatTracking;
+namespace PoMode.Api.Features.BeatTracking;
 
 /// <summary>
 /// The classic, model-less beat tracker: <see cref="TempoEstimator"/>'s onset-autocorrelation grid

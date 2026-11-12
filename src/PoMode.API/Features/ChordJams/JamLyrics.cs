@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ChordJams;
+namespace PoMode.Api.Features.ChordJams;
 
 /// <summary>
 /// Words to sing over a jam song, so the hands have a voice to keep time with: one line for each chord

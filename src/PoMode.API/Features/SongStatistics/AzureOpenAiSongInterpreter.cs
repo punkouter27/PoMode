@@ -5,7 +5,7 @@ using Azure.Identity;
 using OpenAI.Chat;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongStatistics;
+namespace PoMode.Api.Features.SongStatistics;
 
 /// <summary>
 /// The optional cloud interpreter: a small Azure OpenAI deployment, for the hosted app, which has no

@@ -1,7 +1,7 @@
-using PoMode.API.Features.ModalAnalysis;
+using PoMode.Api.Features.ModalAnalysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongStatistics;
+namespace PoMode.Api.Features.SongStatistics;
 
 /// <summary>
 /// Derives every song/melody statistic, plus the plain-English fingerprint paragraph, from the

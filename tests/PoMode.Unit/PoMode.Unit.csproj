@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\PoMode.Shared\PoMode.Shared.csproj" />
-    <ProjectReference Include="..\..\src\PoMode.API\PoMode.API.csproj" />
+    <ProjectReference Include="..\..\src\PoMode.Api\PoMode.Api.csproj" />
     <ProjectReference Include="..\..\src\PoMode.Client\PoMode.Client.csproj" />
   </ItemGroup>
   <ItemGroup>

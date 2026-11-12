@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ChordJams;
+namespace PoMode.Api.Features.ChordJams;
 
 /// <summary>
 /// The Practice page's open guitar chord jams, made fresh from a seed: each one a short song in a key
@@ -25,6 +25,7 @@ public static class OpenChordJams
 
     private const int X = -1;
     private static readonly string[] StringNames = ["low E", "A", "D", "G", "B", "high E"];
+    private static readonly string[] StandardSectionNames = ["Verse", "Pre-chorus", "Chorus", "Bridge"];
     /// <summary>Strum patterns from sparse to busy, the strumming slider choosing the set: a down stroke a
     /// beat or two apart, the eighth-note patterns, then constant eighths with few gaps.</summary>
     private static readonly string[][] PatternSets =
@@ -399,7 +400,7 @@ public static class OpenChordJams
             var tonic = tonics[random.Next(tonics.Length)];
             var preChorus = random.NextDouble() < PreChorusChance * c.Variety;
             var order = BuildOrder(preChorus, c.Length);
-            var names = new[] { "Verse", "Pre-chorus", "Chorus", "Bridge" }.Where(order.Contains).ToArray();
+            var names = StandardSectionNames.Where(order.Contains).ToArray();
             var chorusAt = Array.IndexOf(names, "Chorus");
             // Verse and chorus from the progression shapes, pre-chorus and bridge from the shapes that
             // lean back home; the pre-chorus is always four chords, there only to build. Copied, since

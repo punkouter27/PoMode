@@ -19,6 +19,7 @@ public class DecoderPortTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await (await browser.NewContextAsync()).NewPageAsync();
+        await using var guard = PlaywrightErrorGuard.Watch(page);
         await page.GotoAsync(app.BaseUrl);
 
         var decoded = await page.EvaluateAsync<JsonElement>(

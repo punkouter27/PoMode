@@ -1,9 +1,9 @@
-using PoMode.API.Features.ChordRecognition;
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.ChordRecognition;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ModalMelodies;
+namespace PoMode.Api.Features.ModalMelodies;
 
 public sealed class ModalMelodyGenerator
 {
@@ -579,7 +579,7 @@ public sealed class ModalMelodyGenerator
         for (var measure = 0; measure < chords.Count; measure++)
         {
             var chord = chords[measure];
-            PitchNames.TryParseRoot(chord.Root, out var chordRootClass);
+            _ = PitchNames.TryParseRoot(chord.Root, out var chordRootClass);
             var chordVoicing = ChordPadBuilder.VoicingFor(chord.Quality);
             var chordTonePitches = pitchPool.Where(p =>
             {

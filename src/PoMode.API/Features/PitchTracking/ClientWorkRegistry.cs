@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace PoMode.API.Features.PitchTracking;
+namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
 /// The rendezvous between a parked stage and the browser doing its work (spec §4's ClientDelegated

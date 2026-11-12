@@ -1,7 +1,7 @@
-using PoMode.API.Features.SongStatistics;
+using PoMode.Api.Features.SongStatistics;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.VoiceProfile;
+namespace PoMode.Api.Features.VoiceProfile;
 
 /// <summary>One sung note with how well it was held: <see cref="OffCents"/> is its median distance
 /// from true pitch (signed, sharp positive), <see cref="WobbleCents"/> how far the pitch moved while

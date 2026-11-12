@@ -147,7 +147,7 @@ public sealed class LibraryActionsTests : IDisposable
         Assert.Equal("application/zip", export.Content.Headers.ContentType?.MediaType);
         using (var zip = new ZipArchive(await export.Content.ReadAsStreamAsync()))
         {
-            Assert.Contains(zip.Entries, entry => entry.FullName.EndsWith("job.json") && entry.FullName.Contains(mine.JobId[..8]));
+            Assert.Contains(zip.Entries, entry => entry.FullName.EndsWith("job.json", StringComparison.Ordinal) && entry.FullName.Contains(mine.JobId[..8]));
             Assert.DoesNotContain(zip.Entries, entry => entry.FullName.Contains(theirs.JobId[..8]));
         }
 

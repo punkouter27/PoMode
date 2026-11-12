@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 public sealed class AnalysisHub(JobQueue queue) : Hub
 {

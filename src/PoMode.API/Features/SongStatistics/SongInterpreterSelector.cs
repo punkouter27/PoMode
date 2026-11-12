@@ -1,10 +1,10 @@
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongStatistics;
+namespace PoMode.Api.Features.SongStatistics;
 
 /// <summary>
 /// Chooses which <see cref="ISongInterpreter"/> writes a reply, streams it, checks its figures, and

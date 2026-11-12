@@ -1,7 +1,7 @@
-using PoMode.API.Audio;
+using PoMode.Api.Audio;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.PitchTracking;
+namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
 /// Bounds-checks note events posted by a browser (spec §4 step 3: "the server validates the payload,

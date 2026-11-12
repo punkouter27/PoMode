@@ -1,7 +1,7 @@
-using PoMode.API.Pipeline;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.PitchTracking;
+namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>Phase-2 stand-in: deterministic C-major scale regardless of input audio.</summary>
 public sealed class FakePitchTracker : IPitchTracker

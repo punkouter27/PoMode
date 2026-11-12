@@ -1,4 +1,4 @@
-namespace PoMode.API.Audio;
+namespace PoMode.Api.Audio;
 
 /// <summary>Interleaved, normalised (-1..1) PCM.</summary>
 public sealed record AudioBuffer(float[] Samples, int SampleRate, int Channels)

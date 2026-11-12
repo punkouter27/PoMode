@@ -1,4 +1,4 @@
-namespace PoMode.API.Features.ChordRecognition;
+namespace PoMode.Api.Features.ChordRecognition;
 
 /// <summary>
 /// Viterbi decoding over the 24-triad + no-chord state space: instead of labelling every chroma

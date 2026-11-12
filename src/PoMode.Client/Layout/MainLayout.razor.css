@@ -259,12 +259,8 @@
         font-size: 1.1rem;
     }
 
-    /* The three destinations share the row rather than queueing off the right edge. An even split
-       puts all three on one line at 320px, so nothing is reached by scrolling. */
     .actions {
-        grid-area: nav;
-        justify-content: space-between;
-        gap: 0.1rem;
+        display: none;
     }
 
     /* The name is in the menu too; on a phone the header row needs the room for the brand. */
@@ -272,15 +268,10 @@
         display: none;
     }
 
-    .actions ::deep .nav-link {
-        padding: 0.25rem 0.3rem;
-        font-size: var(--pm-text-sm);
-    }
-
     .app-main {
         padding-block: 0.4rem;
         padding-inline: max(0.5rem, env(safe-area-inset-left)) max(0.5rem, env(safe-area-inset-right));
-        padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+        padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
         gap: 0.5rem;
     }
 }
@@ -314,15 +305,11 @@
     }
 }
 
-/* The build date, YYMMDD: which build is on screen, at a glance. Never in the way of a click. */
-.build-watermark {
-    position: fixed;
-    right: var(--pm-space-2);
-    bottom: var(--pm-space-1);
-    color: var(--pm-fg-muted);
-    font-size: var(--pm-text-xs);
-    font-variant-numeric: tabular-nums;
-    opacity: 0.6;
-    pointer-events: none;
-    z-index: 1;
+.po-error-actions {
+    margin-top: 0.75rem;
+}
+
+.overflow-item--active {
+    font-weight: 600;
+    color: var(--pm-accent);
 }

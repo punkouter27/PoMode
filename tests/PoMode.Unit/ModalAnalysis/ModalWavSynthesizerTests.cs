@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
 using System.Text;
-using PoMode.API.Features.ModalMelodies;
+using PoMode.Api.Features.ModalMelodies;
 using PoMode.Shared.Analysis;
 using Xunit;
 

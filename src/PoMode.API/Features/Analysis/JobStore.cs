@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>Per-job folder persistence under Jobs:RootPath. The folder is the working copy;
 /// when <see cref="JobBlobStorage"/> is connected (Azurite in dev, Azure Storage in prod) every

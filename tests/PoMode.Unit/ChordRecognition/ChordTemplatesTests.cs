@@ -1,4 +1,4 @@
-using PoMode.API.Features.ChordRecognition;
+using PoMode.Api.Features.ChordRecognition;
 using Xunit;
 
 namespace PoMode.Unit.ChordRecognition;

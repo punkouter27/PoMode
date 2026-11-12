@@ -1,7 +1,7 @@
 using System.Buffers.Text;
 using System.Security.Cryptography;
 
-namespace PoMode.API.Features.Push;
+namespace PoMode.Api.Features.Push;
 
 /// <summary>
 /// This server's VAPID identity — the key pair push services use to know every message for a
@@ -42,7 +42,7 @@ public sealed record PushSettings(string? PublicKey, string? PrivateKey, string 
             return new PushSettings(null, null, subject, Ephemeral: false);
         }
 
-        if (environment.IsDevelopment())
+        if (environment.IsDevelopment() || environment.IsEnvironment("Test"))
         {
             var (ephemeralPublic, ephemeralPrivate) = GenerateKeyPair();
             logger.LogWarning(

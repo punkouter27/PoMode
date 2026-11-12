@@ -1,6 +1,6 @@
 using Azure.Identity;
 
-namespace PoMode.API.Infrastructure;
+namespace PoMode.Api.Infrastructure;
 
 public enum SecretSource
 {

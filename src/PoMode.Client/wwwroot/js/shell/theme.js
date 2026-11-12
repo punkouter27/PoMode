@@ -3,7 +3,7 @@
 // prefers-color-scheme rules take over. Tiny and synchronous by design — call init() before first
 // paint to avoid a theme flash.
 
-const STORAGE_KEY = 'pm-theme';
+const STORAGE_KEY = 'pomode:theme';
 const MODES = ['system', 'light', 'dark'];
 
 /// Reads the persisted choice, defaulting to "system" for absent or unrecognised values.

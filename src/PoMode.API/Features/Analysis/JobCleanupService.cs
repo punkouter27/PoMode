@@ -1,4 +1,4 @@
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>Hourly sweep deleting job folders older than 7 days, plus a size cap: when the store
 /// outgrows the budget, the oldest completed jobs go first.</summary>

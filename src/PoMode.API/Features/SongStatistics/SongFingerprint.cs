@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongStatistics;
+namespace PoMode.Api.Features.SongStatistics;
 
 /// <summary>
 /// Writes the computed statistics out as one plain-English paragraph — the "what is this song"

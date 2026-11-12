@@ -37,7 +37,7 @@ public class StemMixerTests(AppFixture app)
     }
 
     private static async Task<double> MixerTimeAsync(IPage page)
-        => double.Parse(await page.Locator(".mixer").GetAttributeAsync("data-mixer-time") ?? "0");
+        => double.Parse(await page.Locator(".mixer").GetAttributeAsync("data-mixer-time") ?? "0", System.Globalization.CultureInfo.InvariantCulture);
 
     [Fact]
     public async Task The_transport_and_all_three_stem_modes_are_offered()
@@ -45,6 +45,7 @@ public class StemMixerTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ReadyMixerPageAsync(browser, app.BaseUrl);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await Assertions.Expect(page.GetByRole(AriaRole.Button, new() { Name = "Play", Exact = true })).ToBeVisibleAsync(Visible);
         var sources = page.Locator(".mixer-sources");
@@ -61,6 +62,7 @@ public class StemMixerTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ReadyMixerPageAsync(browser, app.BaseUrl);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         Assert.Equal(0.0, await MixerTimeAsync(page), precision: 2);
         await page.GetByRole(AriaRole.Button, new() { Name = "Play", Exact = true }).ClickAsync();
@@ -80,6 +82,7 @@ public class StemMixerTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ReadyMixerPageAsync(browser, app.BaseUrl);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await page.GetByRole(AriaRole.Button, new() { Name = "Play", Exact = true }).ClickAsync();
         await Assertions.Expect(page.Locator(".mixer"))
@@ -100,6 +103,7 @@ public class StemMixerTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ReadyMixerPageAsync(browser, app.BaseUrl);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await page.GetByRole(AriaRole.Button, new() { Name = "Play", Exact = true }).ClickAsync();
         await Assertions.Expect(page.Locator(".mixer"))
@@ -123,6 +127,7 @@ public class StemMixerTests(AppFixture app)
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await ReadyMixerPageAsync(browser, app.BaseUrl);
+        await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await CanvasTests.ClickCanvasAsync(page.Locator("canvas.analysis-canvas"), 0.6f, 0.3f);
 

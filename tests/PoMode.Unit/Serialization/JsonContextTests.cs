@@ -39,7 +39,7 @@ public class JsonContextTests
             Plan: [new StagePlan("Separating", ExecutionTier.Local, "FakeStemSeparator")],
             CompletedStages: ["Separating"],
             Error: null,
-            CreatedAt: DateTimeOffset.Parse("2026-08-16T12:00:00Z"));
+            CreatedAt: DateTimeOffset.Parse("2026-08-16T12:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
 
         var backStatus = JsonSerializer.Deserialize(
             JsonSerializer.Serialize(status, PoModeJsonContext.Default.JobStatusDto),

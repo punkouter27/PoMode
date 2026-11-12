@@ -1,8 +1,8 @@
-using PoMode.API.Features.ModalAnalysis;
-using PoMode.API.Features.SongStructure;
+using PoMode.Api.Features.ModalAnalysis;
+using PoMode.Api.Features.SongStructure;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Analysis;
+namespace PoMode.Api.Features.Analysis;
 
 /// <summary>
 /// Flattens the three analysis artifacts into the single payload the canvas draws (spec §7). Pure function —

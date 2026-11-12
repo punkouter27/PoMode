@@ -1,5 +1,5 @@
-using PoMode.API.Audio;
-using PoMode.API.Features.PitchTracking;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.PitchTracking;
 using Xunit;
 
 namespace PoMode.Unit.PitchTracking;

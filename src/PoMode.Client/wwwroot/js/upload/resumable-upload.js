@@ -127,7 +127,7 @@ export async function upload(source, name, dotNet, beat = false) {
     });
 }
 
-const UNSENT_DB = 'pm-uploads';
+const UNSENT_DB = 'pomode:uploads';
 const UNSENT_STORE = 'unsent';
 
 let database = null;

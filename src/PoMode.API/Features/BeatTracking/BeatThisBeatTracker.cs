@@ -1,11 +1,11 @@
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using PoMode.API.Audio;
-using PoMode.API.Infrastructure;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Infrastructure;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.BeatTracking;
+namespace PoMode.Api.Features.BeatTracking;
 
 /// <summary>
 /// Neural beat and downbeat tracking with Beat This! (CPJKU, MIT) on the ONNX CPU provider. The

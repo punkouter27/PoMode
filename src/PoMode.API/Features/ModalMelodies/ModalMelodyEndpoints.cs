@@ -1,12 +1,13 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.Auth;
-using PoMode.API.Features.Export;
-using PoMode.API.Platform;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.Auth;
+using PoMode.Api.Features.Export;
+using PoMode.Api.Platform;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.ModalMelodies;
+namespace PoMode.Api.Features.ModalMelodies;
 
 public static class ModalMelodyEndpoints
 {
@@ -24,12 +25,31 @@ public static class ModalMelodyEndpoints
 
         // "Darker and slower": the lab's settings from a description (ModeLabDescriber). Rules first,
         // a language model only for a phrase the rules find nothing in, so it carries the interpret limit.
-        group.MapPost("/describe", async (ModeLabDescriptionRequest request, ModeLabDescriber describer, CancellationToken ct) =>
-            TypedResults.Ok(await describer.DescribeAsync(request.Text[..Math.Min(request.Text.Length, 200)], request.Current, ct)))
-            .RequireRateLimiting(PoRateLimits.InterpretPolicy);
-
-        group.MapPost("/generate", (ModalMelodyRequest request, ModalMelodyGenerator generator) =>
+        group.MapPost("/describe", async Task<Results<Ok<ModeLabDescriptionDto>, ValidationProblem>> (
+            ModeLabDescriptionRequest request,
+            IValidator<ModeLabDescriptionRequest> validator,
+            ModeLabDescriber describer,
+            CancellationToken ct) =>
         {
+            var validation = await validator.ValidateAsync(request, ct);
+            if (!validation.IsValid)
+            {
+                return TypedResults.ValidationProblem(validation.ToDictionary());
+            }
+            return TypedResults.Ok(await describer.DescribeAsync(request.Text[..Math.Min(request.Text.Length, 200)], request.Current, ct));
+        })
+        .RequireRateLimiting(PoRateLimits.InterpretPolicy);
+
+        group.MapPost("/generate", Results<Ok<GeneratedMelodyDto>, ValidationProblem> (
+            ModalMelodyRequest request,
+            IValidator<ModalMelodyRequest> validator,
+            ModalMelodyGenerator generator) =>
+        {
+            var validation = validator.Validate(request);
+            if (!validation.IsValid)
+            {
+                return TypedResults.ValidationProblem(validation.ToDictionary());
+            }
             var result = generator.Generate(request);
             return TypedResults.Ok(result);
         })

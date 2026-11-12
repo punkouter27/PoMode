@@ -1,5 +1,5 @@
-using PoMode.API.Features.ModalMelodies;
-using PoMode.API.Features.SongStatistics;
+using PoMode.Api.Features.ModalMelodies;
+using PoMode.Api.Features.SongStatistics;
 using PoMode.Shared.Analysis;
 using Xunit;
 

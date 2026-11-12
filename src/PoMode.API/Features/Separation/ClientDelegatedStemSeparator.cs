@@ -1,10 +1,10 @@
-using PoMode.API.Audio;
-using PoMode.API.Features.Analysis;
-using PoMode.API.Features.PitchTracking;
-using PoMode.API.Pipeline;
+using PoMode.Api.Audio;
+using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.PitchTracking;
+using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Separation;
+namespace PoMode.Api.Features.Separation;
 
 /// <summary>The vocal stem the browser separated, already validated and written into the job folder.</summary>
 public sealed record ClientStems(string VocalsPath);

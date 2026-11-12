@@ -1,4 +1,4 @@
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.TestCommon;
 using Xunit;
 

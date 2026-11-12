@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.SongLoop;
+namespace PoMode.Api.Features.SongLoop;
 
 public static class SongLoopEndpoints
 {
@@ -11,18 +11,23 @@ public static class SongLoopEndpoints
         var group = app.MapGroup("/api/analysis");
         group.AddEndpointFilter<JobIdEndpointFilter>();
 
-        // Derived per request from the stored chords, same ruling as /structure: nothing to keep in
-        // step with the chords if a rerun replaces them. 404 when the song never comes round twice.
-        group.MapGet("/{jobId}/loop", async Task<Results<Ok<SongLoopDto>, NotFound>> (
+        // Derived per request from the stored chords: 204 when the song never comes round twice, 404 when the job is missing.
+        group.MapGet("/{jobId}/loop", async Task<Results<Ok<SongLoopDto>, NoContent, NotFound>> (
             string jobId, JobStore store, HooktheoryClient hooktheory, CancellationToken ct) =>
-            await FindAsync(jobId, store, ct) is { } loop
+        {
+            if (await store.LoadAsync(jobId, ct) is null)
+            {
+                return TypedResults.NotFound();
+            }
+            return await FindAsync(jobId, store, ct) is { } loop
                 ? TypedResults.Ok(new SongLoopDto(
                     SongLoops.Id(loop.Mode, loop.Bpm, loop.Found.Formulas),
                     [.. loop.Found.Chords.Select(chord => chord.Symbol)],
                     string.Join(" - ", loop.Found.Formulas.Select(formula => formula[..formula.IndexOf(':')])),
                     loop.Found.Repeats,
                     hooktheory.IsConfigured && HooktheoryClient.ChordPath(loop.Found.Formulas) is not null))
-                : TypedResults.NotFound())
+                : TypedResults.NoContent();
+        })
             .WithTags("Analysis")
             .WithName("GetSongLoop")
             .WithSummary("The chord cycle the song repeats most, as a progression the Mode Lab and Practice can play.");

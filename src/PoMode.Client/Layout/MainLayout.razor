@@ -1,6 +1,8 @@
 @inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.WebAssembly.Hosting
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+@inject IWebAssemblyHostEnvironment HostEnv
 @inject SessionState Session
 @inject ThemeState Theme
 @inject FeatureFlags Flags
@@ -86,6 +88,20 @@
                         Diagnostics
                     </a>
                 }
+                @if (HostEnv.IsDevelopment() || HostEnv.IsEnvironment("Test"))
+                {
+                    <div class="overflow-group" role="group" aria-label="Dev persona">
+                        <span class="pm-label overflow-label">Dev Persona</span>
+                        @foreach (var persona in AccountMenu.Personas)
+                        {
+                            var active = string.Equals(DevFakeUserHandler.ActiveFakeUser, persona.FakeUserHeader, StringComparison.Ordinal);
+                            <button class="overflow-item @(active ? "overflow-item--active" : "")" type="button" role="menuitemradio"
+                                    aria-checked="@active" @onclick="@(() => SwitchDevPersonaAsync(persona.FakeUserHeader))">
+                                @(active ? "● " : "○ ")@persona.Label
+                            </button>
+                        }
+                    </div>
+                }
                 @* Offered only when the browser has actually handed us an install prompt, so the
                    item is never a button that does nothing. *@
                 @if (_canInstall)
@@ -121,13 +137,17 @@
                and leaves a blank page with no way back. *@
             <div class="po-error-panel" role="alert">
                 <h2>Something went wrong</h2>
-                <p>This page hit an unexpected error. Reload the page to try again.</p>
+                <p>This page hit an unexpected error. Try again or reload the page.</p>
+                <div class="po-error-actions">
+                    <RadzenButton Text="Retry" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="RecoverBoundary" />
+                </div>
             </div>
         </ErrorContent>
     </ErrorBoundary>
 </main>
 
-<div class="build-watermark" title="Build date" aria-hidden="true">@BuildDate</div>
+<BottomNav />
+<BuildVersion />
 
 @code {
     private IJSObjectReference? _pwa;
@@ -154,6 +174,15 @@
     /// <summary>The layout outlives navigation, so a tripped boundary would otherwise keep showing its
     /// error panel on every page until a reload. A new page (a new Body) gets a clean start.</summary>
     protected override void OnParametersSet() => _boundary?.Recover();
+
+    private void RecoverBoundary() => _boundary?.Recover();
+
+    private async Task SwitchDevPersonaAsync(string? fakeUser)
+    {
+        DevFakeUserHandler.ActiveFakeUser = fakeUser;
+        _overflowOpen = false;
+        await Session.RefreshAsync();
+    }
 
     /// <summary>True once the browser has offered an install prompt for this app to capture. It
     /// never fires on a desktop browser that already has the app, or on iOS at all.</summary>

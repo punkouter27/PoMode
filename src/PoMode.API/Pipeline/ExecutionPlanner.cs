@@ -1,6 +1,6 @@
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Pipeline;
+namespace PoMode.Api.Pipeline;
 
 /// <summary>Resolves each stage to the best available executor: Local model → browser.</summary>
 public sealed class ExecutionPlanner(

@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using PoMode.API.Features.Analysis;
+using PoMode.Api.Features.Analysis;
 using PoMode.Shared.Analysis;
 
-namespace PoMode.API.Features.Export;
+namespace PoMode.Api.Features.Export;
 
 public static class MidiExportEndpoints
 {

@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
 
-namespace PoMode.API.Audio;
+namespace PoMode.Api.Audio;
 
 /// <summary>
 /// Writes an <see cref="AudioBuffer"/> back to a canonical PCM16 WAV file, so pipeline stages that
