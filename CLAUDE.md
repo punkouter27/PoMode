@@ -100,13 +100,10 @@ These override any default instinct. Where one contradicts a habit, the rule win
 
 One process: `PoMode.Api` hosts the Blazor WASM client (`PoMode.Client`), the REST endpoints, a SignalR
 hub (`/hubs/analysis`) and the background analysis worker; `PoMode.Shared` holds the DTOs, the
-source-generated `PoModeJsonContext` and the few pure lookups both sides need. The rest is in `docs/`:
-
-- `docs/architecture.md` - every feature slice and why it is shaped the way it is.
-- `docs/ui-rules.md` - colour tokens, the 12px floor, the 640px breakpoint, buttons, and "an effect
-  animates a fact, never a mood".
-- `docs/removed.md` - features that were deliberately removed. Do not rebuild one by accident.
-- `docs/ai-cost.md` - what the one paid piece (the optional Azure OpenAI interpreter) costs, and how to switch it on.
+source-generated `PoModeJsonContext` and the few pure lookups both sides need. Server features
+live under `src/PoMode.Api/Features/`; the root `README.md` is the project overview. There is no
+`docs/` directory in this checkout, so this file and the source are the architecture and decision
+references until one is added.
 
 # NET_RULES (New project: apply all / Existing project: verify & fix)
 
