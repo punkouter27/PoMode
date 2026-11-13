@@ -170,7 +170,7 @@ public static class ModalMelodyEndpoints
                 return TypedResults.BadRequest("No recording uploaded.");
             }
 
-            var file = form.Files.FirstOrDefault();
+            var file = form.Files.Count > 0 ? form.Files[0] : null;
             if (file is null)
             {
                 return TypedResults.BadRequest("No recording uploaded.");
@@ -183,7 +183,7 @@ public static class ModalMelodyEndpoints
                 {
                     UploadRejection.TooLarge => "The recording exceeds the 100 MB limit.",
                     UploadRejection.UnsupportedFormat or UploadRejection.CannotConvert => "The recording must be .wav or .mp3 audio.",
-                    _ => throw new ArgumentOutOfRangeException(nameof(rejection), rejection, "Unhandled upload rejection."),
+                    _ => throw new InvalidOperationException($"Unhandled upload rejection {rejection}."),
                 });
             }
 
