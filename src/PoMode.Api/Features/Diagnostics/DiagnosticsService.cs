@@ -32,6 +32,8 @@ public sealed class DiagnosticsService(
     InterpreterStats interpreters,
     TimeProvider time)
 {
+    private static readonly TimeSpan ProbeBudget = TimeSpan.FromSeconds(1.5);
+
     public async Task<DiagnosticsReport> BuildReportAsync(CancellationToken ct)
     {
         var stores = await StoresAsync(ct);
@@ -90,12 +92,25 @@ public sealed class DiagnosticsService(
             null,
             now);
 
+        // Capped: an Ollama that is not running can hold a probe for seconds, and the page waits on it.
         var started = Stopwatch.GetTimestamp();
-        var writers = await interpreterSelector.ListAsync(ct);
+        var anyModel = false;
+        using (var probe = CancellationTokenSource.CreateLinkedTokenSource(ct))
+        {
+            probe.CancelAfter(ProbeBudget);
+            try
+            {
+                anyModel = (await interpreterSelector.ListAsync(probe.Token)).Any(writer => writer.UsesLlm && writer.Available);
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                // Too slow to count as available.
+            }
+        }
         var writersLatency = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
         var ai = new DiagnosticCheck(
             "AI interpreters",
-            writers.Any(writer => writer.UsesLlm && writer.Available) ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
+            anyModel ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
             "Language models that write a song's summary and answer questions; a template stands in without one.",
             Math.Round(writersLatency, 1),
             now);
