@@ -134,6 +134,15 @@
     }
 }
 
+/* An anchor (it goes somewhere) dressed as one of the header's icon buttons. */
+.settings-link {
+    text-decoration: none;
+}
+
+.settings-link ::deep .rzi {
+    font-size: 1.15rem;
+}
+
 .icon-button:hover {
     background: var(--pm-surface);
     color: var(--pm-fg);

@@ -37,6 +37,11 @@
                 title="Theme: follows the system by default; click to override" aria-label="@($"Theme: {Theme.Label}")">
             @Theme.Glyph
         </button>
+        @* Settings in plain sight at every width (2026-11-17): inside the ⋯ menu alone it was a
+           place people had to already know about. The menu keeps its item too. *@
+        <a class="icon-button settings-link" href="settings" id="open-settings" title="Settings" aria-label="Settings">
+            <RadzenIcon Icon="settings" />
+        </a>
         <button class="icon-button overflow-toggle" type="button" @onclick="ToggleOverflowAsync"
                 title="More" aria-label="More" aria-haspopup="true" aria-expanded="@_overflowOpen">
             ⋯
@@ -84,7 +89,7 @@
                 </a>
                 @if (Flags.Tools.Diagnostics)
                 {
-                    <a class="overflow-item" role="menuitem" href="diagnostics" @onclick="CloseOverflow">
+                    <a class="overflow-item" role="menuitem" href="diag" @onclick="CloseOverflow">
                         Diagnostics
                     </a>
                 }
