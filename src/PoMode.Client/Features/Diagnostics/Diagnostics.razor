@@ -1,45 +1,87 @@
+@page "/diag"
 @page "/diagnostics"
+@using System.Diagnostics
 @using PoMode.Shared.Analysis
 @using PoMode.Shared.Diagnostics
-@using PoMode.Shared.Hardware
 @inject AnalysisClient Analysis
 
 <PageTitle>Diagnostics · PoMode</PageTitle>
 
-@* One card, a section per question: where it runs, what the pipeline would pick, what the machine
-   has. Four stacked cards spent a border and a padding ring on each heading. *@
+@* /diag is the fleet's one address for "is this app well?": reachable signed out, plain words, one
+   status per thing the app leans on. /diagnostics stays as the old address. The JSON it reads lives
+   at /api/diag (2026-11-17) so a browser landing here gets this page rather than raw JSON. *@
 <RadzenCard class="diag">
     <div class="diag-header">
         <RadzenText TextStyle="TextStyle.H5" TagName="TagName.H1" Text="Diagnostics" />
-        <RadzenButton Text="Refresh" Click="@LoadAsync" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
+        <RadzenButton Text="@(_loading ? "Refreshing…" : "Refresh")" Icon="refresh" Click="@LoadAsync"
+                      Disabled="@_loading" IsBusy="@_loading" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                      id="diag-refresh" />
     </div>
+
     @if (_error is not null)
     {
-        <RadzenText class="diag-error" Text="@_error" />
+        <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" AllowClose="false" Shade="Shade.Lighter"
+                     Title="The app's API did not answer" class="diag-banner" id="diag-error">
+            @_error
+        </RadzenAlert>
     }
     else if (_report is null)
     {
-        <RadzenText Text="Loading…" />
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" class="diag-loading">
+            <RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Small" />
+            <RadzenText Text="Checking the app's health…" />
+        </RadzenStack>
     }
     else
     {
         var report = _report;
-        @* Two columns on a desktop so the page is one screen at 1440×900: the server's state on the left,
-           the model table (the longest list here) on the right. *@
+        <RadzenAlert AlertStyle="@AlertFor(report.Status)" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false"
+                     Title="@Headline(report.Status)" class="diag-banner" id="diag-status" data-status="@report.Status">
+            Checked @report.CheckedAt.ToLocalTime().ToString("HH:mm:ss"). Version @BuildVersion.Stamp · @report.EnvironmentName environment.
+        </RadzenAlert>
+
         <div class="diag-columns">
             <div class="diag-col">
-                <section class="diag-section" aria-label="Environment">
-                    <h3 class="pm-label diag-title">Environment</h3>
+                <section class="diag-section" aria-label="API">
+                    <h2 class="pm-label diag-title">API</h2>
+                    <CheckRow Check="@(new DiagnosticCheck("PoMode API", DiagnosticStatus.Healthy, "Reachable: answers every page, upload and analysis.", _apiMs, report.CheckedAt))" />
+                </section>
+
+                <section class="diag-section" aria-label="Database / storage">
+                    <h2 class="pm-label diag-title">Database / storage</h2>
+                    @if (report.Stores.Count == 0)
+                    {
+                        <RadzenText Text="No stores are reported." />
+                    }
+                    @foreach (var store in report.Stores)
+                    {
+                        <CheckRow Check="store" />
+                    }
+                </section>
+
+                <section class="diag-section" aria-label="Services">
+                    <h2 class="pm-label diag-title">Services</h2>
+                    @if (report.Services.Count == 0)
+                    {
+                        <RadzenText Text="No external services are reported." />
+                    }
+                    @foreach (var service in report.Services)
+                    {
+                        <CheckRow Check="service" />
+                    }
+                </section>
+            </div>
+
+            <div class="diag-col">
+                <section class="diag-section" aria-label="Activity">
+                    <h2 class="pm-label diag-title">Activity</h2>
                     <dl class="diag-grid">
-                        <dt>Environment</dt><dd>@report.EnvironmentName</dd>
-                        <dt>Azure hosted</dt><dd>@YesNo(report.IsAzureHosted)</dd>
-                        <dt>Secret source</dt><dd>@report.SecretSource @(report.SecretFellBack ? "(fell back)" : "")</dd>
                         <dt>Jobs queued</dt><dd>@report.QueueDepth</dd>
                         @if (report.Operational is { } operational)
                         {
-                            <dt>Rate limits</dt><dd>@YesNo(operational.RateLimitsEnabled)</dd>
-                            <dt>Push notifications</dt><dd>@YesNo(operational.PushAvailable)</dd>
-                            <dt>Telemetry export</dt><dd>@YesNo(operational.TelemetryEnabled)</dd>
+                            <dt>Queue limit</dt><dd>@operational.MaxQueueDepth</dd>
+                            <dt>Rate limits</dt><dd>@OnOff(operational.RateLimitsEnabled)</dd>
+                            <dt>Telemetry export</dt><dd>@OnOff(operational.TelemetryEnabled)</dd>
                         }
                     </dl>
                 </section>
@@ -49,8 +91,8 @@
                 @if (report.Interpreters is { Count: > 0 } writers)
                 {
                     <section class="diag-section" aria-label="Interpreters">
-                        <h3 class="pm-label diag-title">Interpreters since start-up</h3>
-                        <table class="diag-models">
+                        <h2 class="pm-label diag-title">Interpreters since start-up</h2>
+                        <table class="diag-table">
                             <thead><tr><th>Interpreter</th><th>Passed</th><th>Sent back</th><th>Fell through</th></tr></thead>
                             <tbody>
                                 @foreach (var writer in writers)
@@ -63,7 +105,7 @@
                 }
 
                 <section class="diag-section" aria-label="Execution plan">
-                    <h3 class="pm-label diag-title">Execution plan (defaults)</h3>
+                    <h2 class="pm-label diag-title">What a new upload would run</h2>
                     @if (report.DefaultPlan is { Count: > 0 } plan)
                     {
                         <ul class="diag-plan">
@@ -72,7 +114,7 @@
                                 <li>
                                     <span class="stage">@stage.Stage</span>
                                     <TierBadge Tier="stage.Tier" />
-                                    <span class="executor">@stage.Executor</span>
+                                    <span class="executor">@ExecutorNames.Display(stage.Executor)</span>
                                 </li>
                             }
                         </ul>
@@ -83,29 +125,6 @@
                     }
                 </section>
             </div>
-            <section class="diag-section" aria-label="Hardware">
-                <h3 class="pm-label diag-title">Hardware</h3>
-                @if (report.Hardware is { } hardware)
-                {
-                    <table class="diag-models">
-                        <thead><tr><th>Model</th><th>Available</th><th>Size</th></tr></thead>
-                        <tbody>
-                            @foreach (var model in hardware.Models)
-                            {
-                                <tr>
-                                    <td>@model.Key</td>
-                                    <td>@YesNo(model.Available)</td>
-                                    <td>@(model.SizeBytes > 0 ? $"{model.SizeBytes / (1024.0 * 1024):0.0} MB" : "—")</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <RadzenText Text="Hardware probe returned nothing." />
-                }
-            </section>
         </div>
     }
 </RadzenCard>
@@ -113,21 +132,54 @@
 @code {
     private DiagnosticsReport? _report;
     private string? _error;
+    private bool _loading;
+    private double _apiMs;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
     private async Task LoadAsync()
     {
+        if (_loading)
+        {
+            return;
+        }
+        _loading = true;
         _error = null;
         try
         {
+            var started = Stopwatch.GetTimestamp();
             _report = await Analysis.GetDiagnosticsAsync();
+            _apiMs = Math.Round(Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+            if (_report is null)
+            {
+                _error = "The API answered with nothing. Try Refresh in a moment.";
+            }
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException or TaskCanceledException)
         {
-            _error = $"Could not load diagnostics: {ex.Message}";
+            // Plain words only: the exception text can carry an address.
+            _report = null;
+            _error = "The page could not reach the API. Check your connection, then try Refresh.";
+        }
+        finally
+        {
+            _loading = false;
         }
     }
 
-    private static string YesNo(bool value) => value ? "yes" : "no";
+    private static AlertStyle AlertFor(string status) => status switch
+    {
+        DiagnosticStatus.Healthy => AlertStyle.Success,
+        DiagnosticStatus.Degraded => AlertStyle.Warning,
+        _ => AlertStyle.Danger,
+    };
+
+    private static string Headline(string status) => status switch
+    {
+        DiagnosticStatus.Healthy => "Everything is working",
+        DiagnosticStatus.Degraded => "Working, with something running in a reduced mode",
+        _ => "Something the app needs is down",
+    };
+
+    private static string OnOff(bool value) => value ? "on" : "off";
 }

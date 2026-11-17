@@ -12,8 +12,16 @@
     min-width: 0;
 }
 
-.diag-error {
-    color: var(--pm-note-outside);
+.diag-banner {
+    margin: var(--pm-space-2) 0 0;
+}
+
+.diag-loading {
+    padding-top: var(--pm-space-2);
+}
+
+.diag-title {
+    margin: 0;
 }
 
 .diag-grid {
@@ -54,21 +62,21 @@
     color: var(--pm-fg-muted);
 }
 
-.diag-models {
+.diag-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 0.75rem;
     font-size: 0.9rem;
 }
 
-.diag-models th,
-.diag-models td {
+.diag-table th,
+.diag-table td {
     text-align: left;
     padding: 0.25rem 0.5rem;
     border-bottom: 1px solid var(--pm-border);
 }
 
-.diag-models th {
+.diag-table th {
     color: var(--pm-fg-muted);
     font-weight: 600;
 }
@@ -92,7 +100,7 @@
 
     .diag-grid dd,
     .diag-plan .executor,
-    .diag-models td {
+    .diag-table td {
         overflow-wrap: anywhere;
     }
 }

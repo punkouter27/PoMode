@@ -19,8 +19,8 @@ public sealed class WriteEndpointAuthTests : IDisposable
     // Every route a signed-out caller may reach. There is no FallbackPolicy here, so an endpoint is
     // public unless it says RequireAuthorization; a new public route fails the test below until it
     // is added here on purpose. Static files and the Blazor host are public by design and not listed.
-    // Listed as Production maps them: OpenAPI and Scalar exist only in Development. /diag stays public
-    // on purpose: presence and health only (no secret values), read by the opt-in Diagnostics page.
+    // Listed as Production maps them: OpenAPI and Scalar exist only in Development. /api/diag stays
+    // public on purpose: status words only (no secrets, hosts or paths), read by the /diag page.
     private static readonly string[] AnonymousAllowList =
     [
         "/api/analysis/executors",
@@ -51,6 +51,7 @@ public sealed class WriteEndpointAuthTests : IDisposable
         "/api/analysis/{jobId}/voice",
         "/api/auth/session",
         "/api/chord-jams/random",
+        "/api/diag",
         "/api/modal-melodies/describe",
         "/api/modal-melodies/generate",
         "/api/modal-melodies/midi",
@@ -59,7 +60,6 @@ public sealed class WriteEndpointAuthTests : IDisposable
         "/auth/guest",
         "/auth/login/microsoft",
         "/auth/logout",
-        "/diag/",
         "/health",
         "/health/live",
         "/health/ready",

@@ -35,7 +35,7 @@ function Test-Json([string] $Path) {
     exit 1
 }
 
-Test-Json '/diag'                              # diagnostics report
+Test-Json '/api/diag'                          # diagnostics report (the page is /diag)
 Test-Json '/api/analysis/executors'            # pipeline executors
 Test-Json '/api/modal-melodies/progressions'   # Mode Lab data the page cannot render without
 

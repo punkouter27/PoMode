@@ -1,4 +1,7 @@
+using System.Diagnostics;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using PoMode.Api.Features.Analysis;
+using PoMode.Api.Features.Auth;
 using PoMode.Api.Features.Push;
 using PoMode.Api.Features.SongStatistics;
 using PoMode.Api.Infrastructure;
@@ -9,27 +12,111 @@ using PoMode.Shared.Diagnostics;
 
 namespace PoMode.Api.Features.Diagnostics;
 
-/// <summary>Builds the /diag report. Reports secret PRESENCE only — never values.</summary>
+/// <summary>
+/// Builds the anonymous /api/diag report. Every dependency is summarised to Healthy / Degraded /
+/// Unhealthy with a fixed sentence of our own: health-check descriptions and exceptions are never
+/// passed through (they can name a path, a host or an account), and where secrets come from is
+/// reported only as the Key Vault check's status.
+/// </summary>
 public sealed class DiagnosticsService(
     IHostEnvironment environment,
     SecretSourceInfo secretSource,
     HardwareProbe hardwareProbe,
+    HealthCheckService healthChecks,
     JobQueue queue,
     ExecutionPlanner planner,
     IConfiguration configuration,
     PushSettings push,
-    InterpreterStats interpreters)
+    PoAuthOptions auth,
+    SongInterpreterSelector interpreterSelector,
+    InterpreterStats interpreters,
+    TimeProvider time)
 {
-    public async Task<DiagnosticsReport> BuildReportAsync(CancellationToken ct) => new(
-        EnvironmentName: environment.EnvironmentName,
-        IsAzureHosted: EnvironmentDetector.IsAzureHosted(),
-        SecretSource: secretSource.Source.ToString(),
-        SecretFellBack: secretSource.FellBack,
-        Hardware: await hardwareProbe.ProbeAsync(ct),
-        QueueDepth: queue.Depth,
-        DefaultPlan: await DefaultPlanAsync(ct),
-        Operational: Operational(),
-        Interpreters: interpreters.Snapshot());
+    public async Task<DiagnosticsReport> BuildReportAsync(CancellationToken ct)
+    {
+        var stores = await StoresAsync(ct);
+        var services = await ServicesAsync(ct);
+        return new DiagnosticsReport(
+            Status: DiagnosticStatus.Worst(stores.Concat(services).Select(check => check.Status)),
+            EnvironmentName: environment.EnvironmentName,
+            CheckedAt: time.GetUtcNow(),
+            Stores: stores,
+            Services: services,
+            QueueDepth: queue.Depth,
+            DefaultPlan: await DefaultPlanAsync(ct),
+            Operational: Operational(),
+            Interpreters: interpreters.Snapshot());
+    }
+
+    private async Task<List<DiagnosticCheck>> StoresAsync(CancellationToken ct)
+    {
+        var report = await healthChecks.CheckHealthAsync(ct);
+        var now = time.GetUtcNow();
+        return
+        [
+            .. report.Entries.Select(entry => new DiagnosticCheck(
+                Name: entry.Key == "job-storage" ? "Job storage" : entry.Key,
+                Status: entry.Value.Status switch
+                {
+                    HealthStatus.Healthy => DiagnosticStatus.Healthy,
+                    HealthStatus.Degraded => DiagnosticStatus.Degraded,
+                    _ => DiagnosticStatus.Unhealthy,
+                },
+                Description: entry.Key == "job-storage"
+                    ? "Keeps uploads, stems and finished analyses, mirrored to blob storage where configured."
+                    : "A storage dependency of the app.",
+                LatencyMs: Math.Round(entry.Value.Duration.TotalMilliseconds, 1),
+                CheckedAt: now)),
+        ];
+    }
+
+    private async Task<List<DiagnosticCheck>> ServicesAsync(CancellationToken ct)
+    {
+        var now = time.GetUtcNow();
+
+        // Where the secrets came from is not reported, only whether the vault was reachable when it
+        // was meant to be: falling back to environment variables is the degraded case.
+        var vault = new DiagnosticCheck(
+            "Key Vault",
+            secretSource.FellBack ? DiagnosticStatus.Degraded : DiagnosticStatus.Healthy,
+            "Holds the app's secrets; read once at start-up.",
+            null,
+            now);
+
+        var signIn = new DiagnosticCheck(
+            "Microsoft sign-in",
+            auth.MicrosoftAvailable ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
+            "Lets a listener keep their library in a Microsoft account; guests work either way.",
+            null,
+            now);
+
+        var started = Stopwatch.GetTimestamp();
+        var writers = await interpreterSelector.ListAsync(ct);
+        var writersLatency = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+        var ai = new DiagnosticCheck(
+            "AI interpreters",
+            writers.Any(writer => writer.UsesLlm && writer.Available) ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
+            "Language models that write a song's summary and answer questions; a template stands in without one.",
+            Math.Round(writersLatency, 1),
+            now);
+
+        var hardware = await hardwareProbe.ProbeAsync(ct);
+        var models = new DiagnosticCheck(
+            "Analysis models",
+            hardware.Models.All(model => model.Available) ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
+            $"Neural models for stems, pitch, chords and beats: {hardware.Models.Count(model => model.Available)} of {hardware.Models.Count} ready.",
+            null,
+            now);
+
+        var notifications = new DiagnosticCheck(
+            "Push notifications",
+            push.Available ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
+            "Tells a closed tab that its song has finished.",
+            null,
+            now);
+
+        return [vault, signIn, ai, models, notifications];
+    }
 
     /// <summary>
     /// The guards this instance is running with. Presence only — in particular the OTLP endpoint is

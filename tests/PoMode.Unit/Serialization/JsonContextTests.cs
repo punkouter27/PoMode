@@ -16,12 +16,13 @@ public class JsonContextTests
     [Fact]
     public void Every_contract_without_wire_coverage_round_trips_through_the_source_gen_context()
     {
+        var checkedAt = DateTimeOffset.Parse("2026-11-17T12:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
         var report = new DiagnosticsReport(
+            Status: DiagnosticStatus.Degraded,
             EnvironmentName: "Development",
-            IsAzureHosted: false,
-            SecretSource: "EnvironmentVariables",
-            SecretFellBack: true,
-            Hardware: null);
+            CheckedAt: checkedAt,
+            Stores: [new DiagnosticCheck("Job storage", DiagnosticStatus.Healthy, "Keeps uploads.", 1.5, checkedAt)],
+            Services: [new DiagnosticCheck("Key Vault", DiagnosticStatus.Degraded, "Holds secrets.", null, checkedAt)]);
 
         var backReport = JsonSerializer.Deserialize(
             JsonSerializer.Serialize(report, PoModeJsonContext.Default.DiagnosticsReport),
@@ -29,8 +30,9 @@ public class JsonContextTests
 
         Assert.NotNull(backReport);
         Assert.Equal("Development", backReport.EnvironmentName);
-        Assert.True(backReport.SecretFellBack);
-        Assert.Equal("EnvironmentVariables", backReport.SecretSource);
+        Assert.Equal(DiagnosticStatus.Degraded, backReport.Status);
+        Assert.Equal(1.5, backReport.Stores[0].LatencyMs);
+        Assert.Null(backReport.Services[0].LatencyMs);
 
         var status = new JobStatusDto(
             JobId: "abc123",

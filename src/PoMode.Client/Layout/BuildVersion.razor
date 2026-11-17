@@ -1,7 +1,8 @@
 <footer class="build-watermark" title="Build version" aria-label="Build version">@Stamp</footer>
 
 @code {
-    private static readonly string Stamp =
+    /// <summary>YYMMDD; also shown on /diag.</summary>
+    public static readonly string Stamp =
         typeof(BuildVersion).Assembly
             .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
             .OfType<System.Reflection.AssemblyMetadataAttribute>()

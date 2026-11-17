@@ -61,7 +61,7 @@ static async Task CaptureAsync(string outDir, string baseUrl)
     // MayScroll is a phone allowance only: on the desktop viewport every route has to fit one screen.
     var routes = new List<(string Name, string Path, bool MayScroll)>
     {
-        ("library", "/", false), ("mode-lab", "/modes", true), ("practice", "/practice", false), ("settings", "/settings", true), ("diagnostics", "/diagnostics", true),
+        ("library", "/", false), ("mode-lab", "/modes", true), ("practice", "/practice", false), ("settings", "/settings", true), ("diagnostics", "/diag", true),
     };
     {
         await using var context = await browser.NewContextAsync(new() { StorageStatePath = state, IgnoreHTTPSErrors = true });

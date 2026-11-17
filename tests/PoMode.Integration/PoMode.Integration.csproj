@@ -6,6 +6,7 @@
     <ProjectReference Include="..\..\src\PoMode.Api\PoMode.Api.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <!-- Windows Media Foundation MP3 encoder for the model-accuracy sample song; the test

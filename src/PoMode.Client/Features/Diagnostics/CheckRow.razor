@@ -1,0 +1,25 @@
+@using PoMode.Shared.Diagnostics
+
+@* One store or service on /diag: its name and status on a line, what it is for under it, then how
+   long asking took and when. *@
+<div class="diag-check" data-check="@Check.Name" data-status="@Check.Status">
+    <div class="diag-check-head">
+        <span class="diag-check-name">@Check.Name</span>
+        <RadzenBadge BadgeStyle="@StyleFor(Check.Status)" Text="@Check.Status" />
+    </div>
+    <span class="diag-check-text">@Check.Description</span>
+    <span class="diag-check-meta">
+        @(Check.LatencyMs is { } ms ? $"{ms:0.#} ms · " : "")checked @Check.CheckedAt.ToLocalTime().ToString("HH:mm:ss")
+    </span>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public DiagnosticCheck Check { get; set; } = default!;
+
+    private static BadgeStyle StyleFor(string status) => status switch
+    {
+        DiagnosticStatus.Healthy => BadgeStyle.Success,
+        DiagnosticStatus.Degraded => BadgeStyle.Warning,
+        _ => BadgeStyle.Danger,
+    };
+}

@@ -63,7 +63,7 @@
         new("Page", "Practice · Your takes", () => GoAsync("practice/takes")),
         new("Page", "Practice · Guitar jam", () => GoAsync("practice/jam")),
         new("Page", "Settings", () => GoAsync("settings")),
-        .. Flags.Tools.Diagnostics ? (Command[])[new("Page", "Diagnostics", () => GoAsync("diagnostics"))] : [],
+        .. Flags.Tools.Diagnostics ? (Command[])[new("Page", "Diagnostics", () => GoAsync("diag"))] : [],
         new("Setting", "Theme: follow my system", () => Theme.SetAsync("system")),
         new("Setting", "Theme: light", () => Theme.SetAsync("light")),
         new("Setting", "Theme: dark", () => Theme.SetAsync("dark")),

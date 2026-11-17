@@ -11,7 +11,7 @@ public class ShellSmokeTests(AppFixture app)
     {
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync();
-        var page = await (await browser.NewContextAsync()).NewPageAsync();
+        var page = await (await browser.NewContextAsync(new() { ViewportSize = new() { Width = 1366, Height = 900 } })).NewPageAsync();
         await using var guard = PlaywrightErrorGuard.Watch(page);
 
         await page.GotoAsync(app.BaseUrl);
@@ -25,6 +25,8 @@ public class ShellSmokeTests(AppFixture app)
         var hiddenOptions = new LocatorAssertionsToBeHiddenOptions { Timeout = AppFixture.ExpectTimeoutMs };
         await Assertions.Expect(page.GetByText("USING MOCK DATA")).ToBeHiddenAsync(hiddenOptions);
         await Assertions.Expect(page.GetByText("PoMode").First).ToBeVisibleAsync(expectOptions);
+        // Settings is in plain sight in the header's upper right, not only behind the ⋯ menu.
+        await Assertions.Expect(page.Locator("header #open-settings")).ToBeVisibleAsync(expectOptions);
         // Diagnostics is an operator's page: off until Settings switches it on, then in the overflow menu.
         await page.GetByRole(AriaRole.Button, new() { Name = "More" }).ClickAsync();
         await Assertions.Expect(page.GetByRole(AriaRole.Menuitem, new() { Name = "Settings" })).ToBeVisibleAsync(expectOptions);
@@ -45,5 +47,18 @@ public class ShellSmokeTests(AppFixture app)
         await page.Locator("#more-tools .settings-row", new() { HasText = "Diagnostics" }).Locator(".rz-switch").ClickAsync();
         await page.GetByRole(AriaRole.Button, new() { Name = "More" }).ClickAsync();
         await Assertions.Expect(page.GetByRole(AriaRole.Menuitem, new() { Name = "Diagnostics" })).ToBeVisibleAsync(expectOptions);
+
+        // /diag is the page, signed out or not, at a desktop and a phone width (the JSON is /api/diag);
+        // the guard fails the test on any console error along the way.
+        await page.GotoAsync($"{app.BaseUrl}/diag");
+        await Assertions.Expect(page.GetByRole(AriaRole.Heading, new() { Name = "Diagnostics", Level = 1 })).ToBeVisibleAsync(expectOptions);
+        await Assertions.Expect(page.Locator("#diag-status")).ToBeVisibleAsync(expectOptions);
+        await Assertions.Expect(page.GetByRole(AriaRole.Region, new() { Name = "Services" })).ToBeVisibleAsync(expectOptions);
+        await page.SetViewportSizeAsync(390, 844);
+        await page.ReloadAsync();
+        await Assertions.Expect(page.Locator("#diag-status")).ToBeVisibleAsync(expectOptions);
+        await Assertions.Expect(page.Locator("header #open-settings")).ToBeVisibleAsync(expectOptions);
+        Assert.True(await page.EvaluateAsync<bool>("document.documentElement.scrollWidth <= window.innerWidth"),
+            "/diag scrolls sideways at 390px");
     }
 }

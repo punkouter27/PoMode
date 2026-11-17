@@ -1,0 +1,35 @@
+.diag-check {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--pm-border);
+    min-width: 0;
+}
+
+.diag-check:last-child {
+    border-bottom: 0;
+}
+
+.diag-check-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.diag-check-name {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.diag-check-text {
+    color: var(--pm-fg);
+    font-size: var(--pm-text-sm);
+    overflow-wrap: anywhere;
+}
+
+.diag-check-meta {
+    color: var(--pm-fg-muted);
+    font-size: var(--pm-text-xs);
+}

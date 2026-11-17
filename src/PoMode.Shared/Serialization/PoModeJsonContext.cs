@@ -2,7 +2,6 @@ using System.Text.Json.Serialization;
 using PoMode.Shared.Account;
 using PoMode.Shared.Analysis;
 using PoMode.Shared.Diagnostics;
-using PoMode.Shared.Hardware;
 using PoMode.Shared.Validation;
 
 namespace PoMode.Shared.Serialization;
@@ -23,7 +22,6 @@ namespace PoMode.Shared.Serialization;
 [JsonSerializable(typeof(ModeLabDescriptionDto))]
 [JsonSerializable(typeof(List<OneDriveFileDto>))]
 [JsonSerializable(typeof(AnalysisPreviewDto))]
-[JsonSerializable(typeof(HardwareReport))]
 [JsonSerializable(typeof(List<NoteEvent>))]
 [JsonSerializable(typeof(List<ChordSpan>))]
 [JsonSerializable(typeof(List<StageExecutorsDto>))]
