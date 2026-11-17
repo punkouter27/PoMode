@@ -121,6 +121,9 @@
                       Disabled="@(_asking || string.IsNullOrWhiteSpace(_question))"
                       Click="@(() => AskAsync(_question!))" id="ask-send" />
     </div>
+    @* The question against SongQuestionRequestValidator (PoMode.Shared, the endpoint's rule too),
+       answered under the box rather than sent. *@
+    <span id="ask-error" class="pm-field-error" role="alert">@_askInvalid</span>
 
     @if (_browserDownload is { } downloaded)
     {
@@ -447,6 +450,9 @@
 
     private string? _question;
     private string? _pendingQuestion;
+
+    /// <summary>Why the typed question was not sent, shown under the box.</summary>
+    private string? _askInvalid;
     private string? _askError;
     private bool _asking;
 
@@ -468,6 +474,7 @@
     private static readonly Dictionary<string, object> AskInputAttributes = new()
     {
         ["aria-label"] = "Ask a question about this song",
+        ["aria-describedby"] = "ask-error",
     };
 
     private async Task AskAsync(string question)
@@ -481,10 +488,11 @@
         var validation = await QuestionValidator.ValidateAsync(new SongQuestionRequest(asked, _conversation, ServerInterpreter));
         if (!validation.IsValid)
         {
-            _askError = validation.Errors[0].ErrorMessage;
+            _askInvalid = validation.Errors[0].ErrorMessage;
             return;
         }
 
+        _askInvalid = null;
         _asking = true;
         _askError = null;
         _question = null;

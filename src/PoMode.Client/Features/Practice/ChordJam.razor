@@ -1,6 +1,9 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @using PoMode.Shared.Analysis
 @using PoMode.Client.Services
+@using PoMode.Shared.Validation
+@using FluentValidation
+@inject IValidator<ChordJamPresetForm> PresetValidator
 @inject AnalysisClient Analysis
 @inject IJSRuntime JS
 @inject BrowserPrefs Prefs
@@ -126,10 +129,20 @@
             <div class="jam-presets">
                 <RadzenDropDown TValue="string" Data="@PresetNames" Value="@_preset" Change="@(value => ApplyPresetAsync((string?)value))"
                                 Placeholder="Presets" class="jam-preset" id="jam-preset" aria-label="Presets" />
-                <RadzenTextBox @bind-Value="@_presetName" Immediate="true" Placeholder="Name these settings" MaxLength="40"
-                               class="jam-preset-name" id="jam-preset-name" aria-label="Preset name" />
-                <RadzenButton Text="Save preset" Icon="save" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
-                              Disabled="@string.IsNullOrWhiteSpace(_presetName)" Click="@SavePresetAsync" id="jam-preset-save" />
+                @* Named and saved through the shared rule (ChordJamPresetFormValidator): an empty or
+                   over-long name is answered under the box rather than silently ignored. *@
+                <RadzenTemplateForm TItem="ChordJamPresetForm" Data="@_presetForm" Submit="@SavePresetAsync" class="jam-preset-form">
+                    <FluentValidationValidator TModel="ChordJamPresetForm" Validator="@PresetValidator" />
+                    <div class="jam-preset-row">
+                        <RadzenTextBox @bind-Value="@_presetForm.Name" Name="jam-preset-name" Placeholder="Name these settings" MaxLength="40"
+                                       class="jam-preset-name" id="jam-preset-name" aria-label="Preset name" aria-describedby="jam-preset-error" />
+                        <RadzenButton ButtonType="ButtonType.Submit" Text="Save preset" Icon="save" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                      Disabled="@_savingPreset" IsBusy="@_savingPreset" id="jam-preset-save" />
+                    </div>
+                    <div id="jam-preset-error">
+                        <ValidationMessage For="@(() => _presetForm.Name)" />
+                    </div>
+                </RadzenTemplateForm>
             </div>
             <div class="jam-settings-grid">
                 @foreach (var knob in Knobs)
@@ -426,7 +439,8 @@
 
     private List<JamPreset> _presets = [];
     private string? _preset;
-    private string _presetName = "";
+    private readonly ChordJamPresetForm _presetForm = new();
+    private bool _savingPreset;
 
     private IEnumerable<string> PresetNames => BuiltInPresets.Concat(_presets).Select(preset => preset.Name).Distinct();
 
@@ -440,17 +454,25 @@
     }
 
     /// <summary>Keeps the sliders as they stand under a name; a name already used is overwritten.</summary>
-    private async Task SavePresetAsync()
+    private async Task SavePresetAsync(ChordJamPresetForm form)
     {
-        var name = _presetName.Trim();
-        if (name.Length == 0)
+        if (_savingPreset)
         {
             return;
         }
-        _presets = [new JamPreset(name, _settings), .. _presets.Where(preset => preset.Name != name)];
-        _preset = name;
-        _presetName = "";
-        await Prefs.SetAsync(BrowserPrefs.JamPresetsKey, _presets, PrefsJsonContext.Default.ListJamPreset);
+        _savingPreset = true;
+        try
+        {
+            var name = form.Name.Trim();
+            _presets = [new JamPreset(name, _settings), .. _presets.Where(preset => preset.Name != name)];
+            _preset = name;
+            form.Name = "";
+            await Prefs.SetAsync(BrowserPrefs.JamPresetsKey, _presets, PrefsJsonContext.Default.ListJamPreset);
+        }
+        finally
+        {
+            _savingPreset = false;
+        }
     }
 
     /// <summary>The lyric line being sung, and which chord of the song it was last wiped for.</summary>

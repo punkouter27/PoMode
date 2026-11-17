@@ -23,6 +23,9 @@ builder.Services.AddScoped<DialogNotificationHelper>();
 builder.Services.AddScoped<IValidator<SongQuestionRequest>, SongQuestionRequestValidator>();
 builder.Services.AddScoped<IValidator<ModeLabDescriptionRequest>, ModeLabDescriptionRequestValidator>();
 builder.Services.AddScoped<IValidator<ModalMelodyRequest>, ModalMelodyRequestValidator>();
+builder.Services.AddScoped<IValidator<ModeLabDescriptionForm>, ModeLabDescriptionFormValidator>();
+builder.Services.AddScoped<IValidator<ChordJamPresetForm>, ChordJamPresetFormValidator>();
+builder.Services.AddScoped<IValidator<AudioFileChoice>, AudioFileChoiceValidator>();
 builder.Services.AddScoped<DevFakeUserHandler>();
 // Same-origin, so the session cookie rides on every request with no header to add; the same is true
 // of the JS modules' fetch() calls and the browser's own uploads.

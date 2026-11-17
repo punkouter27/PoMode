@@ -1,4 +1,7 @@
 @using PoMode.Shared.Analysis
+@using PoMode.Shared.Validation
+@using FluentValidation
+@inject IValidator<AudioFileChoice> FileValidator
 @inject AnalysisClient Analysis
 @inject IJSRuntime JS
 @implements IAsyncDisposable
@@ -41,7 +44,7 @@
                        title="A drum beat recorded without a click: it is cut to a loop at this tempo and played with the chords">
                     <RadzenIcon Icon="album" />
                     <span>@(_adding ? "Adding…" : "Choose a beat")</span>
-                    <input type="file" accept="audio/*,.mp3,.wav,.m4a" aria-label="Choose a beat" disabled="@_adding"
+                    <input type="file" accept="audio/*,.mp3,.wav,.m4a" aria-label="Choose a beat" disabled="@_adding" aria-describedby="drums-pick-error"
                            @ref="_beatInput" @onchange="OnBeatChosenAsync" id="drums-choose" />
                 </label>
                 <RadzenButton Text="Record a beat" Icon="graphic_eq" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
@@ -78,6 +81,8 @@
     {
         <p class="drums-readout">@Readout</p>
     }
+    @* The picked beat against the shared rule (AudioFileChoiceValidator), before a byte is sent. *@
+    <span id="drums-pick-error" class="pm-field-error" role="alert">@_pickError</span>
     @if (_error is { } error)
     {
         <p class="drums-error" role="alert">@error</p>
@@ -178,7 +183,22 @@
     private static string ChoiceLabel(string? fileName, DateTimeOffset createdAt)
         => $"{fileName} · {createdAt.ToLocalTime():yyyy-MM-dd HH:mm}";
 
-    private Task OnBeatChosenAsync() => AddBeatAsync(_beatInput, name: null);
+    private string? _pickError;
+
+    private async Task OnBeatChosenAsync()
+    {
+        if (_adding)
+        {
+            return;
+        }
+        _uploader ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/upload/resumable-upload.js");
+        var (cancelled, error) = await AudioPick.CheckAsync(_uploader, _beatInput, FileValidator);
+        _pickError = error;
+        if (!cancelled && error is null)
+        {
+            await AddBeatAsync(_beatInput, name: null);
+        }
+    }
 
     /// <summary>
     /// A new beat: over tus like every upload (resumable-upload.js remembers it as a beat if the tab

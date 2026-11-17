@@ -14,7 +14,7 @@ public enum UploadRejection
 /// <summary>Magic-byte sniffing for uploads; extension is never trusted.</summary>
 public static class AudioFormatValidator
 {
-    public const long MaxBytes = 100L * 1024 * 1024;
+    public const long MaxBytes = PoMode.Shared.Validation.FormRules.MaxAudioBytes;
 
     /// <summary>The hum take's multipart file, through the same rule as a resumable upload.</summary>
     public static async Task<UploadRejection?> ValidateAsync(IFormFile file, CancellationToken ct)

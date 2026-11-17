@@ -24,9 +24,7 @@ public sealed class ModeLabDescriptionRequestValidator : AbstractValidator<ModeL
 {
     public ModeLabDescriptionRequestValidator()
     {
-        RuleFor(x => x.Text)
-            .NotEmpty().WithMessage("Describe how the loop should sound.")
-            .MaximumLength(200).WithMessage("Descriptions must be 200 characters or fewer.");
+        RuleFor(x => x.Text).ModeLabDescription();
     }
 }
 

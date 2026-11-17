@@ -4,6 +4,7 @@ using System.Text;
 using PoMode.Api.Features.Analysis;
 using PoMode.Api.Features.Auth;
 using PoMode.Shared.Analysis;
+using PoMode.Shared.Validation;
 using tusdotnet.Models;
 using tusdotnet.Models.Configuration;
 using tusdotnet.Models.Expiration;
@@ -45,6 +46,8 @@ public sealed class ResumableUploads(JobStore jobs, TimeProvider time, ILogger<R
     public const string Route = "/api/uploads";
 
     public static readonly TimeSpan Lifetime = TimeSpan.FromHours(24);
+
+    private static readonly AudioFileChoiceValidator ChoiceValidator = new();
 
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _handoffLocks = new();
 
@@ -98,6 +101,13 @@ public sealed class ResumableUploads(JobStore jobs, TimeProvider time, ILogger<R
                     else if (!creating.Metadata.TryGetValue("filename", out var name) || name.HasEmptyValue)
                     {
                         creating.FailRequest("A 'filename' metadata entry is required.");
+                    }
+                    // The pickers' own rule (name and size), so the page and the server refuse a file
+                    // in the same words.
+                    else if (ChoiceValidator.Validate(new AudioFileChoice(name.GetString(Encoding.UTF8), creating.UploadLength))
+                             is { IsValid: false } invalid)
+                    {
+                        creating.FailRequest(invalid.Errors[0].ErrorMessage);
                     }
                     return Task.CompletedTask;
                 },

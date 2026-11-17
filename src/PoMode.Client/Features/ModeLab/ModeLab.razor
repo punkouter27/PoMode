@@ -1,5 +1,8 @@
 @page "/modes"
 @using PoMode.Shared.Analysis
+@using PoMode.Shared.Validation
+@using FluentValidation
+@inject IValidator<ModeLabDescriptionForm> DescribeValidator
 @inject AnalysisClient Analysis
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
@@ -85,13 +88,20 @@
         {
             @* The settings below, by description: "darker and slower", "funky, in D". Read by the server
                (ModeLabDescriber), which says what it changed; the controls then show it. *@
-            <form class="describe-row" @onsubmit="DescribeAsync" @onsubmit:preventDefault>
-                <RadzenTextBox @bind-Value="_description" Placeholder="Describe it: darker, slower, funky, in D…"
-                               aria-label="Describe how the loop should sound" class="describe-input" MaxLength="200" />
-                <RadzenButton ButtonType="ButtonType.Submit" Text="@(_describing ? "Reading…" : "Apply")" Icon="auto_awesome"
-                              Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
-                              Disabled="@(_describing || string.IsNullOrWhiteSpace(_description))" />
-            </form>
+            <RadzenTemplateForm TItem="ModeLabDescriptionForm" Data="@_describeForm" Submit="@DescribeAsync" class="describe-form">
+                <FluentValidationValidator TModel="ModeLabDescriptionForm" Validator="@DescribeValidator" />
+                <div class="describe-row">
+                    <RadzenTextBox @bind-Value="_describeForm.Text" Name="describe-text" Placeholder="Describe it: darker, slower, funky, in D…"
+                                   aria-label="Describe how the loop should sound" class="describe-input" MaxLength="200"
+                                   aria-describedby="describe-error" />
+                    <RadzenButton ButtonType="ButtonType.Submit" Text="@(_describing ? "Reading…" : "Apply")" Icon="auto_awesome"
+                                  Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                                  Disabled="@_describing" IsBusy="@_describing" id="describe-apply" />
+                </div>
+                <div id="describe-error" class="describe-error">
+                    <ValidationMessage For="@(() => _describeForm.Text)" />
+                </div>
+            </RadzenTemplateForm>
             @if (_describeSentence is { } said)
             {
                 <p class="describe-said" role="status">@said</p>

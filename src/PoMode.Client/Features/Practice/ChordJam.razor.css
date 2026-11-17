@@ -303,6 +303,13 @@
     width: 12rem;
 }
 
+.jam-preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pm-space-2);
+}
+
 .jam-presets ::deep .jam-preset-name {
     width: 14rem;
     max-width: 100%;

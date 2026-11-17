@@ -1,4 +1,7 @@
 @using PoMode.Shared.Analysis
+@using PoMode.Shared.Validation
+@using FluentValidation
+@inject IValidator<AudioFileChoice> FileValidator
 @inject AnalysisClient Analysis
 @inject NavigationManager Navigation
 @inject NotificationService Notifications
@@ -31,7 +34,7 @@
                 <RadzenIcon Icon="upload_file" />
                 <span>Choose a song</span>
                 <input type="file" class="upload-input" accept="audio/*,.mp3,.wav,.m4a"
-                       aria-label="Choose a song" disabled="@_uploading"
+                       aria-label="Choose a song" disabled="@_uploading" aria-describedby="upload-pick-error"
                        @ref="_fileInput" @onchange="OnFileChosenAsync" />
             </label>
             @if (!_recording)
@@ -65,6 +68,8 @@
                 </div>
             }
         </div>
+        @* The picked file against the shared rule (AudioFileChoiceValidator), before a byte is sent. *@
+        <span id="upload-pick-error" class="pm-field-error" role="alert">@_pickError</span>
         @if (_recordError is not null)
         {
             <RadzenText class="upload-error" Text="@_recordError" />
@@ -188,7 +193,22 @@
         return InvokeAsync(StateHasChanged);
     }
 
-    private Task OnFileChosenAsync() => UploadAsync(_fileInput, name: null);
+    private string? _pickError;
+
+    private async Task OnFileChosenAsync()
+    {
+        if (_uploading)
+        {
+            return;
+        }
+        _uploader ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/upload/resumable-upload.js");
+        var (cancelled, error) = await AudioPick.CheckAsync(_uploader, _fileInput, FileValidator);
+        _pickError = error;
+        if (!cancelled && error is null)
+        {
+            await UploadAsync(_fileInput, name: null);
+        }
+    }
 
     /// <summary>
     /// Every intake path's one route to a job: the bytes go over tus, then the finished upload is

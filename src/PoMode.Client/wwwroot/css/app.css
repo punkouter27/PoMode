@@ -34,3 +34,17 @@
     color: var(--pm-fg-muted);
 }
 
+
+/* A form field's own error, right under it (FluentValidationValidator + ValidationMessage, or a
+   picker's pre-upload check). One look for every form in the app. */
+.validation-message,
+.pm-field-error {
+    display: block;
+    margin: 0.25rem 0 0;
+    color: var(--pm-danger);
+    font-size: var(--pm-text-sm);
+}
+
+.pm-field-error:empty {
+    display: none;
+}

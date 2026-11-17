@@ -200,6 +200,20 @@ export function takeUnsent() {
     return blob;
 }
 
+/// The picked file's name and size, read before anything is sent so the page can check them against
+/// the shared rule (AudioFileChoiceValidator) and say what is wrong under the picker. Null when the
+/// dialog was cancelled. `clear` empties the input, so choosing the same file again still fires.
+export function peek(input) {
+    const picked = input && input.files && input.files[0];
+    return picked ? { fileName: picked.name || '', length: picked.size } : null;
+}
+
+export function clear(input) {
+    if (input) {
+        input.value = '';
+    }
+}
+
 function toBlob(source) {
     if (typeof HTMLInputElement !== 'undefined' && source instanceof HTMLInputElement) {
         const picked = source.files && source.files[0];

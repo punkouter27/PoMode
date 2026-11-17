@@ -4,6 +4,7 @@ using Radzen;
 using PoMode.Client.Features.ModeLab;
 using PoMode.Client.Services;
 using PoMode.Shared.Analysis;
+using PoMode.Shared.Validation;
 
 namespace PoMode.Client.Features.ModeLab;
 
@@ -165,22 +166,24 @@ public partial class ModeLab
         StateHasChanged();
     }
 
-    private string? _description;
+    /// <summary>The describe box's model; FluentValidation (PoMode.Shared) checks it before Submit
+    /// fires, so an empty or over-long description is answered under the box, not sent.</summary>
+    private readonly ModeLabDescriptionForm _describeForm = new();
     private string? _describeSentence;
     private bool _describing;
 
     /// <summary>Applies a described change through the same paths the controls use, so "Match to mode"
     /// still moves the harmony with a new mode; the described tempo is set after it.</summary>
-    private async Task DescribeAsync()
+    private async Task DescribeAsync(ModeLabDescriptionForm form)
     {
-        if (string.IsNullOrWhiteSpace(_description) || _describing)
+        if (_describing)
         {
             return;
         }
         _describing = true;
         try
         {
-            if (await Analysis.DescribeModeLabAsync(_description, CurrentRequest()) is not { } described)
+            if (await Analysis.DescribeModeLabAsync(form.Text.Trim(), CurrentRequest()) is not { } described)
             {
                 _describeSentence = "That could not be read just now.";
                 return;
@@ -204,7 +207,7 @@ public partial class ModeLab
             {
                 _bpm = next.Bpm;
             }
-            _description = null;
+            form.Text = "";
             await OnConfigChanged();
         }
         catch (HttpRequestException)

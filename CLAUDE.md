@@ -27,7 +27,10 @@ pwsh scripts/setup-microsoft-signin.ps1  # Microsoft sign-in app registration (F
 - `InterpreterReportTests` does the same for the written interpretation: every Ollama model installed on the machine writes the summary and answers four questions over the real prompts, scored on schema, invented figures (`GroundingCheck`) and declining the unanswerable one, into `test-reports/interpreter-report.html`, and it fails when `OllamaSongInterpreter.PreferredModel` is not the winner. Minutes per model on a CPU: `POMODE_LLM_REPORT=1 dotnet test tests/PoMode.Integration --filter InterpreterReport`.
 
 - First E2EUI run: install browsers with `pwsh tests/PoMode.E2EUI/bin/Debug/net10.0/playwright.ps1 install chromium`.
-- API reference UI: `/scalar`. Health: `/health`, `/health/live`, `/health/ready`. Diagnostics: `/diag`.
+- API reference UI: `/scalar`. Health: `/health`, `/health/live`, `/health/ready`. Diagnostics: the `/diag` page
+  (`/diagnostics` is an alias), fed by the anonymous `GET /api/diag` JSON — moved off `/diag` on 2026-11-17 so a
+  browser gets the page, and reduced to Healthy/Degraded/Unhealthy per store and service (no secret source, paths,
+  hosts or keys; `DiagnosticsReportTests` guards it).
 
 ## Working rules
 
@@ -123,7 +126,7 @@ references until one is added.
 * **Secrets & Identity:** Resource Group `PoShared` (or `Po{Name}`). Authenticate exclusively via System-Assigned Managed Identity / `DefaultAzureCredential` + Azure Key Vault (Local & Azure). Connection strings, `appsettings` secrets, and `dotnet-secrets` are strictly forbidden. Get keys from key vault in dev env and prod env.
 * **Health & Diagnostics:**
   * `/health`: Native .NET health status for external dependencies.
-  * `/diag`: Real-time operational summary. Must strictly redact all secrets, tokens, and connection strings.
+  * `/diag`: Real-time operational summary page; its JSON is `GET /api/diag` (2026-11-17). Must strictly redact all secrets, tokens, and connection strings.
 
 ## 3. UI/UX & Blazor WASM
 * **Layout Structure:** Header format: `[Left: Branding | Center: Contextual Actions | Right: Session / Logout]`.
@@ -132,3 +135,9 @@ references until one is added.
 * **Code Hygiene:** Continuously purge unused files, dead code, orphaned assets, and unused `using` directives across all commits.
 * **Ports:** HTTP 5000, HTTPS 5001.
 * **Home page title:** exactly `Po{Name}` (this app: `PoMode`).
+* **Settings in the header (2026-11-17):** a gear link to `/settings` sits in the header's upper right at every width,
+  beside search, theme and the ⋯ menu (which keeps its Settings item too).
+* **Forms (2026-11-17):** every form that submits user input validates with a FluentValidation validator in
+  `PoMode.Shared/Validation` (the endpoint runs the same rule and returns `ValidationProblem`; the tus upload endpoint
+  refuses with the same message), shows the message inline under the field (`FluentValidationValidator` +
+  `ValidationMessage` in a `RadzenTemplateForm`, or `.pm-field-error`), and disables its submit while busy.
