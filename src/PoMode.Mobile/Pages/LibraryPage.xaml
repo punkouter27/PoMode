@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PoMode.Mobile.Pages.LibraryPage"
+             Title="Library">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="12">
+            <Label Text="Offline-Cached Song Library" FontSize="22" FontAttributes="Bold" />
+            <Button Text="Refresh Library" Clicked="OnRefreshClicked" />
+            <Label x:Name="StatusLabel" FontSize="12" />
+            <VerticalStackLayout x:Name="SongsList" Spacing="8" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

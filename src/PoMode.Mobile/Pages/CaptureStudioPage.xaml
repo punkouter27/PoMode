@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PoMode.Mobile.Pages.CaptureStudioPage"
+             Title="PoMode Studio">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="12">
+            <Label Text="PoMode Audio Companion" FontSize="24" FontAttributes="Bold" />
+            <Label x:Name="StatusLabel" Text="Pick an MP3/WAV take to analyze via resumable tus upload, or queue offline." FontSize="13" />
+
+            <Border Padding="14" StrokeThickness="1" StrokeShape="RoundRectangle 10">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Rehearsal Intake" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="10">
+                        <Button Text="Grant Mic Permission" Clicked="OnMicPermissionClicked" />
+                        <Button Text="Pick Audio (.mp3/.wav)" Clicked="OnPickAudioClicked" />
+                    </HorizontalStackLayout>
+                    <Button Text="Flush Offline Queue" Clicked="OnFlushQueueClicked" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label x:Name="JobProgressLabel" Text="No active analysis job." FontSize="14" />
+            <Label x:Name="QueueLabel" Text="Pending offline takes: 0" FontSize="12" Opacity="0.8" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
