@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
+using Microsoft.IdentityModel.Tokens;
 using PoMode.Api.Features.Analysis;
 using PoMode.Api.Infrastructure;
 using PoMode.Shared.Account;
@@ -43,7 +45,9 @@ public static class PoAuth
         var environment = builder.Environment;
         var allowFakeHeaders = environment.IsDevelopment() || environment.IsEnvironment("Test");
         var azureAd = builder.Configuration.GetSection(AzureAdSection);
-        var microsoft = !string.IsNullOrWhiteSpace(azureAd["ClientId"])
+        var clientId = azureAd["ClientId"];
+        var bearerConfigured = !string.IsNullOrWhiteSpace(clientId);
+        var microsoft = bearerConfigured
                         && !string.IsNullOrWhiteSpace(azureAd["ClientSecret"]);
         builder.Services.AddSingleton(new PoAuthOptions(microsoft));
 
@@ -55,9 +59,69 @@ public static class PoAuth
 
         auth.AddPolicyScheme(SelectorScheme, SelectorScheme, options =>
             options.ForwardDefaultSelector = context =>
-                allowFakeHeaders && context.Request.Headers.ContainsKey(FakeAuthHandler.UserHeader)
-                    ? FakeAuthHandler.SchemeName
-                    : SessionScheme);
+            {
+                if (allowFakeHeaders && context.Request.Headers.ContainsKey(FakeAuthHandler.UserHeader))
+                {
+                    return FakeAuthHandler.SchemeName;
+                }
+
+                if (bearerConfigured
+                    && (context.Request.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                        || (context.Request.Path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase)
+                            && !string.IsNullOrEmpty(context.Request.Query["access_token"]))))
+                {
+                    return JwtBearerDefaults.AuthenticationScheme;
+                }
+
+                return SessionScheme;
+            });
+
+        if (bearerConfigured)
+        {
+            var instance = (azureAd["Instance"] ?? "https://login.microsoftonline.com/").TrimEnd('/');
+            var tenant = azureAd["TenantId"] ?? "common";
+            auth.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+            {
+                options.Authority = $"{instance}/{tenant}/v2.0";
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateAudience = true,
+                    ValidAudiences = [clientId!, $"api://{clientId}"],
+                    ValidateIssuer = true,
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var token = context.Request.Query["access_token"];
+                        if (!string.IsNullOrEmpty(token) && context.HttpContext.Request.Path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase))
+                        {
+                            context.Token = token;
+                        }
+
+                        return Task.CompletedTask;
+                    },
+                    OnTokenValidated = context =>
+                    {
+                        if (context.Principal?.Identity is ClaimsIdentity identity)
+                        {
+                            var objectId = identity.FindFirst(ClaimConstants.ObjectId)?.Value
+                                           ?? identity.FindFirst("oid")?.Value
+                                           ?? identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                            if (string.IsNullOrEmpty(objectId))
+                            {
+                                context.Fail("The Microsoft token carried no account id.");
+                                return Task.CompletedTask;
+                            }
+
+                            identity.AddClaims(PoUser.Stamp($"ms:{objectId}", SessionKind.Microsoft));
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
+            });
+        }
 
         if (microsoft)
         {
@@ -137,7 +201,7 @@ public static class PoAuth
     }
 
     /// <summary>Stamps PoMode's own claims on the Microsoft principal and brings the guest's jobs along.</summary>
-    private static async Task OnMicrosoftSignInAsync(TokenValidatedContext context)
+    private static async Task OnMicrosoftSignInAsync(Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context)
     {
         if (context.Principal?.Identity is not ClaimsIdentity identity)
         {
