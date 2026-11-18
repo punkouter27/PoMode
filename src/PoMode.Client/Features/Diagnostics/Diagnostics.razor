@@ -10,7 +10,7 @@
 @* /diag is the fleet's one address for "is this app well?": reachable signed out, plain words, one
    status per thing the app leans on. /diagnostics stays as the old address. The JSON it reads lives
    at /api/diag (2026-11-17) so a browser landing here gets this page rather than raw JSON. *@
-<RadzenCard class="diag">
+<RadzenCard class="diag po-diag">
     <div class="diag-header">
         <RadzenText TextStyle="TextStyle.H5" TagName="TagName.H1" Text="Diagnostics" />
         <RadzenButton Text="@(_loading ? "Refreshing…" : "Refresh")" Icon="refresh" Click="@LoadAsync"
