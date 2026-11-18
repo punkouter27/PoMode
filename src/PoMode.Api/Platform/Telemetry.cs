@@ -1,5 +1,6 @@
 using Azure.Identity;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
+using Serilog;
 
 namespace PoMode.Api.Platform;
 
@@ -23,6 +24,14 @@ public static class Telemetry
 
     public static WebApplicationBuilder AddPoTelemetry(this WebApplicationBuilder builder)
     {
+        builder.Services.AddSerilog((services, lc) => lc
+            .ReadFrom.Configuration(builder.Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext()
+            .Enrich.WithProperty(PoPlatform.ApplicationProperty, PoPlatform.AppName)
+            .WriteTo.Console(formatProvider: System.Globalization.CultureInfo.InvariantCulture),
+            writeToProviders: true);
+
         if (IsEnabled(builder.Configuration))
         {
             builder.Services.AddOpenTelemetry().UseAzureMonitor(options =>
