@@ -17,7 +17,6 @@ builder.Services.AddScoped<AnalysisClient>();
 builder.Services.AddScoped<ChordFingerings>();
 builder.Services.AddScoped<SessionState>();
 builder.Services.AddScoped<BrowserPrefs>();
-builder.Services.AddScoped<ThemeState>();
 builder.Services.AddScoped<FeatureFlags>();
 builder.Services.AddScoped<DialogNotificationHelper>();
 builder.Services.AddScoped<IValidator<SongQuestionRequest>, SongQuestionRequestValidator>();

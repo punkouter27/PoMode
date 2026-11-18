@@ -47,7 +47,7 @@ body {
     margin: 0;
     background: var(--pm-bg);
     color: var(--pm-fg);
-    font-family: "Segoe UI", system-ui, sans-serif;
+    font-family: var(--po-font);
     font-size: clamp(0.95rem, 0.9rem + 0.25vw, 1.05rem);
     line-height: 1.55;
     font-variant-numeric: tabular-nums lining-nums;
@@ -64,6 +64,7 @@ body {
 
 h1, h2, h3, h4, h5, h6,
 .rz-text-h5, .rz-text-h6 {
+    font-family: var(--po-font-display);
     line-height: 1.25;
     letter-spacing: -0.01em;
     text-wrap: balance;

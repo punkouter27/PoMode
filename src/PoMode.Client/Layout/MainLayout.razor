@@ -1,123 +1,45 @@
 @inherits LayoutComponentBase
-@using Microsoft.AspNetCore.Components.WebAssembly.Hosting
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
-@inject IWebAssemblyHostEnvironment HostEnv
 @inject SessionState Session
-@inject ThemeState Theme
-@inject FeatureFlags Flags
 @using PoMode.Shared.Account
 @implements IAsyncDisposable
 
 <a class="skip-link" href="#main-content">Skip to content</a>
 
-<header class="app-header">
-    <div class="brand">PoMode</div>
-    @* One name per destination, the same at every width, in the palette and on the page: on a phone
-       the row has a line of its own, and all three fit it at 320px. Songs stays lit on a song page,
-       which is where a listener spends most of their time. Diagnostics is an operator's page, not a
-       place a listener goes, so it lives in the ⋯ menu rather than taking a slot here. *@
+@* The Po shell header (Po web standard, 2026-11-18): the name upper-left; search, then the email
+   (signed in) or Sign in (a guest, when Microsoft sign-in is offered), then the one settings gear
+   upper-right, at every width. The theme toggle and the More menu are gone: light and dark follow
+   the device, and the account, Diagnostics, the dev personas and Install moved to /settings. *@
+<header class="po-header app-header">
+    <a class="po-header__title" href="/">PoMode</a>
+    @* One name per destination, the same at every width, in the palette and on the page. On a phone
+       the bottom nav carries them, so the header keeps one row. *@
     <nav class="actions" aria-label="Main navigation">
         <SongsNavLink class="nav-link" href="">Songs</SongsNavLink>
         <NavLink class="nav-link" href="modes">Mode Lab</NavLink>
         <NavLink class="nav-link" href="practice">Practice</NavLink>
     </nav>
-    <div class="session">
-        @if (Session.Current is { DisplayName: { } who })
-        {
-            <span class="session-name" id="session-name" data-session-kind="@Session.Current.Kind">@who</span>
-        }
+    <div class="po-header__actions">
         @* The palette searches every song, beat, page and setting; Ctrl+K alone left it to people who
            already knew it was there. A labelled button on a desktop, the glass alone on a phone. *@
         <button class="icon-button search-toggle" type="button" @onclick="OpenPalette" id="open-search"
                 title="Search songs, pages and settings (Ctrl K)" aria-label="Search songs, pages and settings" aria-haspopup="dialog">
             <RadzenIcon Icon="search" /><span class="search-label">Search</span><kbd class="search-kbd">Ctrl K</kbd>
         </button>
-        <button class="icon-button theme-toggle" type="button" @onclick="Theme.CycleAsync"
-                title="Theme: follows the system by default; click to override" aria-label="@($"Theme: {Theme.Label}")">
-            @Theme.Glyph
-        </button>
-        @* Settings in plain sight at every width (2026-11-17): inside the ⋯ menu alone it was a
-           place people had to already know about. The menu keeps its item too. *@
-        <a class="icon-button settings-link" href="settings" id="open-settings" title="Settings" aria-label="Settings">
-            <RadzenIcon Icon="settings" />
-        </a>
-        <button class="icon-button overflow-toggle" type="button" @onclick="ToggleOverflowAsync"
-                title="More" aria-label="More" aria-haspopup="true" aria-expanded="@_overflowOpen">
-            ⋯
-        </button>
-        @if (_overflowOpen)
+        @if (Session.Current is { Kind: SessionKind.Microsoft or SessionKind.Test } signedIn)
         {
-            @* A transparent scrim rather than a document-level JS listener: clicking anywhere else
-               has to close the menu, and a scrim gets that from the same render tree the menu lives
-               in, with no listener to leak when the layout is torn down. *@
-            <div class="overflow-scrim" @onclick="CloseOverflow" aria-hidden="true"></div>
-            <div class="overflow-menu" role="menu" tabindex="-1" @ref="_overflowMenu"
-                 @onkeydown="OnOverflowKeyDown">
-                @if (Session.Current is { } session)
-                {
-                    <div class="overflow-group overflow-account" role="group" aria-label="Account">
-                        <span class="pm-label overflow-label">Account</span>
-                        <span class="overflow-who">@(session.DisplayName ?? "Not signed in")</span>
-                        @if (session.Kind == SessionKind.Guest)
-                        {
-                            <span class="overflow-hint">Your library lives in this browser.</span>
-                        }
-                    </div>
-                    @* A guest is never offered "sign out": their session is their library, and ending it
-                       would strand every take in it. Signing in with Microsoft carries it across. *@
-                    @if (session.Kind == SessionKind.Guest && session.MicrosoftAvailable)
-                    {
-                        <button class="overflow-item" type="button" role="menuitem" id="sign-in-microsoft"
-                                @onclick="SignInWithMicrosoft">
-                            Sign in with Microsoft
-                        </button>
-                    }
-                    else if (session.Kind == SessionKind.Microsoft)
-                    {
-                        <button class="overflow-item" type="button" role="menuitem" id="sign-out"
-                                @onclick="SignOutAsync">
-                            Sign out
-                        </button>
-                    }
-                }
-                @* Effects, sounds, notifications, models and shortcuts live on the Settings page, each
-                   already at its best value; the menu keeps only places to go. *@
-                @* The palette is the header's Search button, so it is not here a second time. *@
-                <a class="overflow-item" role="menuitem" href="settings" @onclick="CloseOverflow">
-                    Settings
-                </a>
-                @if (Flags.Tools.Diagnostics)
-                {
-                    <a class="overflow-item" role="menuitem" href="diag" @onclick="CloseOverflow">
-                        Diagnostics
-                    </a>
-                }
-                @if (HostEnv.IsDevelopment() || HostEnv.IsEnvironment("Test"))
-                {
-                    <div class="overflow-group" role="group" aria-label="Dev persona">
-                        <span class="pm-label overflow-label">Dev Persona</span>
-                        @foreach (var persona in AccountMenu.Personas)
-                        {
-                            var active = string.Equals(DevFakeUserHandler.ActiveFakeUser, persona.FakeUserHeader, StringComparison.Ordinal);
-                            <button class="overflow-item @(active ? "overflow-item--active" : "")" type="button" role="menuitemradio"
-                                    aria-checked="@active" @onclick="@(() => SwitchDevPersonaAsync(persona.FakeUserHeader))">
-                                @(active ? "● " : "○ ")@persona.Label
-                            </button>
-                        }
-                    </div>
-                }
-                @* Offered only when the browser has actually handed us an install prompt, so the
-                   item is never a button that does nothing. *@
-                @if (_canInstall)
-                {
-                    <button class="overflow-item" type="button" role="menuitem" @onclick="InstallAsync"
-                            id="install-app">
-                        Install PoMode
-                    </button>
-                }
-            </div>
+            <span class="po-header__email" id="session-email" data-session-kind="@signedIn.Kind"
+                  title="@(signedIn.Email ?? signedIn.DisplayName)">@(signedIn.Email ?? signedIn.DisplayName)</span>
         }
+        else if (Session.Current is { MicrosoftAvailable: true })
+        {
+            <RadzenButton Text="Sign in" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                          Click="SignInWithMicrosoft" id="sign-in-microsoft" />
+        }
+        <a class="po-header__settings" href="/settings" id="open-settings" aria-label="Settings" title="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </a>
     </div>
 </header>
 
@@ -164,17 +86,7 @@
     private bool _sessionReady;
     private bool _paletteOpen;
 
-    /// <summary>Whether this browser was subscribed to push when the page loaded, so signing out
-    /// can drop it from the account being left.</summary>
-    private bool _pushSubscribed;
-
     private ErrorBoundary? _boundary;
-
-    /// <summary>YYMMDD, stamped into the assembly by the csproj when it was built.</summary>
-    private static readonly string BuildDate = typeof(MainLayout).Assembly
-        .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
-        .Cast<System.Reflection.AssemblyMetadataAttribute>()
-        .FirstOrDefault(a => a.Key == "BuildDate")?.Value ?? "";
 
     /// <summary>The layout outlives navigation, so a tripped boundary would otherwise keep showing its
     /// error panel on every page until a reload. A new page (a new Body) gets a clean start.</summary>
@@ -182,29 +94,9 @@
 
     private void RecoverBoundary() => _boundary?.Recover();
 
-    private async Task SwitchDevPersonaAsync(string? fakeUser)
-    {
-        DevFakeUserHandler.ActiveFakeUser = fakeUser;
-        _overflowOpen = false;
-        await Session.RefreshAsync();
-    }
-
-    /// <summary>True once the browser has offered an install prompt for this app to capture. It
-    /// never fires on a desktop browser that already has the app, or on iOS at all.</summary>
-    private bool _canInstall;
-    private bool _overflowOpen;
-
-    private ElementReference _overflowMenu;
-
-    /// <summary>Set when the menu has just opened, so the render after that can move focus into it
-    /// exactly once rather than stealing focus back on every subsequent render.</summary>
-    private bool _focusOverflow;
-
     protected override async Task OnInitializedAsync()
     {
         Session.Changed += OnSessionChanged;
-        Theme.Changed += OnSessionChanged;
-        Flags.Changed += OnSessionChanged;
         try
         {
             await Session.EnsureAsync();
@@ -225,64 +117,20 @@
         Navigation.NavigateTo($"auth/login/microsoft?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
     }
 
-    private async Task SignOutAsync()
-    {
-        _overflowOpen = false;
-        if (_push is not null && _pushSubscribed)
-        {
-            // While the session still exists: the account being left stops notifying this browser.
-            try
-            {
-                await _push.InvokeVoidAsync("forget");
-            }
-            catch (JSException)
-            {
-                // Signing out must not depend on a push service being reachable.
-            }
-        }
-        await Session.SignOutAsync();
-        // The library and any open job belonged to the account just left.
-        Navigation.NavigateTo("", forceLoad: true);
-    }
-
-    private void ToggleOverflowAsync()
-    {
-        _overflowOpen = !_overflowOpen;
-        _focusOverflow = _overflowOpen;
-    }
-
-    private void CloseOverflow() => _overflowOpen = false;
-
-    /// <summary>Ctrl+K from anywhere (palette.js), or the menu's "Go to…".</summary>
+    /// <summary>Ctrl+K from anywhere (palette.js), or the header's Search button.</summary>
     [JSInvokable]
     public Task OpenPalette()
     {
-        _overflowOpen = false;
         _paletteOpen = true;
         return InvokeAsync(StateHasChanged);
     }
 
-    private void OnOverflowKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Escape")
-        {
-            _overflowOpen = false;
-        }
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_focusOverflow)
-        {
-            _focusOverflow = false;
-            await _overflowMenu.FocusAsync();
-        }
         if (!firstRender)
         {
             return;
         }
-        await Theme.InitAsync();
-        await Flags.LoadAsync();
         // Before any effect module: init stamps data-fx on <html>, and every module below reads it
         // on the way up.
         _prefs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/prefs.js");
@@ -294,12 +142,10 @@
         {
             await layout.InvokeVoidAsync("watchHeader");
         }
-        // The install prompt fires once, on the browser's own schedule; pwa.js captures it so the
-        // app can offer it from the menu rather than leaving it to Chrome's infobar.
+        // The install prompt fires once, on the browser's own schedule; pwa.js captures it from here,
+        // on every page, so /settings can offer it whenever someone goes looking.
         _pwa = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/pwa.js");
-        await _pwa.InvokeVoidAsync("watchInstall", _self);
-        _canInstall = await _pwa.InvokeAsync<bool>("canInstall");
-        StateHasChanged();
+        await _pwa.InvokeVoidAsync("watchInstall");
         await InitPushAsync();
     }
 
@@ -312,7 +158,7 @@
         {
             await Session.EnsureAsync();
             _push = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/push.js");
-            _pushSubscribed = await _push.InvokeAsync<string>("init") == "on";
+            await _push.InvokeAsync<string>("init");
         }
         catch (Exception ex) when (ex is JSException or HttpRequestException)
         {
@@ -320,30 +166,9 @@
         }
     }
 
-    /// <summary>Called from pwa.js when the browser offers an install prompt.</summary>
-    [JSInvokable]
-    public Task OnInstallAvailable()
-    {
-        _canInstall = true;
-        return InvokeAsync(StateHasChanged);
-    }
-
-    private async Task InstallAsync()
-    {
-        _overflowOpen = false;
-        if (_pwa is not null)
-        {
-            await _pwa.InvokeAsync<bool>("promptInstall");
-            // A prompt is single-use whether or not it was accepted, so the item goes either way.
-            _canInstall = false;
-        }
-    }
-
     public async ValueTask DisposeAsync()
     {
         Session.Changed -= OnSessionChanged;
-        Theme.Changed -= OnSessionChanged;
-        Flags.Changed -= OnSessionChanged;
         try
         {
             if (_palette is not null)

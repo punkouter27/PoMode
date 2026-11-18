@@ -74,7 +74,7 @@ public static class AuthEndpoints
     }
 
     private static SessionDto SessionOf(ClaimsPrincipal user, PoAuthOptions options)
-        => new(PoUser.KindOf(user), PoUser.DisplayNameOf(user), options.MicrosoftAvailable);
+        => new(PoUser.KindOf(user), PoUser.DisplayNameOf(user), options.MicrosoftAvailable, PoUser.EmailOf(user));
 
     /// <summary>A rooted local path, or "/". Anything else would make the sign-in an open redirect.</summary>
     internal static string LocalOnly(string? returnUrl)

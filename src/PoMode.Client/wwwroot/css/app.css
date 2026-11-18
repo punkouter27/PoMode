@@ -48,3 +48,10 @@
 .pm-field-error:empty {
     display: none;
 }
+
+/* The build stamp (.po-version, po-tokens.css) sits above the bottom nav where the nav shows. */
+@media (max-width: 640px) {
+    :root {
+        --po-stamp-lift: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+    }
+}

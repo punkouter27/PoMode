@@ -2,7 +2,7 @@
     position: absolute;
     top: -3rem;
     left: 0.75rem;
-    z-index: 20;
+    z-index: calc(var(--po-z-header) + 1);
     padding: 0.4rem 0.8rem;
     background: var(--pm-accent);
     color: var(--pm-bg);
@@ -15,33 +15,18 @@
     top: 0;
 }
 
+/* The header is the Po shell (.po-header in po-tokens.css): the name left, the actions right, one
+   row at every width. This sheet only adds the route links between them and the search button. */
 .app-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 1rem;
-    /* The page paints under the notch (viewport-fit=cover), so the header adds the inset back on
-       the three sides that can have one. max() keeps the ordinary padding on a device with none. */
-    padding: max(0.5rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.5rem
-             max(1rem, env(safe-area-inset-left));
-    background: var(--pm-surface-glass);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--pm-border);
-}
-
-.brand {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--pm-accent);
+    padding-top: env(safe-area-inset-top);
 }
 
 .actions {
+    flex: 1 1 auto;
     display: flex;
+    justify-content: center;
     gap: 0.25rem;
+    min-width: 0;
 }
 
 .actions ::deep .nav-link {
@@ -60,26 +45,10 @@
 
 .actions ::deep .nav-link.active {
     color: var(--pm-accent);
-    background: var(--pm-surface);
+    background: var(--pm-accent-soft);
 }
 
-.session {
-    justify-self: end;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--pm-fg-muted);
-    position: relative;
-}
-
-.session-name {
-    font-size: var(--pm-text-sm);
-    color: var(--pm-fg-muted);
-    max-width: 14rem;
-    overflow-wrap: anywhere;
-}
-
-/* Small icon-only button used in the header for theme + overflow. Native button keeps keyboard
+/* Small icon-only button used in the header for search. Native button keeps keyboard
    focus and screen-reader support without pulling in another Radzen control. */
 .icon-button {
     display: inline-flex;
@@ -134,15 +103,6 @@
     }
 }
 
-/* An anchor (it goes somewhere) dressed as one of the header's icon buttons. */
-.settings-link {
-    text-decoration: none;
-}
-
-.settings-link ::deep .rzi {
-    font-size: 1.15rem;
-}
-
 .icon-button:hover {
     background: var(--pm-surface);
     color: var(--pm-fg);
@@ -156,87 +116,6 @@
 
 /* Catches the click that should dismiss the menu. Below the menu, above everything else, and
    invisible — it exists only to own that click. */
-.overflow-scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 10;
-}
-
-.overflow-menu {
-    position: absolute;
-    top: calc(100% + 0.4rem);
-    right: 0;
-    min-width: 12rem;
-    display: flex;
-    flex-direction: column;
-    padding: 0.25rem;
-    background: var(--pm-surface);
-    border: 1px solid var(--pm-border);
-    border-radius: 0.5rem;
-    box-shadow: var(--pm-shadow);
-    z-index: 11;
-}
-
-/* The container only holds focus so Escape has somewhere to land; the ring belongs on the items. */
-.overflow-menu:focus {
-    outline: none;
-}
-
-.overflow-item {
-    display: block;
-    padding: 0.45rem 0.7rem;
-    background: transparent;
-    border: 0;
-    border-radius: 0.4rem;
-    color: var(--pm-fg);
-    text-align: left;
-    text-decoration: none;
-    font: inherit;
-    cursor: pointer;
-}
-
-.overflow-item:hover {
-    background: var(--pm-bg);
-}
-
-/* The notifications item while the browser has them blocked: still shown, so the hint under it has
-   something to explain, but it cannot be switched from here. */
-.overflow-item:disabled {
-    color: var(--pm-fg-muted);
-    cursor: default;
-}
-
-.overflow-item:disabled:hover {
-    background: transparent;
-}
-
-/* Effects control. A three-stop segmented scale rather than a checkbox, because the middle
-   setting is the one most people actually want and a two-state toggle cannot offer it. */
-.overflow-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--pm-space-1);
-    padding: 0.45rem 0.7rem 0.55rem;
-    border-top: 1px solid var(--pm-border);
-    margin-top: 0.25rem;
-}
-
-.overflow-hint {
-    font-size: var(--pm-text-xs);
-    color: var(--pm-fg-muted);
-}
-
-/* First group in the menu, so it drops the separator every later group draws above itself. */
-.overflow-account {
-    border-top: 0;
-    margin-top: 0;
-}
-
-.overflow-who {
-    color: var(--pm-fg);
-    overflow-wrap: anywhere;
-}
-
 .app-main {
     flex: 1 0 auto;
     display: flex;
@@ -253,27 +132,8 @@
 }
 
 @media (max-width: 640px) {
-    .app-header {
-        grid-template-columns: auto 1fr;
-        grid-template-areas:
-            "brand session"
-            "nav nav";
-        gap: 0.3rem;
-        padding: max(0.35rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right))
-                 0.35rem max(0.5rem, env(safe-area-inset-left));
-    }
-
-    .brand {
-        grid-area: brand;
-        font-size: 1.1rem;
-    }
-
+    /* The bottom nav carries the routes on a phone. */
     .actions {
-        display: none;
-    }
-
-    /* The name is in the menu too; on a phone the header row needs the room for the brand. */
-    .session-name {
         display: none;
     }
 
@@ -307,8 +167,7 @@
 
 /* Touch: the header's icons and the menu rows are the smallest targets in the app. */
 @media (pointer: coarse) {
-    .icon-button,
-    .overflow-item {
+    .icon-button {
         min-width: 2.75rem;
         min-height: 2.75rem;
     }
@@ -316,9 +175,4 @@
 
 .po-error-actions {
     margin-top: 0.75rem;
-}
-
-.overflow-item--active {
-    font-weight: 600;
-    color: var(--pm-accent);
 }

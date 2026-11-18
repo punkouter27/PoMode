@@ -30,6 +30,21 @@ public static class PoUser
     public static string? DisplayNameOf(ClaimsPrincipal user)
         => user.Identity?.Name ?? user.FindFirstValue("name");
 
+    /// <summary>The account's email: Entra's preferred_username (an address for every Microsoft
+    /// account), the email claim, or a name that is itself an address. Null for a guest.</summary>
+    public static string? EmailOf(ClaimsPrincipal user)
+    {
+        if (IdOf(user) is null || KindOf(user) == SessionKind.Guest)
+        {
+            return null;
+        }
+        var candidate = user.FindFirstValue("preferred_username")
+                        ?? user.FindFirstValue(ClaimTypes.Email)
+                        ?? user.FindFirstValue("email")
+                        ?? DisplayNameOf(user);
+        return candidate is { } address && address.Contains('@', StringComparison.Ordinal) ? address : null;
+    }
+
     public static Claim[] Stamp(string id, SessionKind kind)
         => [new(IdClaim, id), new(KindClaim, kind.ToString())];
 }

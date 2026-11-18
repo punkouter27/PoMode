@@ -10,8 +10,11 @@ public enum SessionKind
     Test,
 }
 
-/// <summary>Who the browser is, and whether Microsoft sign-in is on offer at all on this server.</summary>
+/// <summary>Who the browser is, and whether Microsoft sign-in is on offer at all on this server.
+/// <paramref name="Email"/> is the account's address when the sign-in carries one (Microsoft, a test
+/// persona named like an address); the header shows it, never the display name.</summary>
 public sealed record SessionDto(
     SessionKind Kind,
     string? DisplayName,
-    bool MicrosoftAvailable);
+    bool MicrosoftAvailable,
+    string? Email = null);

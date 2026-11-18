@@ -11,15 +11,18 @@
     <base href="/" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E" />
     <!-- Radzen ships separate light and dark bases. Loading both under prefers-color-scheme media
-         queries makes the component library follow the OS theme with no JS by default. The header's
-         theme toggle (js/theme.js) overrides by rewriting these links' media attributes, which is
-         why they carry ids. Without the dark base, Radzen cards stay white while app.css flips to
-         light text — unreadable. -->
-    <link id="radzen-light" rel="stylesheet" href="_content/Radzen.Blazor/css/material-base.css?v=12.1.12"
+         queries makes the component library follow the device with no JS. Without the dark base,
+         Radzen cards stay white while the app flips to light text: unreadable. -->
+    <link rel="stylesheet" href="_content/Radzen.Blazor/css/material-base.css?v=12.1.12"
           media="(prefers-color-scheme: light)" />
-    <link id="radzen-dark" rel="stylesheet" href="_content/Radzen.Blazor/css/material-dark-base.css?v=12.1.12"
+    <link rel="stylesheet" href="_content/Radzen.Blazor/css/material-dark-base.css?v=12.1.12"
           media="(prefers-color-scheme: dark)" />
+    <!-- po-tokens.css first among the app's sheets (Po web standard): the estate's colours, the
+         self-hosted Inter and Space Grotesk, and the shell (header, stamp, /diag cards).
+         pm-tokens.css aliases PoMode's own tokens to it. -->
+    <link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="css/po-tokens.css" />
+    <link rel="stylesheet" href="css/pm-tokens.css" />
     <link rel="stylesheet" href="css/po-motion.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="stylesheet" href="PoMode.Client.styles.css" />
@@ -29,24 +32,13 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <!-- One theme-color per scheme, so the installed app's title bar matches the page it is framing
          rather than showing a light accent above a dark UI. -->
-    <meta name="theme-color" content="#6750a4" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1117" media="(prefers-color-scheme: dark)" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="PoMode" />
-    <script>
-        // Pre-paint theme: apply any persisted override before the first frame so a user who chose
-        // Dark on a light-OS machine never sees a light flash. Mirrors js/theme.js's apply().
-        (function () {
-            var mode = null;
-            try { mode = localStorage.getItem('pomode:theme'); } catch (e) { }
-            if (mode === 'light' || mode === 'dark') {
-                document.documentElement.dataset.theme = mode;
-                document.getElementById('radzen-light').media = mode === 'light' ? 'all' : 'not all';
-                document.getElementById('radzen-dark').media = mode === 'dark' ? 'all' : 'not all';
-            }
-        })();
-    </script>
+    <!-- Tab with nothing focused opens /po-dev.html, the developer window (Po web standard). -->
+    <script src="js/po-devwindow.js"></script>
 </head>
 <body>
     <div id="app">Loading…</div>

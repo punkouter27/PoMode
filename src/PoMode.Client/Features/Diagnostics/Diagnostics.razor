@@ -37,18 +37,18 @@
         var report = _report;
         <RadzenAlert AlertStyle="@AlertFor(report.Status)" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false"
                      Title="@Headline(report.Status)" class="diag-banner" id="diag-status" data-status="@report.Status">
-            Checked @report.CheckedAt.ToLocalTime().ToString("HH:mm:ss"). Version @BuildVersion.Stamp · @report.EnvironmentName environment.
+            Checked @report.CheckedAt.ToLocalTime().ToString("HH:mm:ss"). Build v@(BuildVersion.Stamp) · @report.EnvironmentName environment.
         </RadzenAlert>
 
         <div class="diag-columns">
             <div class="diag-col">
-                <section class="diag-section" aria-label="API">
+                <section class="diag-section po-diag__group" aria-label="API">
                     <h2 class="pm-label diag-title">API</h2>
                     <CheckRow Check="@(new DiagnosticCheck("PoMode API", DiagnosticStatus.Healthy, "Reachable: answers every page, upload and analysis.", _apiMs, report.CheckedAt))" />
                 </section>
 
-                <section class="diag-section" aria-label="Database / storage">
-                    <h2 class="pm-label diag-title">Database / storage</h2>
+                <section class="diag-section po-diag__group" aria-label="Data">
+                    <h2 class="pm-label diag-title">Data</h2>
                     @if (report.Stores.Count == 0)
                     {
                         <RadzenText Text="No stores are reported." />
@@ -59,7 +59,7 @@
                     }
                 </section>
 
-                <section class="diag-section" aria-label="Services">
+                <section class="diag-section po-diag__group" aria-label="Services">
                     <h2 class="pm-label diag-title">Services</h2>
                     @if (report.Services.Count == 0)
                     {

@@ -2,7 +2,10 @@
 @using PoMode.Shared.Analysis
 @inject AnalysisClient Analysis
 @inject BrowserPrefs Prefs
-@inject ThemeState Theme
+@inject SessionState Session
+@using Microsoft.AspNetCore.Components.WebAssembly.Hosting
+@inject IWebAssemblyHostEnvironment HostEnv
+@using PoMode.Shared.Account
 @inject FeatureFlags Flags
 @inject IJSRuntime JS
 @inject DialogService Dialogs
@@ -22,18 +25,70 @@
        what changes how the app looks and reads on the left, the extras and your data on the right. *@
     <div class="settings-columns">
         <div class="settings-col">
+            @* The account lives here since the Po web standard (2026-11-18): the header keeps only the
+               email (or Sign in) and the gear, so what the More menu held is in this section. *@
+            <section class="settings-section" aria-labelledby="settings-account" id="account">
+                <h2 class="pm-label" id="settings-account">Account</h2>
+                @if (Session.Current is { } session)
+                {
+                    <div class="settings-row">
+                        <span class="settings-name">Signed in as</span>
+                        <span class="settings-hint settings-email" id="settings-who">@(session.Email ?? session.DisplayName ?? "Not signed in")</span>
+                    </div>
+                    @if (session.Kind == SessionKind.Guest)
+                    {
+                        <p class="settings-hint">A guest library lives in this browser. Signing in with Microsoft carries it to your account.</p>
+                    }
+                    <div class="settings-actions">
+                        @* A guest is never offered "sign out": their session is their library, and ending
+                           it would strand every take in it. Signing in with Microsoft carries it across. *@
+                        @if (session.Kind == SessionKind.Guest && session.MicrosoftAvailable)
+                        {
+                            <RadzenButton Text="Sign in with Microsoft" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                          Click="@SignInWithMicrosoft" id="settings-sign-in" />
+                        }
+                        else if (session.Kind == SessionKind.Microsoft)
+                        {
+                            <RadzenButton Text="Sign out" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                          Click="@SignOutAsync" id="sign-out" />
+                        }
+                        @if (_canInstall)
+                        {
+                            <RadzenButton Text="Install PoMode" Icon="install_desktop" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                          Click="@InstallAsync" id="install-app" />
+                        }
+                        @if (Flags.Tools.Diagnostics)
+                        {
+                            <a class="settings-text-button" href="diag" id="open-diag">Diagnostics</a>
+                        }
+                    </div>
+                }
+                @if (HostEnv.IsDevelopment() || HostEnv.IsEnvironment("Test"))
+                {
+                    <div class="settings-row" role="group" aria-label="Dev persona">
+                        <span class="settings-name">Dev persona</span>
+                        <div class="settings-actions">
+                            @foreach (var persona in AccountMenu.Personas)
+                            {
+                                var active = string.Equals(DevFakeUserHandler.ActiveFakeUser, persona.FakeUserHeader, StringComparison.Ordinal);
+                                <RadzenButton Text="@persona.Label" Size="ButtonSize.Small"
+                                              ButtonStyle="@(active ? ButtonStyle.Primary : ButtonStyle.Light)"
+                                              Click="@(() => SwitchDevPersonaAsync(persona.FakeUserHeader))" />
+                            }
+                        </div>
+                    </div>
+                }
+                <div class="settings-row">
+                    <span class="settings-name">Build</span>
+                    <span class="settings-hint settings-build" id="settings-build">v@(BuildVersion.Stamp)</span>
+                </div>
+            </section>
+
             <section class="settings-section" aria-labelledby="settings-look">
                 <h2 class="pm-label" id="settings-look">Look and sound</h2>
                 <div class="settings-row">
-                    <span class="settings-name" id="theme-label">Theme</span>
-                    <RadzenSelectBar TValue="string" Value="@Theme.Mode" Change="@(value => Theme.SetAsync(value))"
-                                     Size="ButtonSize.Small" aria-labelledby="theme-label" class="settings-control">
-                        <Items>
-                            <RadzenSelectBarItem Text="Auto" Value="@("system")" />
-                            <RadzenSelectBarItem Text="Light" Value="@("light")" />
-                            <RadzenSelectBarItem Text="Dark" Value="@("dark")" />
-                        </Items>
-                    </RadzenSelectBar>
+                    <span class="settings-name">Theme</span>
+                    <span class="settings-hint">Light or dark follows your device's setting.</span>
                 </div>
                 <div class="settings-row">
                     <span class="settings-name" id="fx-label">Effects</span>
@@ -212,9 +267,12 @@
 
     private sealed record InterpreterChoice(string Name, string Label);
 
+    private bool _canInstall;
+    private IJSObjectReference? _pwa;
+
     protected override async Task OnInitializedAsync()
     {
-        Theme.Changed += OnThemeChanged;
+        Session.Changed += OnSessionChanged;
         await Flags.LoadAsync();
         try
         {
@@ -271,6 +329,9 @@
         {
             _prefsJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/prefs.js");
             await ReadFxAsync();
+            // The same module instance the layout captured the install prompt with.
+            _pwa = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/pwa.js");
+            _canInstall = await _pwa.InvokeAsync<bool>("canInstall");
             _push = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/push.js");
             _pushState = await _push.InvokeAsync<string>("init");
         }
@@ -295,7 +356,45 @@
         }
     }
 
-    private void OnThemeChanged() => InvokeAsync(StateHasChanged);
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
+    private void SignInWithMicrosoft()
+        => Navigation.NavigateTo($"auth/login/microsoft?returnUrl={Uri.EscapeDataString("/settings")}", forceLoad: true);
+
+    private async Task SignOutAsync()
+    {
+        if (_push is not null && _pushState == "on")
+        {
+            // While the session still exists: the account being left stops notifying this browser.
+            try
+            {
+                await _push.InvokeVoidAsync("forget");
+            }
+            catch (JSException)
+            {
+                // Signing out must not depend on a push service being reachable.
+            }
+        }
+        await Session.SignOutAsync();
+        // The library and any open job belonged to the account just left.
+        Navigation.NavigateTo("", forceLoad: true);
+    }
+
+    private async Task SwitchDevPersonaAsync(string? fakeUser)
+    {
+        DevFakeUserHandler.ActiveFakeUser = fakeUser;
+        await Session.RefreshAsync();
+    }
+
+    private async Task InstallAsync()
+    {
+        if (_pwa is not null)
+        {
+            await _pwa.InvokeAsync<bool>("promptInstall");
+            // A prompt is single-use whether or not it was accepted, so the button goes either way.
+            _canInstall = false;
+        }
+    }
 
     private async Task ReadFxAsync()
     {
@@ -419,7 +518,7 @@
 
     public async ValueTask DisposeAsync()
     {
-        Theme.Changed -= OnThemeChanged;
+        Session.Changed -= OnSessionChanged;
         try
         {
             if (_prefsJs is not null)
@@ -429,6 +528,10 @@
             if (_push is not null)
             {
                 await _push.DisposeAsync();
+            }
+            if (_pwa is not null)
+            {
+                await _pwa.DisposeAsync();
             }
         }
         catch (JSDisconnectedException)

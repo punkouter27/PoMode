@@ -15,8 +15,8 @@ dotnet test tests/PoMode.Integration     # needs Azurite running
 dotnet test tests/PoMode.E2EAPI          # HTTP contract tests (in-process app)
 dotnet test tests/PoMode.E2EUI           # Playwright browser tests (boots the real app)
 dotnet test tests/PoMode.Unit --filter "FullyQualifiedName~TempoEstimator"   # single test/class
-pwsh scripts/test-caps.ps1              # fails if a suite is over its cap (100/50/25/25); CI runs it too
-dotnet format whitespace PoMode.slnx     # fixes spacing; CI fails on anything it would change
+pwsh scripts/test-caps.ps1              # fails if a suite is over its cap (100/50/25/25); run before a push
+dotnet format whitespace PoMode.slnx     # fixes spacing; scripts/ci-checks.ps1 (run locally) fails on anything it would change
 pwsh scripts/get-models.ps1              # pre-fetch every ONNX/browser model into models/ (warms the E2EUI cache)
 dotnet run scripts/layout-audit.cs -- capture before        # app running: screenshot + audit every route, phone and desktop
 dotnet run scripts/layout-audit.cs -- compare before after notes.md name   # one annotated SCREENSHOTS/name.html
@@ -91,8 +91,9 @@ These override any default instinct. Where one contradicts a habit, the rule win
   the full paths to both files in the reply.
 - **Docs move with the code.** When a dependency, a configuration key or a major endpoint changes,
   update `docs/` (and `docs/README.md`) in the same change.
-- **The build watermark stays.** The layout shows the build version as `YYMMDD` (build or commit
-  date), fixed bottom-right. Don't remove it in a layout pass.
+- **The build stamp stays.** The layout shows `<span class="po-version">vYYMMDD</span>`, the UTC date
+  of the HEAD commit (written by `Directory.Build.props` as `BuildVersion` assembly metadata), fixed
+  bottom-right by `po-tokens.css`. Don't remove it in a layout pass.
 - **Answers over ~100 words end with a TLDR.** One line, under 20 words, saying what happened.
 - **A code change over 20 lines gets a three-level TLDR** instead, one sentence each: *Toddler*
   explains the idea simply, *Child* says what the app actually does now, *Adult* says how it was built.
@@ -129,14 +130,14 @@ references until one is added.
   * `/diag`: Real-time operational summary page; its JSON is `GET /api/diag` (2026-11-17). Must strictly redact all secrets, tokens, and connection strings.
 
 ## 3. UI/UX & Blazor WASM
-* **Layout Structure:** Header format: `[Left: Branding | Center: Contextual Actions | Right: Session / Logout]`.
-* **UI Controls & Styling:** Radzen Blazor library (prefer advanced Radzen controls when possible). Zero inline CSS—use scoped `.razor.css` and global CSS variables only. Auto-detect system Light/Dark themes.
+* **Layout Structure:** the Po shell header (`po-header`, from `wwwroot/css/po-tokens.css`): `PoMode` upper-left; the route links between; search, the email (signed in) or Sign in (a guest, when Microsoft is offered), then the one settings gear (`po-header__settings`, `/settings`) upper-right, at every width. No theme toggle and no More menu: the account, Sign out, Diagnostics, the dev personas and Install live on `/settings`.
+* **UI Controls & Styling:** Radzen Blazor library (prefer advanced Radzen controls when possible). Zero inline CSS—use scoped `.razor.css` and global CSS variables only. `po-tokens.css` is the same file in every Po app (never edit one copy alone; link it first); `pm-tokens.css` aliases PoMode's tokens to its `--po-*` ones. Light/dark follow the device only (no `data-theme`), one indigo accent, Inter text and Space Grotesk headings (self-hosted in `wwwroot/fonts`).
+* **Tab developer window:** Tab with nothing focused opens `/po-dev.html` (`js/po-devwindow.js`, `js/po-dev.js`, both kit files) with `/health/live` and `/api/diag`. `FocusOnNavigate` runs only after the first in-app navigation so a fresh page has nothing focused.
 * **Mock Indicator:** Display a persistent warning banner ("USING MOCK DATA") whenever an active state uses mock/local data.
 * **Code Hygiene:** Continuously purge unused files, dead code, orphaned assets, and unused `using` directives across all commits.
 * **Ports:** HTTP 5000, HTTPS 5001.
 * **Home page title:** exactly `Po{Name}` (this app: `PoMode`).
-* **Settings in the header (2026-11-17):** a gear link to `/settings` sits in the header's upper right at every width,
-  beside search, theme and the ⋯ menu (which keeps its Settings item too).
+* **Settings in the header (2026-11-18):** the gear link to `/settings` is the header's only settings affordance; the theme toggle and the ⋯ menu were removed by the Po web standard.
 * **Forms (2026-11-17):** every form that submits user input validates with a FluentValidation validator in
   `PoMode.Shared/Validation` (the endpoint runs the same rule and returns `ValidationProblem`; the tus upload endpoint
   refuses with the same message), shows the message inline under the field (`FluentValidationValidator` +

@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    PoMode's extra build-time checks, run by the shared deploy.yml after the unit tests.
+    PoMode's extra checks, run locally before a push (the deploy workflow no longer runs them).
 
 .DESCRIPTION
     Runs from the repo root with the solution already built in Release. Any failure exits non-zero.

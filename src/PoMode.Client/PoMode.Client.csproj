@@ -12,11 +12,4 @@
     <PackageReference Include="Radzen.Blazor" />
     <PackageReference Include="FluentValidation" />
   </ItemGroup>
-  <ItemGroup>
-    <!-- The layout's YYMMDD watermark: the date this build was made. -->
-    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
-      <_Parameter1>BuildStamp</_Parameter1>
-      <_Parameter2>$([System.DateTime]::Now.ToString("yyMMdd"))</_Parameter2>
-    </AssemblyAttribute>
-  </ItemGroup>
 </Project>

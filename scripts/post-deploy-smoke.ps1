@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Checks the live PoMode site after the shared deploy.yml health gate has passed.
+    Checks the live PoMode site; run by hand after a deploy (the shared deploy.yml no longer calls it).
 
 .DESCRIPTION
     Every API check asserts JSON, not just a 200: MapFallbackToFile serves the SPA shell for anything

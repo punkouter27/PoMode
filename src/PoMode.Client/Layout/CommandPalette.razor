@@ -1,7 +1,6 @@
 @using PoMode.Shared.Analysis
 @inject AnalysisClient Analysis
 @inject NavigationManager Navigation
-@inject ThemeState Theme
 @inject FeatureFlags Flags
 
 @* One keyboard way to anywhere: a page, a song in the library, a setting. Opened with Ctrl+K or the
@@ -64,9 +63,7 @@
         new("Page", "Practice · Guitar jam", () => GoAsync("practice/jam")),
         new("Page", "Settings", () => GoAsync("settings")),
         .. Flags.Tools.Diagnostics ? (Command[])[new("Page", "Diagnostics", () => GoAsync("diag"))] : [],
-        new("Setting", "Theme: follow my system", () => Theme.SetAsync("system")),
-        new("Setting", "Theme: light", () => Theme.SetAsync("light")),
-        new("Setting", "Theme: dark", () => Theme.SetAsync("dark")),
+        new("Setting", "Account: sign in, sign out, install the app", () => GoAsync("settings#account")),
         new("Setting", "Analysis models", () => GoAsync("settings")),
         new("Setting", "More tools: inspector, rerun, MIDI, diagnostics, purity, describe", () => GoAsync("settings#more-tools")),
         new("Setting", "Keyboard shortcuts", () => GoAsync("settings#shortcuts")),

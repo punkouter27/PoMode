@@ -30,6 +30,18 @@ The app serves on `http://localhost:5000` and `https://localhost:5001`. The Scal
 reference is at `/scalar`; `/health`, `/health/live`, and `/health/ready` expose health
 status.
 
+Every page carries the Po shell: the name top-left, the email (or Sign in) and the settings
+gear top-right, and the build stamp `vYYMMDD` (UTC commit date) bottom-right. `/diag` shows one
+card per dependency (API, Data, Services) for anyone, signed in or not. Pressing Tab before
+anything has focus opens a developer window (`/po-dev.html`) with live health and page stats.
+Light and dark follow the device.
+
+## Deploy
+
+A push to `master` runs `.github/workflows/deploy.yml` (the same file in every Po repo): build,
+publish, deploy, then wait for `/health/live` to report the new commit. It runs no tests;
+run the related tests and `scripts/ci-checks.ps1` locally before pushing.
+
 ## Verification
 
 Run only the tests relevant to a change; Integration tests require Azurite and E2E UI
