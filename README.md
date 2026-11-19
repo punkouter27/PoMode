@@ -36,6 +36,35 @@ card per dependency (API, Data, Services) for anyone, signed in or not. Pressing
 anything has focus opens a developer window (`/po-dev.html`) with live health and page stats.
 Light and dark follow the device.
 
+## Phone app
+
+`src/PoMode.Mobile/` is a native .NET MAUI app (Android, iOS) on the same API and the same
+`PoMode.Shared` contracts. It is not in `PoMode.slnx` or CI; build it by hand
+(`dotnet build src/PoMode.Mobile -f net10.0-android`). It opens as a guest like the web, and
+Settings signs in with Microsoft (the id token is the bearer the API already accepts).
+
+- **Songs:** pick or record a song; it goes up through the same tus endpoint in 4 MB chunks and
+  resumes after a dropped connection or a restart. A foreground service (Android) or background task
+  (iOS) keeps it going with the screen locked, and a notification opens the song when the analysis
+  is done (`pomode://song/{jobId}`).
+- **Song:** live progress over `/hubs/analysis`; then the mode and why, sections, bar-by-bar chords,
+  guitar shapes and the loop, voice and stems playback with a voice/band mix, statistics, the
+  written summary and questions (streamed), MIDI, re-run with another model, delete.
+- **Practice:** pick a home note, mode and chords and sing over them. The phone tracks your pitch
+  (YIN) and draws your line over the chord tones live, with a vibrato readout. The take goes to
+  `/api/modal-melodies/hum`. A Bluetooth LE or USB MIDI keyboard can play the take instead.
+  Also on Practice: earlier takes and your range, and the guitar jam (strummed on the phone,
+  sing over it).
+- **Drone and click:** a drone on any note and a metronome that keep playing with the screen
+  locked, with play/pause and ±5 BPM on the lock screen.
+- **Mode Lab:** generate, play (`/api/modal-melodies/wav`), describe a change in words, analyse
+  it, share as MIDI/WAV.
+
+Local loop: start the API, then `pwsh scripts/mobile-dev.ps1 -Run` (`adb reverse` maps the
+phone's `localhost:5000` to the API). Not on the phone yet: OneDrive import (its Graph token lives
+in the web's cookie session), the Mode Lab's drum strip and gravity panel, and the
+similarity-matrix view of how the sections were found.
+
 ## Deploy
 
 A push to `master` runs `.github/workflows/deploy.yml` (the same file in every Po repo): build,
