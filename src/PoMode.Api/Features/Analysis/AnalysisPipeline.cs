@@ -24,8 +24,13 @@ public sealed class AnalysisPipeline(
     private readonly IReadOnlyList<IBeatTracker> _beatTrackers =
         beatTrackers?.ToArray() is { Length: > 0 } registered ? registered : [new Features.BeatTracking.DspBeatTracker()];
 
-    /// <summary>Clips shorter than this skip stem separation entirely (snippets, mic checks).</summary>
-    private const double ShortClipSeconds = 30.0;
+    /// <summary>
+    /// Clips shorter than this skip stem separation entirely (snippets, mic checks). It was 30 s, which
+    /// caught song excerpts too: a 25 s clip had its "vocal" traced from the full mix, and the tracker
+    /// followed the bass and jumped octaves, reporting a 43-semitone range centred on G#2. Key and
+    /// chords read fine from a mix; a melody does not, so only clips too short to be a song skip it.
+    /// </summary>
+    private const double ShortClipSeconds = 10.0;
 
     public async Task RunAsync(string jobId, CancellationToken ct)
     {

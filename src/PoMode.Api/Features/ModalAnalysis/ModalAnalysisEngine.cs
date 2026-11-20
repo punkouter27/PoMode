@@ -13,6 +13,13 @@ public static class ModalAnalysisEngine
     // within a coverage level and can never invert the ordering between coverage levels.
     private const double CharacteristicBonus = 0.05;
 
+    /// <summary>
+    /// The lead the winning key needs over the runner-up (as a share of its own score, which is what
+    /// <see cref="TonicEstimate.Confidence"/> is) before the tonic counts as settled. Relative keys
+    /// sit a few percent apart; a song with a clear home is well past this.
+    /// </summary>
+    internal const double ClearTonicMargin = 0.15;
+
     public static ModalResult Analyze(
         IReadOnlyList<NoteEvent> notes,
         IReadOnlyList<ChordSpan> chords,
@@ -77,7 +84,13 @@ public static class ModalAnalysisEngine
                 Matches: matches));
         }
 
-        var (primaryMode, primaryConfidence) = PickPrimary(windows);
+        var (primaryMode, fit) = PickPrimary(windows);
+
+        // Fit alone cannot tell a mode from its relatives: C Ionian and A Aeolian are the same seven
+        // notes, so a song that never leaves them fits both perfectly and read "100% confidence"
+        // whichever was named. What separates them is the tonic, so the figure is the fit scaled by
+        // how clearly the tonic won: a coin toss between two roots halves it.
+        var primaryConfidence = fit * (0.5 + (0.5 * Math.Min(1.0, tonic.Confidence / ClearTonicMargin)));
 
         return new ModalResult(
             SchemaVersion: 1,

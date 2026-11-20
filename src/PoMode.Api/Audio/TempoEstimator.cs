@@ -460,6 +460,16 @@ public static class TempoEstimator
 
         var smoothed = MedianSmooth(raw);
 
+        // One bar's reading rests on a single snapped downbeat, so a snap a fraction of a beat off
+        // reads as a ten percent tempo change that never happened: a steady 100 BPM clip was drawn
+        // drifting between 92 and 109. Whether the tempo really moves is asked of longer stretches
+        // instead, where one onset cannot swing the answer, and a song they call steady is reported
+        // at its one tempo.
+        if (IsSteadyAcrossWindows(envelope, estimate.Bpm, minBpm, maxBpm))
+        {
+            Array.Fill(smoothed, estimate.Bpm);
+        }
+
         var measures = new List<TempoMeasure>(smoothed.Length);
         for (var i = 0; i < smoothed.Length; i++)
         {
@@ -483,6 +493,42 @@ public static class TempoEstimator
             IsSteady: sorted[^1] - sorted[0] <= SteadyRangeBpm,
             Confidence: estimate.Confidence,
             Measures: measures);
+    }
+
+    /// <summary>
+    /// Twelve seconds, not eight: on a steady 100 BPM clip one 8 s stretch heard the pulse at three
+    /// quarters speed (75), while every 12 s stretch read 100.1 to 100.3. The longer window holds
+    /// enough beats that one syncopated bar cannot pick the metrical level.
+    /// </summary>
+    private const double SteadyWindowSeconds = 12.0;
+
+    /// <summary>
+    /// True when the tempo measured over each overlapping <see cref="SteadyWindowSeconds"/> stretch
+    /// stays within <see cref="SteadyRangeBpm"/> of the whole song's. A stretch that cannot be
+    /// measured, or reads another tempo (a real change, or an octave it heard differently), answers
+    /// false, and the per-measure readings stand as they were: this only ever removes drift, it
+    /// never invents steadiness for a song too short to ask.
+    /// </summary>
+    private static bool IsSteadyAcrossWindows(OnsetEnvelope envelope, double globalBpm, double minBpm, double maxBpm)
+    {
+        var (detrended, frameCount, frameRate) = envelope;
+        var windowFrames = (int)(SteadyWindowSeconds * frameRate);
+        var hopFrames = windowFrames / 2;
+        if (frameCount < windowFrames + hopFrames)
+        {
+            return false;
+        }
+
+        for (var start = 0; start + windowFrames <= frameCount; start += hopFrames)
+        {
+            var window = new OnsetEnvelope(detrended[start..(start + windowFrames)], windowFrames, frameRate);
+            var local = EstimateFromEnvelope(window, minBpm, maxBpm);
+            if (local.Confidence <= 0 || Math.Abs(local.Bpm - globalBpm) > SteadyRangeBpm)
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     /// <summary>

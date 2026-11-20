@@ -224,7 +224,7 @@ public sealed class ClientDelegatedFallbackTests : IDisposable
 
         async Task<(JobState Job, Task Run)> StartAsync()
         {
-            // Past the 30 s short-clip line, under which no separator is asked at all.
+            // Past the short-clip line (10 s), under which no separator is asked at all.
             using var content = new MemoryStream(TestAudio.MakeTwoToneStereo(31.0, 220, 330));
             var job = await _store.CreateAsync("song.wav", content, CancellationToken.None);
             job.Plan = await planner.PlanAsync(browserCanInfer: true, null, CancellationToken.None);
