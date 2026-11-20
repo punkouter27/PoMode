@@ -199,8 +199,8 @@ public class AnalysisClient(HttpClient http)
         return await response.Content.ReadFromJsonAsync(Json.Int32);
     }
 
-    public Task<DiagnosticsReport?> GetDiagnosticsAsync(CancellationToken ct = default)
-        => http.GetFromJsonAsync(Url("api/diag"), Json.DiagnosticsReport, ct);
+    public Task<DiagReportDto?> GetDiagnosticsAsync(CancellationToken ct = default)
+        => http.GetFromJsonAsync(Url("api/diag"), Json.DiagReportDto, ct);
 
     // ---- Starting analyses -----------------------------------------------------------------------
 

@@ -17,8 +17,8 @@
     <PublishCompressionFormats>brotli</PublishCompressionFormats>
   </PropertyGroup>
 
-  <!-- Self-contained Po build stamp (vYYMMDD = UTC date of HEAD commit, fallback to UTC build date).
-       Emits BuildVersion so the client corner badge and /api/diag match. -->
+  <!-- The one version source (Po web standard): BuildVersion = UTC yyMMdd of the HEAD commit (fallback: UTC
+       build date). The version badge, /api/diag and /health/live all read this one assembly metadata key. -->
   <Target Name="PoBuildStamp" BeforeTargets="GetAssemblyAttributes;CoreCompile">
     <Exec Condition="'$(PoStamp)' == ''" Command="git rev-list -1 --timestamp HEAD" WorkingDirectory="$(MSBuildThisFileDirectory)"
           ConsoleToMSBuild="true" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true"

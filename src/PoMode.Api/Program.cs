@@ -214,9 +214,9 @@ if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Test"))
 // hash could cover). 'unsafe-eval' is for Essentia's Emscripten bindings, which build functions with
 // new Function (it also covers WebAssembly compilation); blob: is for model workers. script-src is the
 // fallback for a browser without the CSP Level 3 directives, so it has to allow all of the above.
-// The commit this build came from (SDK-stamped as "<version>+<sha>"), so a deploy can prove which
-// build is answering: CI checks /health/live for X-Commit equal to the pushed sha.
-var commit = PoPlatform.Version.Split('+') is [_, var sha, ..] ? sha : "unknown";
+// The commit this build came from (PoPlatform.Commit), so a deploy can prove which build is
+// answering: CI checks /health/live for X-Commit equal to the pushed sha.
+var commit = PoPlatform.Commit;
 const string ContentSecurityPolicy =
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; script-src-elem 'self' blob:; script-src-attr 'unsafe-inline'; "
     + "object-src 'none'; base-uri 'self'; frame-ancestors 'none'";

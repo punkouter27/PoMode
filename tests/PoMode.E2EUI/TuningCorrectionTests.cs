@@ -44,7 +44,7 @@ public class TuningCorrectionTests(AppFixture app)
     /// page says so and by how much, and the opening note is still read as a true C rather than
     /// drifting toward the neighbouring semitone.
     /// </summary>
-    [Fact]
+    [BrowserFact]
     public async Task A_slightly_sharp_recording_is_measured_and_its_first_note_still_reads_as_C()
     {
         using var playwright = await Playwright.CreateAsync();

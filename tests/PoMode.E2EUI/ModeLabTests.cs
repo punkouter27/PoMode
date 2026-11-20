@@ -34,7 +34,7 @@ public class ModeLabTests(AppFixture app)
     private static async Task<string?> StateAsync(IPage page, string attribute) =>
         await page.Locator("body").GetAttributeAsync(attribute);
 
-    [Fact]
+    [BrowserFact]
     public async Task Sampling_a_mode_starts_the_player()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -49,7 +49,7 @@ public class ModeLabTests(AppFixture app)
         Assert.Equal("1", await StateAsync(page, "data-modal-plays"));
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task Sampling_a_second_mode_while_playing_restarts_the_whole_arrangement()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -87,7 +87,7 @@ public class ModeLabTests(AppFixture app)
     /// around", which dumped every note of the song into the opening frame, sounded each one twice,
     /// and left the following passes through the loop without their chords.
     /// </summary>
-    [Fact]
+    [BrowserFact]
     public async Task Playing_schedules_the_whole_progression_just_in_time_and_keeps_looping()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -151,7 +151,7 @@ public class ModeLabTests(AppFixture app)
     /// the chords stayed on the parent key, every card sounded like that key with the melody starting
     /// somewhere else, which is the one thing a mode demonstrator must not do.
     /// </summary>
-    [Fact]
+    [BrowserFact]
     public async Task Picking_a_mode_moves_the_harmony_onto_that_modes_tonic()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -186,7 +186,7 @@ public class ModeLabTests(AppFixture app)
     /// Turning the match off restores the older lesson, where one fixed progression shows that all
     /// seven modes are drawn from a single set of notes.
     /// </summary>
-    [Fact]
+    [BrowserFact]
     public async Task Turning_the_match_off_holds_one_progression_across_modes()
     {
         using var playwright = await Playwright.CreateAsync();

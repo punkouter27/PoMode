@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using PoMode.Api.Features.Analysis;
 using PoMode.Api.Features.Push;
@@ -32,56 +33,76 @@ public sealed class DiagnosticsService(
 {
     private static readonly TimeSpan ProbeBudget = TimeSpan.FromSeconds(1.5);
 
-    public async Task<DiagnosticsReport> BuildReportAsync(CancellationToken ct)
+    /// <summary>The build stamp (UTC yyMMdd) from the one BuildVersion assembly metadata key.</summary>
+    public static string BuildVersion { get; } =
+        typeof(DiagnosticsService).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => a.Key == "BuildVersion")?.Value ?? "dev";
+
+    public async Task<DiagReportDto> BuildReportAsync(CancellationToken ct)
     {
-        var stores = await StoresAsync(ct);
-        var services = await ServicesAsync(ct);
-        return new DiagnosticsReport(
-            Status: DiagnosticStatus.Worst(stores.Concat(services).Select(check => check.Status)),
-            EnvironmentName: environment.EnvironmentName,
+        var started = Stopwatch.GetTimestamp();
+        List<DiagCheckDto> checks =
+        [
+            new("api", "api", "PoMode API", DiagnosticStatus.Healthy,
+                "Answers every page, upload and analysis.", "Answering.", 0, null),
+            .. await StoresAsync(ct),
+            .. await ServicesAsync(ct),
+        ];
+        return new DiagReportDto(
+            Status: DiagnosticStatus.Worst(checks.Select(check => check.Status)),
+            Environment: environment.EnvironmentName,
+            Version: BuildVersion,
             CheckedAt: time.GetUtcNow(),
-            Stores: stores,
-            Services: services,
-            QueueDepth: queue.Depth,
-            DefaultPlan: await DefaultPlanAsync(ct),
-            Operational: Operational(),
-            Interpreters: interpreters.Snapshot());
+            CheckedMs: Math.Round(Stopwatch.GetElapsedTime(started).TotalMilliseconds, 1),
+            Checks: [.. checks]);
     }
 
-    private async Task<List<DiagnosticCheck>> StoresAsync(CancellationToken ct)
+    /// <summary>The operator extras (queue, guards, interpreters, default plan) for /api/diag/activity.</summary>
+    public async Task<DiagnosticsActivity> BuildActivityAsync(CancellationToken ct) => new(
+        QueueDepth: queue.Depth,
+        DefaultPlan: await DefaultPlanAsync(ct),
+        Operational: Operational(),
+        Interpreters: interpreters.Snapshot());
+
+    private async Task<List<DiagCheckDto>> StoresAsync(CancellationToken ct)
     {
         var report = await healthChecks.CheckHealthAsync(ct);
-        var now = time.GetUtcNow();
         return
         [
-            .. report.Entries.Select(entry => new DiagnosticCheck(
-                Name: entry.Key == "job-storage" ? "Job storage" : entry.Key,
-                Status: entry.Value.Status switch
+            .. report.Entries.Select(entry =>
+            {
+                var status = entry.Value.Status switch
                 {
                     HealthStatus.Healthy => DiagnosticStatus.Healthy,
                     HealthStatus.Degraded => DiagnosticStatus.Degraded,
                     _ => DiagnosticStatus.Unhealthy,
-                },
-                Description: entry.Key == "job-storage"
-                    ? "Keeps uploads, stems and finished analyses, mirrored to blob storage where configured."
-                    : "A storage dependency of the app.",
-                LatencyMs: Math.Round(entry.Value.Duration.TotalMilliseconds, 1),
-                CheckedAt: now)),
+                };
+                return new DiagCheckDto(
+                    Name: entry.Key,
+                    Group: "data",
+                    Label: entry.Key == "job-storage" ? "Job storage" : entry.Key,
+                    Status: status,
+                    Purpose: entry.Key == "job-storage"
+                        ? "Keeps uploads, stems and finished analyses, mirrored to blob storage where configured."
+                        : "A storage dependency of the app.",
+                    Detail: Plain(status),
+                    LatencyMs: Math.Round(entry.Value.Duration.TotalMilliseconds, 1),
+                    Problem: status == DiagnosticStatus.Healthy ? null : "Storage did not answer as expected.");
+            }),
         ];
     }
 
-    private async Task<List<DiagnosticCheck>> ServicesAsync(CancellationToken ct)
+    private async Task<List<DiagCheckDto>> ServicesAsync(CancellationToken ct)
     {
-        var now = time.GetUtcNow();
-
         // Where the secrets came from is not reported, only whether the vault was reachable when it
         // was meant to be: falling back to environment variables is the degraded case.
-        var vault = new DiagnosticCheck(
-            "Key Vault",
+        var vault = new DiagCheckDto(
+            "key-vault", "service", "Key Vault",
             secretSource.FellBack ? DiagnosticStatus.Degraded : DiagnosticStatus.Healthy,
             "Holds the app's secrets; read once at start-up.",
-            null,
-            now);
+            secretSource.FellBack ? "Settings came from the environment instead." : "Read at start-up.",
+            0,
+            secretSource.FellBack ? "The vault could not be read at start-up." : null);
 
         // Capped: an Ollama that is not running can hold a probe for seconds, and the page waits on it.
         var started = Stopwatch.GetTimestamp();
@@ -99,30 +120,43 @@ public sealed class DiagnosticsService(
             }
         }
         var writersLatency = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
-        var ai = new DiagnosticCheck(
-            "AI interpreters",
+        var ai = new DiagCheckDto(
+            "ai-interpreters", "service", "AI interpreters",
             anyModel ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
-            "Language models that write a song's summary and answer questions; a template stands in without one.",
+            "Language models that write a song's summary and answer questions.",
+            anyModel ? "A language model is ready." : "No language model answered; a template writes the summary.",
             Math.Round(writersLatency, 1),
-            now);
+            anyModel ? null : "No language model is available.");
 
+        var probeStarted = Stopwatch.GetTimestamp();
         var hardware = await hardwareProbe.ProbeAsync(ct);
-        var models = new DiagnosticCheck(
-            "Analysis models",
-            hardware.Models.All(model => model.Available) ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
-            $"Neural models for stems, pitch, chords and beats: {hardware.Models.Count(model => model.Available)} of {hardware.Models.Count} ready.",
-            null,
-            now);
+        var ready = hardware.Models.Count(model => model.Available);
+        var allReady = ready == hardware.Models.Count;
+        var models = new DiagCheckDto(
+            "analysis-models", "service", "Analysis models",
+            allReady ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
+            "Neural models for stems, pitch, chords and beats.",
+            $"{ready} of {hardware.Models.Count} ready.",
+            Math.Round(Stopwatch.GetElapsedTime(probeStarted).TotalMilliseconds, 1),
+            allReady ? null : "Some models are not downloaded; simpler analysers stand in.");
 
-        var notifications = new DiagnosticCheck(
-            "Push notifications",
+        var notifications = new DiagCheckDto(
+            "push", "service", "Push notifications",
             push.Available ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
             "Tells a closed tab that its song has finished.",
-            null,
-            now);
+            push.Available ? "Set up." : "Not set up on this server.",
+            0,
+            push.Available ? null : "No push key pair is configured.");
 
         return [vault, ai, models, notifications];
     }
+
+    private static string Plain(string status) => status switch
+    {
+        DiagnosticStatus.Healthy => "Working normally.",
+        DiagnosticStatus.Degraded => "Answering, but not fully.",
+        _ => "Not answering.",
+    };
 
     /// <summary>
     /// The guards this instance is running with. Presence only — in particular the OTLP endpoint is

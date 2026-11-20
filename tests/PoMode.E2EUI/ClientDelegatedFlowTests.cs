@@ -87,7 +87,7 @@ public class ClientDelegatedFlowTests(ClientDelegatedAppFixture app)
     private const float FlowTimeoutMs = 180000f;
     private static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);
 
-    [Fact]
+    [BrowserFact]
     public async Task The_browser_transcribes_the_vocals_and_the_job_completes_on_the_client_tier()
     {
         using var playwright = await Playwright.CreateAsync();

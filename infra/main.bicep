@@ -29,7 +29,7 @@ resource poModeRg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
 }
 
 // Deploy PoMode application infrastructure into the PoMode RG
-module resources 'resources.bicep' = {
+module resources 'modules/resources.bicep' = {
   name: 'pomode-resources'
   scope: poModeRg
   params: {

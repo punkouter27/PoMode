@@ -4,6 +4,8 @@ PoMode is a .NET 10 music-analysis application. Its API host serves a Blazor Web
 client, accepts audio-analysis jobs, and coordinates background workers, browser-assisted
 analysis, library management, and optional song interpretation.
 
+Live: https://app-pomode2.azurewebsites.net (status page: `/diag`).
+
 ## Architecture
 
 The shape and the decisions behind it are in [`docs/`](docs/README.md): architecture, the UI rules,
@@ -14,15 +16,15 @@ what was removed and why, and what the AI costs.
 - `src/PoMode.Client/` contains the Blazor WebAssembly UI.
 - `src/PoMode.Shared/` contains contracts and source-generated JSON support shared by the
   API and client.
-- `tests/` contains Unit, Integration, E2E API, and Playwright E2E UI projects.
+- `tests/` contains Unit (94), Integration (38), E2E API (25) and Playwright E2E UI (25) projects.
 
-The solution is `PoMode.slnx`. `CLAUDE.md` is the detailed guide to the architecture,
-constraints, test budgets, and development workflow.
+The solution is `PoMode.slnx`. `AGENTS.md` is the detailed guide: the Po web standard this repo
+follows, the architecture, constraints, test tiers and development workflow.
 
 ## Local development
 
-Use the .NET SDK pinned by `global.json`. Start the shared Azurite emulator when needed,
-then run the host:
+Use the .NET SDK pinned by `global.json`. Start the local Azurite emulator if you want the
+blob mirror (the default is file-system storage), then run the host:
 
 ```powershell
 docker compose up -d
@@ -37,15 +39,17 @@ Every page carries the Po shell: the name top-left, your three initials and the 
 gear top-right, and the build stamp `vYYMMDD` (UTC commit date) bottom-right. There is no sign-in and
 nothing is private: a first visit asks for three initials, and those letters open the same collection
 of songs on any device.
-`/diag` shows one card per dependency (API, Data, Services) for anyone. Pressing Tab before
+`/diag` ("System status") shows one row per dependency (API, Data, Services) for anyone, from the
+anonymous `GET /api/diag`. Pressing Tab before
 anything has focus opens a developer window (`/po-dev.html`) with live health and page stats.
 Light and dark follow the device.
 
 ## Phone app
 
 `src/PoMode.Mobile/` is a native .NET MAUI app (Android, iOS) on the same API and the same
-`PoMode.Shared` contracts. It is not in `PoMode.slnx` or CI; build it by hand
-(`dotnet build src/PoMode.Mobile -f net10.0-android`). It opens with a persistent guest session.
+`PoMode.Shared` contracts. It is not in `PoMode.slnx`; CI's `mobile` job builds its Android
+target on every push (never blocking the deploy), and by hand:
+`dotnet build src/PoMode.Mobile -f net10.0-android` (needs the `maui-android` workload). It opens with a persistent guest session.
 
 - **Songs:** pick or record a song; it goes up through the same tus endpoint in 4 MB chunks and
   resumes after a dropped connection or a restart. A foreground service (Android) or background task
@@ -77,8 +81,8 @@ pushing. Azure permissions all come from `scripts/ensure-azure-access.ps1`.
 
 ## Verification
 
-Run only the tests relevant to a change; Integration tests require Azurite and E2E UI
-tests install and launch Playwright Chromium.
+Run the tests relevant to a change while iterating and every tier before a push. No tier needs
+Docker; E2E UI tests need Playwright Chromium and skip with a clear message without it.
 
 ```powershell
 dotnet build PoMode.slnx
@@ -86,5 +90,5 @@ dotnet test tests/PoMode.Unit --filter "FullyQualifiedName~TempoEstimator"
 pwsh scripts/test-caps.ps1
 ```
 
-See `CLAUDE.md` for targeted test commands, layout auditing, model setup, and the
+See `AGENTS.md` for targeted test commands, layout auditing, model setup, and the
 project-specific verification limits.

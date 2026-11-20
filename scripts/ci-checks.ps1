@@ -7,7 +7,7 @@
     Runs from the repo root with the solution already built in Release. Any failure exits non-zero.
     (Formatting is checked by the deploy itself: dotnet format PoMode.slnx --verify-no-changes.)
       1. Test caps per suite (scripts/test-caps.ps1: 100 Unit / 50 Integration / 25 E2EAPI / 25 E2EUI).
-      2. Every infra/*.bicep compiles to ARM (catches template errors; nothing is deployed).
+      2. Every infra .bicep (main + modules/) compiles to ARM (catches template errors; nothing is deployed).
       3. The mobile app builds for Android (it is outside the deploy, so nothing else would notice a
          Shared change that breaks it). Skipped when the MAUI workload is not installed.
 #>

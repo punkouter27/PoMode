@@ -2,8 +2,13 @@ using System.Reflection;
 
 namespace PoMode.Api.Platform;
 
-/// <summary>The conventions every Po app shares: its name, the session cookie name, the build version
-/// and the uniform <c>/health/live</c> probe.</summary>
+/// <summary>
+/// PoMode's platform conventions (log property, cookie stem, liveness, build stamp). This repo owns
+/// this file; it follows the Po web standard in AGENTS.md and may change freely.
+/// </summary>
+/// <remarks>
+/// Deliberately dependency-free beyond the shared framework.
+/// </remarks>
 public static class PoPlatform
 {
     /// <summary>This app's name, used as the log property, the cookie stem and the liveness label.</summary>
@@ -23,17 +28,27 @@ public static class PoPlatform
     public static string SessionCookieName(bool secure) =>
         secure ? $"__Host-{AppName}.Auth" : $"{AppName}.Auth";
 
-    /// <summary>Informational version, from the assembly's build metadata.</summary>
+    /// <summary>The build stamp, UTC yyMMdd, from the one <c>BuildVersion</c> assembly metadata key
+    /// (Directory.Build.props). The version badge and /api/diag read the same key.</summary>
     public static string Version { get; } =
-        Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-            ?.InformationalVersion
-        ?? Assembly.GetEntryAssembly()?.GetName().Version?.ToString()
-        ?? "unknown";
+        typeof(PoPlatform).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => a.Key == "BuildVersion")?.Value
+        ?? "dev";
+
+    /// <summary>The commit this build came from: the SDK stamps the informational version as
+    /// "&lt;version&gt;+&lt;sha&gt;". Sent as the X-Commit header so a deploy can prove which build answers.</summary>
+    public static string Commit { get; } =
+        (Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "")
+            .Split('+') is [_, var sha, ..] ? sha : "unknown";
 
     /// <summary>
-    /// Maps <c>/health/live</c>: dependency-free, the same shape in every Po app, so one dashboard can
-    /// poll them all. <c>/health</c> is the deep, app-specific probe.
+    /// Maps <c>/health/live</c>: the dependency-free liveness probe (the deploy reads its X-Commit header).
     /// </summary>
+    /// <remarks>
+    /// Separate from <c>/health</c> on purpose. <c>/health</c> is a DEEP probe whose payload is
+    /// app-specific and expensive to poll. This one touches nothing and cannot fail on a dependency
+    /// outage, so an uptime monitor can poll it cheaply.
+    /// </remarks>
     public static IEndpointRouteBuilder MapPoLiveness(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapGet("/health/live", () => Results.Ok(new
