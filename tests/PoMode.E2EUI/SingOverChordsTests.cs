@@ -71,7 +71,7 @@ public class SingOverChordsTests(AppFixture app)
         await page.Locator("#practice-stop").ClickAsync();
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task A_take_records_over_the_chords_and_is_offered_for_review()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -94,7 +94,7 @@ public class SingOverChordsTests(AppFixture app)
             $"expected the chord backing to have been playing, got '{backing}'");
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task A_captured_take_can_be_heard_back_against_its_chords()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -117,7 +117,7 @@ public class SingOverChordsTests(AppFixture app)
         await Assertions.Expect(page.Locator("body[data-modal-player='stopped']")).ToHaveCountAsync(1, Count);
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task Saving_a_take_sends_it_to_the_analyzer_with_the_progression_it_was_sung_over()
     {
         using var playwright = await Playwright.CreateAsync();

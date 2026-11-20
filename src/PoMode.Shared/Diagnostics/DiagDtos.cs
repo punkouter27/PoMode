@@ -29,35 +29,55 @@ public static class DiagnosticStatus
 }
 
 /// <summary>
-/// The anonymous <c>GET /api/diag</c> payload behind the /diag page (2026-11-17: moved off /diag so a
-/// browser lands on the page, not the JSON). Every check is reduced to a status word, a fixed
-/// sentence saying what the dependency is for and a latency. Nothing identifying goes out: no
-/// secret source, vault or storage address, path, host, key or exception text.
+/// What <c>GET /api/diag</c> answers (Po web standard, AGENTS.md) and the <c>/diag</c> "System status" page shows.
+/// Anonymous, so plain words only: never a connection string, key, URL, path, host, id, email or exception message.
 /// </summary>
-public sealed record DiagnosticsReport(
+/// <param name="Status">"Healthy", "Degraded" or "Unhealthy": the worst of <paramref name="Checks"/>.</param>
+/// <param name="Environment">The host environment name (Production, Development, …).</param>
+/// <param name="Version">The build's <c>BuildVersion</c> stamp, UTC <c>yyMMdd</c>.</param>
+/// <param name="CheckedAt">When the checks ran (UTC).</param>
+/// <param name="CheckedMs">How long all the checks took together, in milliseconds.</param>
+public sealed record DiagReportDto(
     string Status,
-    string EnvironmentName,
+    string Environment,
+    string Version,
     DateTimeOffset CheckedAt,
-    IReadOnlyList<DiagnosticCheck> Stores,
-    IReadOnlyList<DiagnosticCheck> Services,
+    double CheckedMs,
+    DiagCheckDto[] Checks);
+
+/// <summary>One row on <c>/diag</c>: one dependency the app really calls.</summary>
+/// <param name="Name">Stable machine id (e.g. "api", "job-storage").</param>
+/// <param name="Group">"api", "data" or "service": the section it is shown in.</param>
+/// <param name="Label">What the page calls it.</param>
+/// <param name="Status">"Healthy", "Degraded" or "Unhealthy".</param>
+/// <param name="Purpose">What the app uses it for, in one line.</param>
+/// <param name="Detail">How it is, in one line.</param>
+/// <param name="LatencyMs">How long the check took.</param>
+/// <param name="Problem">What is wrong, in plain words, when it is not Healthy.</param>
+public sealed record DiagCheckDto(
+    string Name,
+    string Group,
+    string Label,
+    string Status,
+    string Purpose,
+    string Detail,
+    double LatencyMs,
+    string? Problem);
+
+/// <summary>
+/// The operator extras that used to sit beside the checks on /diag, now at <c>GET /api/diag/activity</c> so the
+/// /diag contract stays the standard shape. Anonymous as well, so presence and counts only.
+/// </summary>
+public sealed record DiagnosticsActivity(
     /// <summary>Jobs waiting for the single-concurrency worker right now.</summary>
-    int QueueDepth = 0,
+    int QueueDepth,
     /// <summary>What the planner would pick for an upload arriving now (no browser tier declared);
     /// null when no executor set is available at all.</summary>
-    IReadOnlyList<StagePlan>? DefaultPlan = null,
+    IReadOnlyList<StagePlan>? DefaultPlan,
     /// <summary>The guards and exporters that are switched on. Presence only.</summary>
-    OperationalReport? Operational = null,
+    OperationalReport Operational,
     /// <summary>How each song interpreter has done since start-up (InterpreterStats).</summary>
-    IReadOnlyList<InterpreterStatsDto>? Interpreters = null);
-
-/// <summary>One store or external service: what it is for, how it is, and how long asking took
-/// (null when the status is known without a round trip).</summary>
-public sealed record DiagnosticCheck(
-    string Name,
-    string Status,
-    string Description,
-    double? LatencyMs,
-    DateTimeOffset CheckedAt);
+    IReadOnlyList<InterpreterStatsDto> Interpreters);
 
 /// <summary>One interpreter's record since start-up: replies that passed the grounding check, replies
 /// sent back for inventing a figure, and failures the next interpreter answered in its place.</summary>

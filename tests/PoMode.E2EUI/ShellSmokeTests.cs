@@ -6,7 +6,7 @@ namespace PoMode.E2EUI;
 [Collection("App")]
 public class ShellSmokeTests(AppFixture app)
 {
-    [Fact]
+    [BrowserFact]
     public async Task Shell_renders_header_without_mock_banner_on_cold_load()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -52,13 +52,13 @@ public class ShellSmokeTests(AppFixture app)
         // /diag is the page, signed out or not, at a desktop and a phone width (the JSON is /api/diag);
         // the guard fails the test on any console error along the way.
         await page.GotoAsync($"{app.BaseUrl}/diag");
-        await Assertions.Expect(page.GetByRole(AriaRole.Heading, new() { Name = "Diagnostics", Level = 1 })).ToBeVisibleAsync(expectOptions);
-        await Assertions.Expect(page.Locator("#diag-status")).ToBeVisibleAsync(expectOptions);
+        await Assertions.Expect(page.GetByRole(AriaRole.Heading, new() { Name = "System status", Level = 1 })).ToBeVisibleAsync(expectOptions);
+        await Assertions.Expect(page.Locator("[data-testid=diag-banner]")).ToBeVisibleAsync(expectOptions);
         await Assertions.Expect(page.GetByRole(AriaRole.Region, new() { Name = "Services" })).ToBeVisibleAsync(expectOptions);
         await Assertions.Expect(page.Locator(".po-diag__card .po-badge").First).ToBeVisibleAsync(expectOptions);
         await page.SetViewportSizeAsync(390, 844);
         await page.ReloadAsync();
-        await Assertions.Expect(page.Locator("#diag-status")).ToBeVisibleAsync(expectOptions);
+        await Assertions.Expect(page.Locator("[data-testid=diag-banner]")).ToBeVisibleAsync(expectOptions);
         await Assertions.Expect(page.Locator("header #open-settings")).ToBeVisibleAsync(expectOptions);
         Assert.True(await page.EvaluateAsync<bool>("document.documentElement.scrollWidth <= window.innerWidth"),
             "/diag scrolls sideways at 390px");

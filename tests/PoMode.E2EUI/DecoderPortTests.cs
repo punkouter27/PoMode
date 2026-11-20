@@ -13,7 +13,7 @@ namespace PoMode.E2EUI;
 [Collection("App")]
 public class DecoderPortTests(AppFixture app)
 {
-    [Fact]
+    [BrowserFact]
     public async Task The_js_decoder_agrees_with_the_csharp_fixture_note_for_note()
     {
         using var playwright = await Playwright.CreateAsync();

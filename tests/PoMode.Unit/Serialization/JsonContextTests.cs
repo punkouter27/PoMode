@@ -17,22 +17,28 @@ public class JsonContextTests
     public void Every_contract_without_wire_coverage_round_trips_through_the_source_gen_context()
     {
         var checkedAt = DateTimeOffset.Parse("2026-11-17T12:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
-        var report = new DiagnosticsReport(
+        var report = new DiagReportDto(
             Status: DiagnosticStatus.Degraded,
-            EnvironmentName: "Development",
+            Environment: "Development",
+            Version: "261120",
             CheckedAt: checkedAt,
-            Stores: [new DiagnosticCheck("Job storage", DiagnosticStatus.Healthy, "Keeps uploads.", 1.5, checkedAt)],
-            Services: [new DiagnosticCheck("Key Vault", DiagnosticStatus.Degraded, "Holds secrets.", null, checkedAt)]);
+            CheckedMs: 12.5,
+            Checks:
+            [
+                new DiagCheckDto("job-storage", "data", "Job storage", DiagnosticStatus.Healthy, "Keeps uploads.", "Working normally.", 1.5, null),
+                new DiagCheckDto("key-vault", "service", "Key Vault", DiagnosticStatus.Degraded, "Holds secrets.", "Fell back.", 0, "Not read."),
+            ]);
 
         var backReport = JsonSerializer.Deserialize(
-            JsonSerializer.Serialize(report, PoModeJsonContext.Default.DiagnosticsReport),
-            PoModeJsonContext.Default.DiagnosticsReport);
+            JsonSerializer.Serialize(report, PoModeJsonContext.Default.DiagReportDto),
+            PoModeJsonContext.Default.DiagReportDto);
 
         Assert.NotNull(backReport);
-        Assert.Equal("Development", backReport.EnvironmentName);
+        Assert.Equal("Development", backReport.Environment);
         Assert.Equal(DiagnosticStatus.Degraded, backReport.Status);
-        Assert.Equal(1.5, backReport.Stores[0].LatencyMs);
-        Assert.Null(backReport.Services[0].LatencyMs);
+        Assert.Equal(1.5, backReport.Checks[0].LatencyMs);
+        Assert.Null(backReport.Checks[0].Problem);
+        Assert.Equal("service", backReport.Checks[1].Group);
 
         var status = new JobStatusDto(
             JobId: "abc123",

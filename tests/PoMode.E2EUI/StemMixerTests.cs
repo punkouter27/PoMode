@@ -39,7 +39,7 @@ public class StemMixerTests(AppFixture app)
     private static async Task<double> MixerTimeAsync(IPage page)
         => double.Parse(await page.Locator(".mixer").GetAttributeAsync("data-mixer-time") ?? "0", System.Globalization.CultureInfo.InvariantCulture);
 
-    [Fact]
+    [BrowserFact]
     public async Task The_transport_and_all_three_stem_modes_are_offered()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -56,7 +56,7 @@ public class StemMixerTests(AppFixture app)
             .ToHaveAttributeAsync("data-mixer-duration", "8.000");
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task Play_advances_the_clock_and_the_canvas_playhead_follows_it()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -76,7 +76,7 @@ public class StemMixerTests(AppFixture app)
         Assert.True(await MixerTimeAsync(page) > 0, "mixer clock did not advance");
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task Pause_stops_the_clock_where_it_was()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -97,7 +97,7 @@ public class StemMixerTests(AppFixture app)
         Assert.Equal(atPause, await MixerTimeAsync(page), precision: 3); // the clock is genuinely stopped
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task Switching_to_solo_vocals_preserves_the_playback_position()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -121,7 +121,7 @@ public class StemMixerTests(AppFixture app)
             .ToHaveAttributeAsync("data-mixer-status", "playing");
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task Clicking_the_canvas_seeks_the_audio_too()
     {
         using var playwright = await Playwright.CreateAsync();

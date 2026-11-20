@@ -20,7 +20,8 @@ public sealed class WriteEndpointAuthTests : IDisposable
     // public unless it says RequireAuthorization; a new public route fails the test below until it
     // is added here on purpose. Static files and the Blazor host are public by design and not listed.
     // Listed as Production maps them: OpenAPI and Scalar exist only in Development. /api/diag stays
-    // public on purpose: status words only (no secrets, hosts or paths), read by the /diag page.
+    // public on purpose: status words only (no secrets, hosts or paths), read by the /diag page;
+    // /api/diag/activity likewise carries counts and on/off flags only.
     private static readonly string[] AnonymousAllowList =
     [
         "/api/analysis/executors",
@@ -52,6 +53,7 @@ public sealed class WriteEndpointAuthTests : IDisposable
         "/api/auth/session",
         "/api/chord-jams/random",
         "/api/diag",
+        "/api/diag/activity",
         "/api/modal-melodies/describe",
         "/api/modal-melodies/generate",
         "/api/modal-melodies/midi",

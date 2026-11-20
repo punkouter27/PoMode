@@ -7,7 +7,7 @@
     Runs from the repo root with the solution already built in Release. Any failure exits non-zero.
       1. Whitespace formatting as `dotnet format whitespace` writes it (fix: dotnet format whitespace PoMode.slnx).
       2. Test caps per suite (scripts/test-caps.ps1: 100 Unit / 50 Integration / 25 E2EAPI / 25 E2EUI).
-      3. Every infra/*.bicep compiles to ARM (catches template errors; nothing is deployed).
+      3. Every infra .bicep (main + modules/) compiles to ARM (catches template errors; nothing is deployed).
 #>
 $ErrorActionPreference = 'Stop'
 Set-Location (Split-Path $PSScriptRoot -Parent)

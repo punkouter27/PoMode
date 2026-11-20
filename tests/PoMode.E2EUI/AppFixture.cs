@@ -39,6 +39,11 @@ public class AppFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        if (!BrowserCheck.ChromiumInstalled)
+        {
+            return; // every test is skipped (BrowserFact); no server to boot
+        }
+
         var repoRoot = TestPaths.RepoRoot();
         await BeforeServerStartAsync();
         var startInfo = new ProcessStartInfo

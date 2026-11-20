@@ -7,7 +7,7 @@ namespace PoMode.E2EUI;
 [Collection("App")]
 public class UploadFlowTests(AppFixture app)
 {
-    [Fact]
+    [BrowserFact]
     public async Task Upload_runs_pipeline_shows_results_keeps_mock_banner_and_deletes_from_library()
     {
         using var playwright = await Playwright.CreateAsync();

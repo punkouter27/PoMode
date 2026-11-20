@@ -77,7 +77,7 @@ public class AnalysisPageTests(AppFixture app)
         return page;
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task The_hud_reports_the_primary_mode_and_tonic()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -94,7 +94,7 @@ public class AnalysisPageTests(AppFixture app)
         await Assertions.Expect(page.GetByText("confidence")).ToBeVisibleAsync(Visible);
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task Before_any_click_the_inspector_invites_a_selection_rather_than_inventing_one()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -108,7 +108,7 @@ public class AnalysisPageTests(AppFixture app)
         await Assertions.Expect(page.Locator(".degree-grid")).ToHaveCountAsync(0);
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task Clicking_the_timeline_fills_in_the_chord_mask_and_degree_grid()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -125,7 +125,7 @@ public class AnalysisPageTests(AppFixture app)
         await Assertions.Expect(page.Locator(".degree-grid .degree")).ToHaveCountAsync(12);
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task A_window_without_enough_sung_notes_says_so_instead_of_showing_a_fake_match()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -148,7 +148,7 @@ public class AnalysisPageTests(AppFixture app)
     /// fixture yields no notes and no chords, so the headline must say nothing was detected and the
     /// tempo must read as unmeasured rather than invent either, and the MIDI download must still be offered.
     /// </summary>
-    [Fact]
+    [BrowserFact]
     public async Task A_track_with_no_detected_chords_still_renders_an_honest_headline()
     {
         using var playwright = await Playwright.CreateAsync();

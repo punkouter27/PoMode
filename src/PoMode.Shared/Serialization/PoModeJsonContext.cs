@@ -7,7 +7,8 @@ using PoMode.Shared.Validation;
 namespace PoMode.Shared.Serialization;
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
-[JsonSerializable(typeof(DiagnosticsReport))]
+[JsonSerializable(typeof(DiagReportDto))]
+[JsonSerializable(typeof(DiagnosticsActivity))]
 [JsonSerializable(typeof(ProblemDetailsDto))]
 [JsonSerializable(typeof(SessionDto))]
 [JsonSerializable(typeof(PushConfigDto))]

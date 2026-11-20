@@ -293,7 +293,7 @@
                 // says. The result arriving is the notice, and a closed tab gets a Web Push.
                 // Tint the chrome with the detected key, then play its tonic (no third — the
                 // arpeggio stays mode-neutral, so no musical decision happens client-side).
-                _themeJs ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/theme.js");
+                _themeJs ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/layout.js");
                 await _themeJs.InvokeVoidAsync("setKeyHue", _result.TonicPitchClass * 30);
                 // And hand the interface its voice: from here the clicks and chimes are sounded from
                 // the mode's own scale. The pitches are derived here, from the shared ScaleModes

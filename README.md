@@ -4,6 +4,8 @@ PoMode is a .NET 10 music-analysis application. Its API host serves a Blazor Web
 client, accepts audio-analysis jobs, and coordinates background workers, browser-assisted
 analysis, library management, and optional song interpretation.
 
+Live: https://app-pomode2.azurewebsites.net (status page: `/diag`).
+
 ## Architecture
 
 - `src/PoMode.Api/` hosts the client, Minimal API endpoints, SignalR analysis hub, and
@@ -11,15 +13,15 @@ analysis, library management, and optional song interpretation.
 - `src/PoMode.Client/` contains the Blazor WebAssembly UI.
 - `src/PoMode.Shared/` contains contracts and source-generated JSON support shared by the
   API and client.
-- `tests/` contains Unit, Integration, E2E API, and Playwright E2E UI projects.
+- `tests/` contains Unit (94), Integration (38), E2E API (25) and Playwright E2E UI (25) projects.
 
-The solution is `PoMode.slnx`. `CLAUDE.md` is the detailed guide to the architecture,
-constraints, test budgets, and development workflow.
+The solution is `PoMode.slnx`. `AGENTS.md` is the detailed guide: the Po web standard this repo
+follows, the architecture, constraints, test tiers and development workflow.
 
 ## Local development
 
-Use the .NET SDK pinned by `global.json`. Start the shared Azurite emulator when needed,
-then run the host:
+Use the .NET SDK pinned by `global.json`. Start the local Azurite emulator if you want the
+blob mirror (the default is file-system storage), then run the host:
 
 ```powershell
 docker compose up -d
@@ -30,17 +32,19 @@ The app serves on `http://localhost:5000` and `https://localhost:5001`. The Scal
 reference is at `/scalar`; `/health`, `/health/live`, and `/health/ready` expose health
 status.
 
-Every page carries the Po shell: the name top-left, the email (or Sign in) and the settings
-gear top-right, and the build stamp `vYYMMDD` (UTC commit date) bottom-right. `/diag` shows one
-card per dependency (API, Data, Services) for anyone, signed in or not. Pressing Tab before
+There is no sign-in: every visitor gets a guest session and a library belongs to its browser.
+Every page carries the Po shell: the name top-left, search and the settings gear top-right, and
+the build stamp `vYYMMDD` (UTC commit date) bottom-right. `/diag` ("System status") shows one row
+per dependency (API, Data, Services) for anyone, from the anonymous `GET /api/diag`. Pressing Tab before
 anything has focus opens a developer window (`/po-dev.html`) with live health and page stats.
 Light and dark follow the device.
 
 ## Phone app
 
 `src/PoMode.Mobile/` is a native .NET MAUI app (Android, iOS) on the same API and the same
-`PoMode.Shared` contracts. It is not in `PoMode.slnx` or CI; build it by hand
-(`dotnet build src/PoMode.Mobile -f net10.0-android`). It opens with a persistent guest session.
+`PoMode.Shared` contracts. It is not in `PoMode.slnx`; CI's `mobile` job builds its Android
+target on every push (never blocking the deploy), and by hand:
+`dotnet build src/PoMode.Mobile -f net10.0-android` (needs the `maui-android` workload). It opens with a persistent guest session.
 
 - **Songs:** pick or record a song; it goes up through the same tus endpoint in 4 MB chunks and
   resumes after a dropped connection or a restart. A foreground service (Android) or background task
@@ -65,14 +69,15 @@ similarity-matrix view of how the sections were found.
 
 ## Deploy
 
-A push to `master` runs `.github/workflows/deploy.yml` (the same file in every Po repo): build,
-publish, deploy, then wait for `/health/live` to report the new commit. It runs no tests;
-run the related tests and `scripts/ci-checks.ps1` locally before pushing.
+A push to `master` runs `.github/workflows/deploy.yml`, the only workflow: format check,
+Release build, Unit and Integration tests, publish, deploy to App Service, then wait for
+`/health/live` to report the new commit in `X-Commit`. E2E tiers and `scripts/ci-checks.ps1`
+run locally before pushing.
 
 ## Verification
 
-Run only the tests relevant to a change; Integration tests require Azurite and E2E UI
-tests install and launch Playwright Chromium.
+Run the tests relevant to a change while iterating and every tier before a push. No tier needs
+Docker; E2E UI tests need Playwright Chromium and skip with a clear message without it.
 
 ```powershell
 dotnet build PoMode.slnx
@@ -80,5 +85,5 @@ dotnet test tests/PoMode.Unit --filter "FullyQualifiedName~TempoEstimator"
 pwsh scripts/test-caps.ps1
 ```
 
-See `CLAUDE.md` for targeted test commands, layout auditing, model setup, and the
+See `AGENTS.md` for targeted test commands, layout auditing, model setup, and the
 project-specific verification limits.

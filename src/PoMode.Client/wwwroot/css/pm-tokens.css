@@ -1,6 +1,6 @@
-/* pm-tokens.css: PoMode's own tokens, layered on po-tokens.css (the Po web standard file, the same
-   in every Po app and loaded first). Every base colour, the accent and the mono face are aliases of
-   --po-* tokens, so light and dark follow the device and the accent is the estate's indigo; there is
+/* pm-tokens.css: PoMode's own tokens, layered on po-tokens.css (the Po web standard tokens, loaded
+   first). Every base colour, the accent and the mono face are aliases of
+   --po-* tokens, so light and dark follow the device and the accent is the standard indigo; there is
    no data-theme override and no theme toggle (2026-11-18). What stays PoMode's own is the music
    palette (modes, note roles, the detected key's hue), the status grounds and the spacing/type scale. */
 @font-face {

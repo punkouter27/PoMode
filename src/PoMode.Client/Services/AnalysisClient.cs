@@ -124,8 +124,8 @@ public sealed class AnalysisClient(HttpClient http)
         }
     }
 
-    public Task<DiagnosticsReport?> GetDiagnosticsAsync()
-        => http.GetFromJsonAsync("api/diag", Json.DiagnosticsReport);
+    public Task<DiagReportDto?> GetDiagnosticsAsync()
+        => http.GetFromJsonAsync("api/diag", Json.DiagReportDto);
 
     /// <summary>The selectable executors per pipeline stage, in the planner's own order.</summary>
     /// <summary>A new run of a finished analysis from <paramref name="stage"/> on, with that stage

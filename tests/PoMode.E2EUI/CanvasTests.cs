@@ -36,7 +36,7 @@ public class CanvasTests(AppFixture app)
         return canvas;
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task The_canvas_renders_and_actually_paints_more_than_a_flat_background()
     {
         using var playwright = await Playwright.CreateAsync();
@@ -65,7 +65,7 @@ public class CanvasTests(AppFixture app)
         Assert.True(distinctColours > 3, $"only {distinctColours} distinct colours were painted");
     }
 
-    [Fact]
+    [BrowserFact]
     public async Task Clicking_the_canvas_seeks_and_moves_the_playhead()
     {
         using var playwright = await Playwright.CreateAsync();

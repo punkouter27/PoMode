@@ -42,8 +42,8 @@ public sealed class ApiClient(HttpClient http, MobileConfig config, CookieJar co
         cookies.Clear();
     }
 
-    public Task<DiagnosticsReport?> GetDiagnosticsAsync(CancellationToken ct = default)
-        => http.GetFromJsonAsync(Url("api/diag"), Json.DiagnosticsReport, ct);
+    public Task<DiagReportDto?> GetDiagnosticsAsync(CancellationToken ct = default)
+        => http.GetFromJsonAsync(Url("api/diag"), Json.DiagReportDto, ct);
 
     // ---- Library -------------------------------------------------------------------------------------------
 

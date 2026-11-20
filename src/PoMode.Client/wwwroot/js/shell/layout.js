@@ -15,3 +15,9 @@ export function watchHeader() {
     });
     observer.observe(header);
 }
+
+/// Tints the chrome with the detected key: --pm-key-hue (0-360) feeds the card accents, the
+/// reactive background and the spectrum wall. The hue comes from server-decided data.
+export function setKeyHue(hue) {
+    document.documentElement.style.setProperty('--pm-key-hue', String(hue));
+}

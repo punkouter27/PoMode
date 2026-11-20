@@ -200,9 +200,9 @@ if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Test"))
 // On every response, static files included. The policy only forbids framing: a script-src would have
 // to allow the two inline scripts in index.html, the WASM runtime and the model workers' blobs, and a
 // wrong one fails silently in the one environment nobody is watching.
-// The commit this build came from (SDK-stamped as "<version>+<sha>"), so a deploy can prove which
-// build is answering: CI checks /health/live for X-Commit equal to the pushed sha.
-var commit = PoPlatform.Version.Split('+') is [_, var sha, ..] ? sha : "unknown";
+// The commit this build came from (PoPlatform.Commit), so a deploy can prove which build is
+// answering: CI checks /health/live for X-Commit equal to the pushed sha.
+var commit = PoPlatform.Commit;
 app.Use((context, next) =>
 {
     var headers = context.Response.Headers;

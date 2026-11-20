@@ -42,7 +42,9 @@ public sealed class DiagnosticsReportTests : IDisposable
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("\"status\":", json, StringComparison.Ordinal);
-        Assert.Contains("\"services\":", json, StringComparison.Ordinal);
+        Assert.Contains("\"checks\":", json, StringComparison.Ordinal);
+        Assert.Contains("\"group\":\"api\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"version\":", json, StringComparison.Ordinal);
         string[] forbidden =
         [
             FakeSecret, "secret-openai-host", "gpt-secret-deployment", _root, _modelsRoot,

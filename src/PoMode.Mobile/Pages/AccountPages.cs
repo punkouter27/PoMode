@@ -137,7 +137,7 @@ public sealed class DiagPage : ContentPage
     public DiagPage(ApiClient api)
     {
         _api = api;
-        Title = "Diagnostics";
+        Title = "System status";
         Content = new ScrollView { Content = _stack, Padding = new Thickness(16) };
     }
 
@@ -145,14 +145,14 @@ public sealed class DiagPage : ContentPage
     {
         base.OnAppearing();
         _stack.Clear();
-        DiagnosticsReport? report;
+        DiagReportDto? report;
         try
         {
             report = await _api.GetDiagnosticsAsync();
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
-            _stack.Add(Ui.Card(Ui.Stack(2, Ui.Text("API"), Ui.Colored($"Unreachable: {ex.Message}", Ui.Bad)), stripe: Ui.Bad));
+            _stack.Add(Ui.Card(Ui.Stack(2, Ui.Text("Not working: the API did not answer"), Ui.Colored("The API could not be reached.", Ui.Bad)), stripe: Ui.Bad));
             return;
         }
 
@@ -161,28 +161,38 @@ public sealed class DiagPage : ContentPage
             return;
         }
 
-        _stack.Add(Ui.Card(Ui.Stack(2, Ui.Text("API"), Ui.Colored($"{report.Status} · {report.EnvironmentName}", Colour(report.Status)),
-            Ui.Muted($"Checked {report.CheckedAt.ToLocalTime().ToString("HH:mm:ss", CultureInfo.CurrentCulture)} · {report.QueueDepth} in the queue")), stripe: Colour(report.Status)));
-        Group("Data", report.Stores);
-        Group("Services", report.Services);
-        if (report.DefaultPlan is { Count: > 0 } plan)
+        _stack.Add(Ui.Card(Ui.Stack(2, Ui.Text(Headline(report)), Ui.Colored($"{report.Status} · {report.Environment}", Colour(report.Status)),
+            Ui.Muted($"Version v{report.Version} · checked {report.CheckedAt.ToLocalTime().ToString("HH:mm:ss", CultureInfo.CurrentCulture)}")), stripe: Colour(report.Status)));
+        Group("API", report.Checks.Where(c => c.Group == "api"));
+        Group("Data", report.Checks.Where(c => c.Group == "data"));
+        Group("Services", report.Checks.Where(c => c.Group == "service"));
+    }
+
+    private void Group(string name, IEnumerable<DiagCheckDto> checks)
+    {
+        _stack.Add(Ui.H2(name));
+        foreach (DiagCheckDto c in checks)
         {
-            _stack.Add(Ui.H2("Default plan"));
-            foreach (StagePlan p in plan)
-            {
-                _stack.Add(Ui.Muted($"{p.Stage}: {p.Executor} ({p.Tier}){(p.IsPlaceholder ? " — USING MOCK DATA" : "")}"));
-            }
+            string latency = string.Create(CultureInfo.InvariantCulture, $" · {c.LatencyMs:0} ms");
+            _stack.Add(Ui.Card(Ui.Stack(2, Ui.Text(c.Label), Ui.Colored($"{c.Status}{latency}", Colour(c.Status)), Ui.Muted(c.Purpose), Ui.Muted(c.Problem ?? c.Detail)), stripe: Colour(c.Status)));
         }
     }
 
-    private void Group(string name, IReadOnlyList<DiagnosticCheck> checks)
+    private static string Headline(DiagReportDto report)
     {
-        _stack.Add(Ui.H2(name));
-        foreach (DiagnosticCheck c in checks)
+        var down = report.Checks.Where(c => c.Status == "Unhealthy").Select(c => c.Label).ToList();
+        if (down.Count > 0)
         {
-            string latency = c.LatencyMs is { } ms ? string.Create(CultureInfo.InvariantCulture, $" · {ms:0} ms") : "";
-            _stack.Add(Ui.Card(Ui.Stack(2, Ui.Text(c.Name), Ui.Colored($"{c.Status}{latency}", Colour(c.Status)), Ui.Muted(c.Description)), stripe: Colour(c.Status)));
+            return $"Not working: {string.Join(", ", down)}";
         }
+
+        var degraded = report.Checks.Count(c => c.Status == "Degraded");
+        return degraded switch
+        {
+            0 => "Everything is working",
+            1 => "Working, with 1 thing degraded",
+            _ => $"Working, with {degraded} things degraded",
+        };
     }
 
     private static Color Colour(string status) => status switch

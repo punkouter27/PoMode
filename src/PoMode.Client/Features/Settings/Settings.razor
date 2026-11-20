@@ -25,16 +25,19 @@
        what changes how the app looks and reads on the left, the extras and your data on the right. *@
     <div class="settings-columns">
         <div class="settings-col">
-            @* The account lives here since the Po web standard (2026-11-18): the header keeps only the
-               email (or Sign in) and the gear, so what the More menu held is in this section. *@
+            @* What the old More menu held lives here: the header keeps only search and the gear (PoMode has
+               no sign-in; a library belongs to this browser). *@
             <section class="settings-section" aria-labelledby="settings-account" id="account">
                 <h2 class="pm-label" id="settings-account">Account</h2>
                 @if (Session.Current is { } session)
                 {
-                    <div class="settings-row">
-                        <span class="settings-name">Signed in as</span>
-                        <span class="settings-hint settings-email" id="settings-who">@(session.Email ?? session.DisplayName ?? "Not signed in")</span>
-                    </div>
+                    @if (session.Kind == SessionKind.Test)
+                    {
+                        <div class="settings-row">
+                            <span class="settings-name">Dev persona</span>
+                            <span class="settings-hint settings-email" id="settings-who">@(session.Email ?? session.DisplayName)</span>
+                        </div>
+                    }
                     @if (session.Kind == SessionKind.Guest)
                     {
                         <p class="settings-hint">Your library lives in this browser.</p>
