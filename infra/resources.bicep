@@ -128,9 +128,8 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
           value: sharedKeyVault.properties.vaultUri
         }
         {
-          // Production: guest and Microsoft sign-in are real, and the FakeAuth header scheme is not
-          // registered outside Development/Test. Microsoft sign-in switches on when
-          // PoMode--AzureAd--ClientSecret exists in the shared vault and the ClientId is in appsettings.
+          // Production: public guest cookie sessions, and the FakeAuth header scheme is not
+          // registered outside Development/Test.
           name: 'ASPNETCORE_ENVIRONMENT'
           value: 'Production'
         }

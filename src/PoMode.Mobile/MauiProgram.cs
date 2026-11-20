@@ -25,15 +25,11 @@ public static class MauiProgram
 #endif
 
         builder.Services.AddSingleton<MobileConfig>();
-        builder.Services.AddSingleton<SecureSessionStore>();
-        builder.Services.AddSingleton<EntraAuthService>();
         builder.Services.AddSingleton(new CookieContainer());
         builder.Services.AddSingleton<CookieJar>();
-        builder.Services.AddTransient<AuthDelegatingHandler>();
         builder.Services.AddSingleton(sp =>
         {
-            var handler = sp.GetRequiredService<AuthDelegatingHandler>();
-            handler.InnerHandler = new HttpClientHandler { CookieContainer = sp.GetRequiredService<CookieContainer>(), UseCookies = true };
+            var handler = new HttpClientHandler { CookieContainer = sp.GetRequiredService<CookieContainer>(), UseCookies = true };
             var http = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(5) };
             http.DefaultRequestHeaders.UserAgent.ParseAdd("PoMode.Mobile/1.0");
             return http;

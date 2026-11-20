@@ -192,20 +192,6 @@ public sealed class AnalysisClient(HttpClient http)
         return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync(Json.ListProgressionSongDto) : null;
     }
 
-    /// <summary>The audio in the signed-in person's OneDrive, or NeedsConsent when Microsoft has not
-    /// (or no longer) granted read access to their files.</summary>
-    public async Task<(List<OneDriveFileDto>? Files, bool NeedsConsent)> GetOneDriveAudioAsync()
-    {
-        using var response = await http.GetAsync("api/onedrive/audio");
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
-            return (null, true);
-        }
-        return response.IsSuccessStatusCode
-            ? (await response.Content.ReadFromJsonAsync(Json.ListOneDriveFileDto) ?? [], false)
-            : ([], false);
-    }
-
     /// <summary>The Mode Lab's settings from a description such as "darker and slower".</summary>
     public async Task<ModeLabDescriptionDto?> DescribeModeLabAsync(string text, ModalMelodyRequest current)
     {

@@ -17,7 +17,6 @@ using PoMode.Api.Features.Library;
 using PoMode.Api.Features.Lyrics;
 using PoMode.Api.Features.ModalAnalysis;
 using PoMode.Api.Features.ModalMelodies;
-using PoMode.Api.Features.OneDrive;
 using PoMode.Api.Features.PitchTracking;
 using PoMode.Api.Features.Push;
 using PoMode.Api.Features.SongIdentity;
@@ -51,7 +50,7 @@ builder.Services.AddSingleton(secretSource);
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, PoModeJsonContext.Default));
 
-// Guest and Microsoft sign-in in every environment; FakeAuth headers in Development and Test only.
+// Guest cookie sessions in every environment; FakeAuth headers in Development and Test only.
 builder.AddPoAuthentication();
 builder.AddPoTelemetry();
 // App Service terminates TLS in front of Kestrel. Without the forwarded scheme the OIDC redirect URI
@@ -277,7 +276,6 @@ app.MapSongStructure();
 app.MapSongLoop();
 app.MapPush();
 app.MapAccount();
-app.MapOneDrive();
 app.MapHub<AnalysisHub>("/hubs/analysis");
 
 // The share target's fallback. Normally the service worker answers this POST and never lets it

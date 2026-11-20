@@ -27,18 +27,10 @@ public sealed class SessionState(HttpClient http)
     /// <summary>Re-queries the server session (for example after switching dev persona).</summary>
     public Task<SessionDto> RefreshAsync() => _ready = ResolveAsync();
 
-    /// <summary>Ends the session and starts a fresh guest one, so the page never sits signed out.</summary>
-    public async Task SignOutAsync()
-    {
-        await http.PostAsync("auth/logout", content: null);
-        _ready = ResolveAsync();
-        await _ready;
-    }
-
     private async Task<SessionDto> ResolveAsync()
     {
         var session = await http.GetFromJsonAsync("api/auth/session", Json.SessionDto)
-                      ?? new SessionDto(SessionKind.None, null, false);
+                      ?? new SessionDto(SessionKind.None, null);
         if (session.Kind == SessionKind.None)
         {
             var response = await http.PostAsync("auth/guest", content: null);

@@ -20,7 +20,6 @@ dotnet format whitespace PoMode.slnx     # fixes spacing; scripts/ci-checks.ps1 
 pwsh scripts/get-models.ps1              # pre-fetch every ONNX/browser model into models/ (warms the E2EUI cache)
 dotnet run scripts/layout-audit.cs -- capture before        # app running: screenshot + audit every route, phone and desktop
 dotnet run scripts/layout-audit.cs -- compare before after notes.md name   # one annotated SCREENSHOTS/name.html
-pwsh scripts/setup-microsoft-signin.ps1  # Microsoft sign-in app registration (Files.Read for OneDrive), secret into Key Vault
 ```
 
 - `tests/PoMode.Integration` includes `ModelAccuracyReportTests`: it renders a known-truth sample MP3, plus a voice-like stem with vibrato and bleed and two drum grooves with a known bar grid, races every free pitch/chord/beat executor against them, and rewrites `test-reports/model-accuracy.html`. It is a reporting tool, not a test, so it is opt-in: `POMODE_MODEL_REPORT=1 dotnet test tests/PoMode.Integration`. Otherwise it skips.

@@ -88,24 +88,6 @@ public sealed class JobStore(IConfiguration configuration, TimeProvider time, Jo
         return state;
     }
 
-    /// <summary>Moves every job owned by <paramref name="fromOwner"/> to <paramref name="toOwner"/>.
-    /// A guest who signs in with Microsoft keeps what they made as a guest; without this the sign-in
-    /// that was meant to protect a library would hand them an empty one.</summary>
-    public async Task<int> ReassignOwnerAsync(string fromOwner, string toOwner, CancellationToken ct)
-    {
-        var moved = 0;
-        foreach (var jobId in ListJobIds())
-        {
-            if (await LoadAsync(jobId, ct) is { } state && state.OwnerId == fromOwner)
-            {
-                state.OwnerId = toOwner;
-                await SaveAsync(state, ct);
-                moved++;
-            }
-        }
-        return moved;
-    }
-
     /// <summary>
     /// A finished job copied under a new id for <paramref name="ownerId"/>: every artifact file, plus
     /// the state rewritten by <see cref="JobState.CopyAs"/>. Artifacts are copied rather than

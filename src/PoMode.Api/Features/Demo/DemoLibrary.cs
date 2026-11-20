@@ -8,7 +8,7 @@ namespace PoMode.Api.Features.Demo;
 ///
 /// <para>Seeding happens where "your library is empty" is actually observed — the library read — rather
 /// than at guest creation or behind an endpoint the client must remember to call. Guest creation would
-/// miss Microsoft sign-ins and anyone who arrived while the template was still being built, and never
+/// miss anyone who arrived while the template was still being built, and never
 /// try again; an explicit endpoint would put the "is it empty" decision in the client and cost every
 /// page a second round trip. The ledger makes the read idempotent: the first empty read after the
 /// template is ready seeds, and no read after that ever does, so deleting the demo (or the 7-day sweep

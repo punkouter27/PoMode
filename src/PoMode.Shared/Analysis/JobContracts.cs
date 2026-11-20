@@ -140,9 +140,6 @@ public sealed record JobStatusDto(
 /// </summary>
 public sealed record SongIdentityDto(string Title, string? Artist, string? Album, string Source, string? LyricsSource = null);
 
-/// <summary>An audio file in the signed-in person's OneDrive, offered for import.</summary>
-public sealed record OneDriveFileDto(string Id, string Name, long Size, DateTimeOffset? Modified);
-
 /// <summary>Seconds a running analysis has left, from how long the same executors took on earlier
 /// songs on this server; null when any remaining one has never been timed here.</summary>
 public sealed record EtaDto(double? SecondsLeft);

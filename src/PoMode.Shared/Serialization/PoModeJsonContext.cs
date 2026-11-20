@@ -20,7 +20,6 @@ namespace PoMode.Shared.Serialization;
 [JsonSerializable(typeof(EtaDto))]
 [JsonSerializable(typeof(ModeLabDescriptionRequest))]
 [JsonSerializable(typeof(ModeLabDescriptionDto))]
-[JsonSerializable(typeof(List<OneDriveFileDto>))]
 [JsonSerializable(typeof(AnalysisPreviewDto))]
 [JsonSerializable(typeof(List<NoteEvent>))]
 [JsonSerializable(typeof(List<ChordSpan>))]

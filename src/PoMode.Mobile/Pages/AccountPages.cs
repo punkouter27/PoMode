@@ -1,6 +1,5 @@
 using System.Globalization;
 using PoMode.Mobile.Services;
-using PoMode.Shared.Account;
 using PoMode.Shared.Analysis;
 using PoMode.Shared.Diagnostics;
 
@@ -47,40 +46,15 @@ public sealed class SettingsPage : ContentPage
         }
 
         _stack.Add(Ui.Text(_session.Label));
-        if (_session.Current is { Kind: SessionKind.Microsoft })
+        _stack.Add(Ui.Muted("You're a guest on this phone: your songs are kept in this app's session."));
+        _stack.Add(Ui.Secondary("Start over as a new guest", async () =>
         {
-            _stack.Add(Ui.Muted("Your songs follow you to the web when you sign in there with the same account."));
-            _stack.Add(Ui.Secondary("Sign out of Microsoft", async () =>
+            if (await DisplayAlertAsync("Start over", "A new guest starts with an empty library. This guest's songs can't be got back.", "Start over", "Cancel"))
             {
-                await _session.SignOutMicrosoftAsync();
+                await _session.StartOverAsync();
                 await RenderAsync();
-            }));
-        }
-        else
-        {
-            _stack.Add(Ui.Muted("You're a guest on this phone: your songs are kept, but only here. Sign in to have them on the web too."));
-            _stack.Add(Ui.Primary("Sign in with Microsoft", async () =>
-            {
-                try
-                {
-                    await _session.SignInWithMicrosoftAsync();
-                }
-                catch (Exception ex) when (ex is InvalidOperationException or TaskCanceledException or HttpRequestException)
-                {
-                    await Ui.Toast(ex.Message);
-                }
-
-                await RenderAsync();
-            }));
-            _stack.Add(Ui.Secondary("Start over as a new guest", async () =>
-            {
-                if (await DisplayAlertAsync("Start over", "A new guest starts with an empty library. This guest's songs can't be got back.", "Start over", "Cancel"))
-                {
-                    await _session.StartOverAsync();
-                    await RenderAsync();
-                }
-            }));
-        }
+            }
+        }));
 
         _stack.Add(Ui.Danger("Delete all my songs", async () =>
         {

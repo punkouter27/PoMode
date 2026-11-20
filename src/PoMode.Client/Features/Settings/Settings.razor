@@ -37,21 +37,9 @@
                     </div>
                     @if (session.Kind == SessionKind.Guest)
                     {
-                        <p class="settings-hint">A guest library lives in this browser. Signing in with Microsoft carries it to your account.</p>
+                        <p class="settings-hint">Your library lives in this browser.</p>
                     }
                     <div class="settings-actions">
-                        @* A guest is never offered "sign out": their session is their library, and ending
-                           it would strand every take in it. Signing in with Microsoft carries it across. *@
-                        @if (session.Kind == SessionKind.Guest && session.MicrosoftAvailable)
-                        {
-                            <RadzenButton Text="Sign in with Microsoft" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
-                                          Click="@SignInWithMicrosoft" id="settings-sign-in" />
-                        }
-                        else if (session.Kind == SessionKind.Microsoft)
-                        {
-                            <RadzenButton Text="Sign out" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
-                                          Click="@SignOutAsync" id="sign-out" />
-                        }
                         @if (_canInstall)
                         {
                             <RadzenButton Text="Install PoMode" Icon="install_desktop" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
@@ -357,28 +345,6 @@
     }
 
     private void OnSessionChanged() => InvokeAsync(StateHasChanged);
-
-    private void SignInWithMicrosoft()
-        => Navigation.NavigateTo($"auth/login/microsoft?returnUrl={Uri.EscapeDataString("/settings")}", forceLoad: true);
-
-    private async Task SignOutAsync()
-    {
-        if (_push is not null && _pushState == "on")
-        {
-            // While the session still exists: the account being left stops notifying this browser.
-            try
-            {
-                await _push.InvokeVoidAsync("forget");
-            }
-            catch (JSException)
-            {
-                // Signing out must not depend on a push service being reachable.
-            }
-        }
-        await Session.SignOutAsync();
-        // The library and any open job belonged to the account just left.
-        Navigation.NavigateTo("", forceLoad: true);
-    }
 
     private async Task SwitchDevPersonaAsync(string? fakeUser)
     {

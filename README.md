@@ -2,7 +2,7 @@
 
 PoMode is a .NET 10 music-analysis application. Its API host serves a Blazor WebAssembly
 client, accepts audio-analysis jobs, and coordinates background workers, browser-assisted
-analysis, library and OneDrive integration, and optional song interpretation.
+analysis, library management, and optional song interpretation.
 
 ## Architecture
 
@@ -40,8 +40,7 @@ Light and dark follow the device.
 
 `src/PoMode.Mobile/` is a native .NET MAUI app (Android, iOS) on the same API and the same
 `PoMode.Shared` contracts. It is not in `PoMode.slnx` or CI; build it by hand
-(`dotnet build src/PoMode.Mobile -f net10.0-android`). It opens as a guest like the web, and
-Settings signs in with Microsoft (the id token is the bearer the API already accepts).
+(`dotnet build src/PoMode.Mobile -f net10.0-android`). It opens with a persistent guest session.
 
 - **Songs:** pick or record a song; it goes up through the same tus endpoint in 4 MB chunks and
   resumes after a dropped connection or a restart. A foreground service (Android) or background task
@@ -61,8 +60,7 @@ Settings signs in with Microsoft (the id token is the bearer the API already acc
   it, share as MIDI/WAV.
 
 Local loop: start the API, then `pwsh scripts/mobile-dev.ps1 -Run` (`adb reverse` maps the
-phone's `localhost:5000` to the API). Not on the phone yet: OneDrive import (its Graph token lives
-in the web's cookie session), the Mode Lab's drum strip and gravity panel, and the
+phone's `localhost:5000` to the API). Not on the phone yet: the Mode Lab's drum strip and gravity panel, and the
 similarity-matrix view of how the sections were found.
 
 ## Deploy

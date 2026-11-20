@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using PoMode.Shared.Account;
 
 namespace PoMode.Api.Features.Auth;
@@ -9,19 +8,19 @@ public static class AuthEndpoints
 {
     public static IEndpointRouteBuilder MapAuth(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/auth/session", (HttpContext context, PoAuthOptions options)
-                => TypedResults.Ok(SessionOf(context.User, options)))
+        app.MapGet("/api/auth/session", (HttpContext context)
+                => TypedResults.Ok(SessionOf(context.User)))
             .AllowAnonymous()
             .WithTags("Auth")
-            .WithSummary("Who the browser is signed in as, and whether Microsoft sign-in is offered.");
+            .WithSummary("Who the browser is signed in as.");
 
         // Idempotent on purpose: the client calls this whenever it finds itself signed out, and a
         // second tab racing the first must not replace a guest (and orphan their library) with another.
-        app.MapPost("/auth/guest", async (HttpContext context, PoAuthOptions options) =>
+        app.MapPost("/auth/guest", async (HttpContext context) =>
             {
                 if (PoUser.IdOf(context.User) is not null)
                 {
-                    return TypedResults.Ok(SessionOf(context.User, options));
+                    return TypedResults.Ok(SessionOf(context.User));
                 }
 
                 var id = Guid.NewGuid();
@@ -32,38 +31,18 @@ public static class AuthEndpoints
                 var principal = new ClaimsPrincipal(identity);
                 await context.SignInAsync(PoAuth.SessionScheme, principal,
                     new AuthenticationProperties { IsPersistent = true });
-                return TypedResults.Ok(SessionOf(principal, options));
+                return TypedResults.Ok(SessionOf(principal));
             })
             .AllowAnonymous()
             .DisableAntiforgery()
             .WithTags("Auth")
             .WithSummary("Starts a persistent guest session, or returns the current one if already signed in.");
 
-        // A top-level navigation, not a fetch: the OIDC round trip leaves this origin.
-        // ?onedrive=true asks for read access to the person's files as well (incremental consent),
-        // which only the OneDrive picker sends them here for.
-        app.MapGet("/auth/login/microsoft", (string? returnUrl, bool? onedrive, PoAuthOptions options) =>
-                options.MicrosoftAvailable
-                    ? Results.Challenge(
-                        onedrive == true
-                            ? new OpenIdConnectChallengeProperties
-                            {
-                                RedirectUri = LocalOnly(returnUrl),
-                                Scope = ["openid", "profile", "offline_access", OneDrive.OneDriveEndpoints.Scope],
-                            }
-                            : new AuthenticationProperties { RedirectUri = LocalOnly(returnUrl) },
-                        [OpenIdConnectDefaults.AuthenticationScheme])
-                    : Results.Redirect(LocalOnly(returnUrl)))
-            .AllowAnonymous()
-            .WithTags("Auth")
-            .WithSummary("Starts Microsoft sign-in. Redirects straight back when it is not configured.");
-
-        // Local sign-out only. Signing the person out of Microsoft everywhere is not this app's call,
-        // and the client mints a fresh guest straight after, so the page keeps working.
-        app.MapPost("/auth/logout", async (HttpContext context, PoAuthOptions options) =>
+        // Ends this browser's session; the client mints a fresh guest straight after.
+        app.MapPost("/auth/logout", async (HttpContext context) =>
             {
                 await context.SignOutAsync(PoAuth.SessionScheme);
-                return TypedResults.Ok(new SessionDto(SessionKind.None, null, options.MicrosoftAvailable));
+                return TypedResults.Ok(new SessionDto(SessionKind.None, null));
             })
             .AllowAnonymous()
             .DisableAntiforgery()
@@ -73,15 +52,6 @@ public static class AuthEndpoints
         return app;
     }
 
-    private static SessionDto SessionOf(ClaimsPrincipal user, PoAuthOptions options)
-        => new(PoUser.KindOf(user), PoUser.DisplayNameOf(user), options.MicrosoftAvailable, PoUser.EmailOf(user));
-
-    /// <summary>A rooted local path, or "/". Anything else would make the sign-in an open redirect.</summary>
-    internal static string LocalOnly(string? returnUrl)
-        => returnUrl is { Length: > 0 } url
-           && url[0] == '/'
-           && !url.StartsWith("//", StringComparison.Ordinal)
-           && !url.StartsWith("/\\", StringComparison.Ordinal)
-            ? url
-            : "/";
+    private static SessionDto SessionOf(ClaimsPrincipal user)
+        => new(PoUser.KindOf(user), PoUser.DisplayNameOf(user), PoUser.EmailOf(user));
 }

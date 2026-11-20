@@ -1,55 +1,22 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.Identity.Web;
-using Microsoft.IdentityModel.Tokens;
-using PoMode.Api.Features.Analysis;
 using PoMode.Api.Infrastructure;
-using PoMode.Shared.Account;
 
 namespace PoMode.Api.Features.Auth;
 
-/// <summary>Whether Microsoft sign-in is wired on this server. Guest sign-in always is.</summary>
-public sealed record PoAuthOptions(bool MicrosoftAvailable);
-
 /// <summary>
-/// Three ways in, one session cookie out.
-/// <list type="bullet">
-/// <item><b>Guest</b> — every environment, Production included. A new visitor gets a persistent
-/// guest identity so the app works before anyone decides whether to sign in.</item>
-/// <item><b>Microsoft</b> — server-side OIDC through Microsoft.Identity.Web, personal and work
-/// accounts both, when <c>PoMode:AzureAd:ClientId</c> and <c>ClientSecret</c> are configured (the
-/// secret lives in Key Vault as <c>PoMode--AzureAd--ClientSecret</c>). Signing in moves the guest's
-/// library across.</item>
-/// <item><b>FakeAuth headers</b> — Development and Test only, for the in-process API tests. The
-/// scheme is not even registered elsewhere, so a stray <c>X-Fake-User</c> header in Production is
-/// just a header.</item>
-/// </list>
+/// Public guest cookie sessions in every environment, plus FakeAuth headers in Development and Test
+/// for automated API tests and local dev personas.
 /// </summary>
 public static class PoAuth
 {
     public const string SessionScheme = "PoMode.Session";
     private const string SelectorScheme = "PoMode";
 
-    /// <summary>
-    /// The shared vault also holds another app's unprefixed <c>AzureAd--*</c> secrets, which surface as
-    /// an <c>AzureAd</c> section. Reading this app's own prefixed section is what stops PoMode from
-    /// quietly signing people in against someone else's app registration.
-    /// </summary>
-    private const string AzureAdSection = "PoMode:AzureAd";
-
     public static void AddPoAuthentication(this WebApplicationBuilder builder)
     {
         var environment = builder.Environment;
         var allowFakeHeaders = environment.IsDevelopment() || environment.IsEnvironment("Test");
-        var azureAd = builder.Configuration.GetSection(AzureAdSection);
-        var clientId = azureAd["ClientId"];
-        var bearerConfigured = !string.IsNullOrWhiteSpace(clientId);
-        var microsoft = bearerConfigured
-                        && !string.IsNullOrWhiteSpace(azureAd["ClientSecret"]);
-        builder.Services.AddSingleton(new PoAuthOptions(microsoft));
 
         var auth = builder.Services.AddAuthentication(options =>
         {
@@ -57,123 +24,22 @@ public static class PoAuth
             options.DefaultChallengeScheme = SelectorScheme;
         });
 
-        auth.AddPolicyScheme(SelectorScheme, SelectorScheme, options =>
-            options.ForwardDefaultSelector = context =>
-            {
-                if (allowFakeHeaders && context.Request.Headers.ContainsKey(FakeAuthHandler.UserHeader))
-                {
-                    return FakeAuthHandler.SchemeName;
-                }
-
-                if (bearerConfigured
-                    && (context.Request.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
-                        || (context.Request.Path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase)
-                            && !string.IsNullOrEmpty(context.Request.Query["access_token"]))))
-                {
-                    return JwtBearerDefaults.AuthenticationScheme;
-                }
-
-                return SessionScheme;
-            });
-
-        if (bearerConfigured)
+        if (allowFakeHeaders)
         {
-            var instance = (azureAd["Instance"] ?? "https://login.microsoftonline.com/").TrimEnd('/');
-            var tenant = azureAd["TenantId"] ?? "common";
-            auth.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
-            {
-                options.Authority = $"{instance}/{tenant}/v2.0";
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateAudience = true,
-                    ValidAudiences = [clientId!, $"api://{clientId}"],
-                    ValidateIssuer = true,
-                };
-                options.Events = new JwtBearerEvents
-                {
-                    OnMessageReceived = context =>
-                    {
-                        var token = context.Request.Query["access_token"];
-                        if (!string.IsNullOrEmpty(token) && context.HttpContext.Request.Path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase))
-                        {
-                            context.Token = token;
-                        }
-
-                        return Task.CompletedTask;
-                    },
-                    OnTokenValidated = context =>
-                    {
-                        if (context.Principal?.Identity is ClaimsIdentity identity)
-                        {
-                            var objectId = identity.FindFirst(ClaimConstants.ObjectId)?.Value
-                                           ?? identity.FindFirst("oid")?.Value
-                                           ?? identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                            if (string.IsNullOrEmpty(objectId))
-                            {
-                                context.Fail("The Microsoft token carried no account id.");
-                                return Task.CompletedTask;
-                            }
-
-                            identity.AddClaims(PoUser.Stamp($"ms:{objectId}", SessionKind.Microsoft));
-                        }
-
-                        return Task.CompletedTask;
-                    }
-                };
-            });
-        }
-
-        if (microsoft)
-        {
-            // Identity.Web registers the cookie scheme itself when it is handed one by name; adding it
-            // a second time here would be a duplicate-scheme startup exception.
-            auth.AddMicrosoftIdentityWebApp(
-                options =>
-                {
-                    options.Instance = azureAd["Instance"] ?? "https://login.microsoftonline.com/";
-                    // "common": personal Microsoft accounts and any work or school tenant.
-                    options.TenantId = azureAd["TenantId"] ?? "common";
-                    options.ClientId = azureAd["ClientId"];
-                    options.ClientSecret = azureAd["ClientSecret"];
-                    options.CallbackPath = azureAd["CallbackPath"] ?? "/auth/callback";
-                    options.Events ??= new OpenIdConnectEvents();
-                    var validated = options.Events.OnTokenValidated;
-                    options.Events.OnTokenValidated = async context =>
-                    {
-                        await validated(context);
-                        await OnMicrosoftSignInAsync(context);
-                    };
-                    var received = options.Events.OnTicketReceived;
-                    options.Events.OnTicketReceived = async context =>
-                    {
-                        await received(context);
-                        // Remember the sign-in across browser restarts, like the guest cookie does;
-                        // a session cookie would drop a signed-in user back to a fresh guest.
-                        context.Properties ??= new AuthenticationProperties();
-                        context.Properties.IsPersistent = true;
-                    };
-                },
-                ConfigureSessionCookie,
-                OpenIdConnectDefaults.AuthenticationScheme,
-                SessionScheme)
-                // Tokens for Graph, so a Microsoft account can bring songs in from its OneDrive. No
-                // scope is asked for at sign-in: Files.Read is requested only when the person chooses
-                // OneDrive (AuthEndpoints, ?onedrive=true). In memory: a restart costs one more
-                // consent round trip, which the OneDrive picker handles.
-                .EnableTokenAcquisitionToCallDownstreamApi()
-                .AddMicrosoftGraph(options => options.Scopes = [OneDrive.OneDriveEndpoints.Scope])
-                .AddInMemoryTokenCaches();
+            auth.AddPolicyScheme(SelectorScheme, SelectorScheme, options =>
+                options.ForwardDefaultSelector = context =>
+                    context.Request.Headers.ContainsKey(FakeAuthHandler.UserHeader)
+                        ? FakeAuthHandler.SchemeName
+                        : SessionScheme);
+            auth.AddScheme<AuthenticationSchemeOptions, FakeAuthHandler>(FakeAuthHandler.SchemeName, _ => { });
         }
         else
         {
-            auth.AddCookie(SessionScheme, ConfigureSessionCookie);
+            auth.AddPolicyScheme(SelectorScheme, SelectorScheme, options =>
+                options.ForwardDefaultSelector = _ => SessionScheme);
         }
 
-        if (allowFakeHeaders)
-        {
-            auth.AddScheme<AuthenticationSchemeOptions, FakeAuthHandler>(FakeAuthHandler.SchemeName, _ => { });
-        }
-
+        auth.AddCookie(SessionScheme, ConfigureSessionCookie);
         builder.Services.AddAuthorization();
     }
 
@@ -198,38 +64,5 @@ public static class PoAuth
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             return Task.CompletedTask;
         };
-    }
-
-    /// <summary>Stamps PoMode's own claims on the Microsoft principal and brings the guest's jobs along.</summary>
-    private static async Task OnMicrosoftSignInAsync(Microsoft.AspNetCore.Authentication.OpenIdConnect.TokenValidatedContext context)
-    {
-        if (context.Principal?.Identity is not ClaimsIdentity identity)
-        {
-            return;
-        }
-        // oid is the account's stable id (personal accounts included); sub is pairwise per app and
-        // would change if the registration were ever replaced.
-        var objectId = identity.FindFirst(ClaimConstants.ObjectId)?.Value ?? identity.FindFirst("oid")?.Value
-                       ?? identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(objectId))
-        {
-            context.Fail("The Microsoft token carried no account id.");
-            return;
-        }
-        var userId = $"ms:{objectId}";
-        identity.AddClaims(PoUser.Stamp(userId, SessionKind.Microsoft));
-
-        // The guest cookie is still on this callback request: it is the last moment the old identity
-        // is knowable, so the library moves now or not at all.
-        var previous = await context.HttpContext.AuthenticateAsync(SessionScheme);
-        if (previous.Principal is { } guest && PoUser.KindOf(guest) == SessionKind.Guest
-            && PoUser.IdOf(guest) is { } guestId)
-        {
-            var store = context.HttpContext.RequestServices.GetRequiredService<JobStore>();
-            var moved = await store.ReassignOwnerAsync(guestId, userId, context.HttpContext.RequestAborted);
-            context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
-                .CreateLogger(nameof(PoAuth))
-                .LogInformation("Moved {Count} guest job(s) into a Microsoft account on sign-in.", moved);
-        }
     }
 }

@@ -58,7 +58,6 @@ public sealed class WriteEndpointAuthTests : IDisposable
         "/api/modal-melodies/progressions",
         "/api/modal-melodies/wav",
         "/auth/guest",
-        "/auth/login/microsoft",
         "/auth/logout",
         "/health",
         "/health/live",

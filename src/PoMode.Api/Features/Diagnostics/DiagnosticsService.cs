@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using PoMode.Api.Features.Analysis;
-using PoMode.Api.Features.Auth;
 using PoMode.Api.Features.Push;
 using PoMode.Api.Features.SongStatistics;
 using PoMode.Api.Infrastructure;
@@ -27,7 +26,6 @@ public sealed class DiagnosticsService(
     ExecutionPlanner planner,
     IConfiguration configuration,
     PushSettings push,
-    PoAuthOptions auth,
     SongInterpreterSelector interpreterSelector,
     InterpreterStats interpreters,
     TimeProvider time)
@@ -85,13 +83,6 @@ public sealed class DiagnosticsService(
             null,
             now);
 
-        var signIn = new DiagnosticCheck(
-            "Microsoft sign-in",
-            auth.MicrosoftAvailable ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
-            "Lets a listener keep their library in a Microsoft account; guests work either way.",
-            null,
-            now);
-
         // Capped: an Ollama that is not running can hold a probe for seconds, and the page waits on it.
         var started = Stopwatch.GetTimestamp();
         var anyModel = false;
@@ -130,7 +121,7 @@ public sealed class DiagnosticsService(
             null,
             now);
 
-        return [vault, signIn, ai, models, notifications];
+        return [vault, ai, models, notifications];
     }
 
     /// <summary>

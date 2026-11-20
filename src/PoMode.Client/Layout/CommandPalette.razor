@@ -63,7 +63,7 @@
         new("Page", "Practice · Guitar jam", () => GoAsync("practice/jam")),
         new("Page", "Settings", () => GoAsync("settings")),
         .. Flags.Tools.Diagnostics ? (Command[])[new("Page", "Diagnostics", () => GoAsync("diag"))] : [],
-        new("Setting", "Account: sign in, sign out, install the app", () => GoAsync("settings#account")),
+        new("Setting", "Account: diagnostics, install the app", () => GoAsync("settings#account")),
         new("Setting", "Analysis models", () => GoAsync("settings")),
         new("Setting", "More tools: inspector, rerun, MIDI, diagnostics, purity, describe", () => GoAsync("settings#more-tools")),
         new("Setting", "Keyboard shortcuts", () => GoAsync("settings#shortcuts")),
