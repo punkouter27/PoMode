@@ -24,6 +24,12 @@ public static class OpenChordJams
     public static readonly int[] Tuning = [40, 45, 50, 55, 59, 64];
 
     private const int X = -1;
+
+    /// <summary>The written-out tables (voicings, slide jams, keys), read once from the embedded
+    /// <c>open-chord-jams.json</c>. Declared before every field that reads it: statics initialise in
+    /// textual order.</summary>
+    private static readonly JamData Data = JamData.Load();
+
     private static readonly string[] StringNames = ["low E", "A", "D", "G", "B", "high E"];
     private static readonly string[] StandardSectionNames = ["Verse", "Pre-chorus", "Chorus", "Bridge"];
     /// <summary>Strum patterns from sparse to busy, the strumming slider choosing the set: a down stroke a
@@ -128,78 +134,15 @@ public static class OpenChordJams
         public bool HasColour => Third is null || PitchClasses.Any(pc => ((pc - Root + 12) % 12) is not (0 or 3 or 4 or 7));
     }
 
+    /// <summary>
+    /// The voicings: the open shapes, the rare ones (each still open, within the 4th fret, only its
+    /// chord's notes) and the three written-out slid shapes, as data in <c>open-chord-jams.json</c>
+    /// (frets low E string first, -1 muted), then the generated closed and slid shapes. The order is
+    /// part of the contract: a seed picks by position, so a reordered file is a different set of jams.
+    /// </summary>
     public static IReadOnlyList<Voicing> Voicings { get; } =
     [
-        new("G", 7, [3, 2, 0, 0, 0, 3], [2, 1, 0, 0, 0, 3]),
-        new("G", 7, [3, 2, 0, 0, 3, 3], [2, 1, 0, 0, 3, 4]),
-        new("G6", 7, [3, 2, 0, 0, 0, 0], [2, 1, 0, 0, 0, 0]),
-        new("Gmaj7", 7, [3, X, 0, 0, 0, 2], [2, 0, 0, 0, 0, 1]),
-        new("Gsus2", 7, [3, 0, 0, 0, 3, 3], [2, 0, 0, 0, 3, 4]),
-        new("G7", 7, [3, 2, 0, 0, 0, 1], [3, 2, 0, 0, 0, 1]),
-        new("G/B", 7, [X, 2, 0, 0, 3, 3], [0, 1, 0, 0, 3, 4]),
-        new("C", 0, [X, 3, 2, 0, 1, 0], [0, 3, 2, 0, 1, 0]),
-        new("Cadd9", 0, [X, 3, 2, 0, 3, 3], [0, 2, 1, 0, 3, 4]),
-        new("Cadd9", 0, [X, 3, 2, 0, 3, 0], [0, 2, 1, 0, 3, 0]),
-        new("Cmaj7", 0, [X, 3, 2, 0, 0, 0], [0, 3, 2, 0, 0, 0]),
-        new("C6", 0, [X, 3, 2, 2, 1, 0], [0, 4, 2, 3, 1, 0]),
-        new("D", 2, [X, X, 0, 2, 3, 2], [0, 0, 0, 1, 3, 2]),
-        new("Dsus2", 2, [X, X, 0, 2, 3, 0], [0, 0, 0, 1, 3, 0]),
-        new("Dsus4", 2, [X, X, 0, 2, 3, 3], [0, 0, 0, 1, 3, 4]),
-        new("Dmaj7", 2, [X, X, 0, 2, 2, 2], [0, 0, 0, 1, 1, 1]),
-        new("D7", 2, [X, X, 0, 2, 1, 2], [0, 0, 0, 2, 1, 3]),
-        new("D/F#", 2, [2, 0, 0, 2, 3, 2], [1, 0, 0, 2, 4, 3]),
-        new("Dm", 2, [X, X, 0, 2, 3, 1], [0, 0, 0, 2, 3, 1]),
-        new("Dm7", 2, [X, X, 0, 2, 1, 1], [0, 0, 0, 2, 1, 1]),
-        new("E", 4, [0, 2, 2, 1, 0, 0], [0, 2, 3, 1, 0, 0]),
-        new("E7", 4, [0, 2, 0, 1, 0, 0], [0, 2, 0, 1, 0, 0]),
-        new("Esus4", 4, [0, 2, 2, 2, 0, 0], [0, 2, 3, 4, 0, 0]),
-        new("E7sus4", 4, [0, 2, 0, 2, 0, 0], [0, 2, 0, 3, 0, 0]),
-        new("Em", 4, [0, 2, 2, 0, 0, 0], [0, 2, 3, 0, 0, 0]),
-        new("Em7", 4, [0, 2, 0, 0, 0, 0], [0, 2, 0, 0, 0, 0]),
-        new("Em7", 4, [0, 2, 2, 0, 3, 0], [0, 1, 2, 0, 3, 0]),
-        new("Em7", 4, [0, 2, 2, 0, 3, 3], [0, 1, 2, 0, 3, 4]),
-        new("Em9", 4, [0, 2, 0, 0, 0, 2], [0, 2, 0, 0, 0, 3]),
-        new("Emadd9", 4, [0, 2, 2, 0, 0, 2], [0, 2, 3, 0, 0, 1]),
-        new("F", 5, [X, X, 3, 2, 1, 1], [0, 0, 3, 2, 1, 1]),
-        new("Fmaj7", 5, [X, X, 3, 2, 1, 0], [0, 0, 3, 2, 1, 0]),
-        new("Fmaj7#11", 5, [X, X, 3, 2, 0, 0], [0, 0, 3, 2, 0, 0]),
-        new("Fadd9", 5, [X, X, 3, 2, 1, 3], [0, 0, 3, 2, 1, 4]),
-        new("A", 9, [X, 0, 2, 2, 2, 0], [0, 0, 1, 2, 3, 0]),
-        new("Asus2", 9, [X, 0, 2, 2, 0, 0], [0, 0, 1, 2, 0, 0]),
-        new("Asus4", 9, [X, 0, 2, 2, 3, 0], [0, 0, 1, 2, 3, 0]),
-        new("A7", 9, [X, 0, 2, 0, 2, 0], [0, 0, 2, 0, 3, 0]),
-        new("A7sus4", 9, [X, 0, 2, 0, 3, 0], [0, 0, 2, 0, 3, 0]),
-        new("Amaj7", 9, [X, 0, 2, 1, 2, 0], [0, 0, 2, 1, 3, 0]),
-        new("A6", 9, [X, 0, 2, 2, 2, 2], [0, 0, 1, 1, 1, 1]),
-        new("Am", 9, [X, 0, 2, 2, 1, 0], [0, 0, 2, 3, 1, 0]),
-        new("Am7", 9, [X, 0, 2, 0, 1, 0], [0, 0, 2, 0, 1, 0]),
-        new("B7", 11, [X, 2, 1, 2, 0, 2], [0, 2, 1, 3, 0, 4]),
-        new("Bm7", 11, [X, 2, 0, 2, 0, 2], [0, 1, 0, 2, 0, 3]),
-        new("Bm7add11", 11, [X, 2, 0, 2, 3, 0], [0, 1, 0, 2, 3, 0]),
-        new("F#m7", 6, [2, X, 2, 2, 2, 0], [1, 0, 2, 3, 4, 0]),
-        new("C#m7", 1, [X, 4, 2, 1, 0, 0], [0, 4, 2, 1, 0, 0]),
-
-        // The rare ones: each still open, still within the 4th fret, still only its chord's notes.
-        new("Cmaj9", 0, [X, 3, 0, 0, 0, 0], [0, 3, 0, 0, 0, 0], Rare: true),
-        new("Cmaj7#11", 0, [X, 3, 2, 0, 0, 2], [0, 3, 2, 0, 0, 1], Rare: true),
-        new("C/G", 0, [3, 3, 2, 0, 1, 0], [4, 3, 2, 0, 1, 0], Rare: true),
-        new("D6", 2, [X, X, 0, 2, 0, 2], [0, 0, 0, 1, 0, 2], Rare: true),
-        new("Emaj7", 4, [0, 2, 1, 1, 0, 0], [0, 3, 1, 2, 0, 0], Rare: true),
-        new("E6", 4, [0, 2, 2, 1, 2, 0], [0, 2, 3, 1, 4, 0], Rare: true),
-        new("Eadd9", 4, [0, 2, 4, 1, 0, 0], [0, 2, 4, 1, 0, 0], Rare: true),
-        new("E/G#", 4, [4, X, 2, 1, 0, 0], [4, 0, 2, 1, 0, 0], Rare: true),
-        new("F#m7add11", 6, [2, X, 2, 2, 0, 0], [1, 0, 2, 3, 0, 0], Rare: true),
-        new("Aadd9", 9, [X, 0, 2, 4, 2, 0], [0, 0, 1, 4, 2, 0], Rare: true),
-        new("Amadd9", 9, [X, 0, 2, 4, 1, 0], [0, 0, 2, 4, 1, 0], Rare: true),
-        new("A9", 9, [X, 0, 2, 4, 2, 3], [0, 0, 1, 3, 2, 4], Rare: true),
-        new("B7sus4", 11, [X, 2, 2, 2, 0, 0], [0, 1, 2, 3, 0, 0], Rare: true),
-
-        // Slid: the E shape up one fret and up three, the open B and high E kept; the C shape up two,
-        // the open G and high E kept. Same fingers as the shape they came from.
-        new("Fmaj7#11/E", 5, [0, 3, 3, 2, 0, 0], [0, 2, 3, 1, 0, 0], Slid: true),
-        new("G6/E", 7, [0, 5, 5, 4, 0, 0], [0, 2, 3, 1, 0, 0], Slid: true),
-        new("Dadd9add11", 2, [X, 5, 4, 0, 3, 0], [0, 3, 2, 0, 1, 0], Slid: true),
-
+        .. Data.Voicings.Select(v => new Voicing(v.Symbol, v.Root, v.Frets, v.Fingers, Rare: v.Rare, Slid: v.Slid)),
         .. Movable(),
         .. SlidOpen(),
     ];
@@ -319,23 +262,7 @@ public static class OpenChordJams
     /// the chorus and bridge around it are written out too, in the same key, and <c>Home</c> closes the song.
     /// </summary>
     private static readonly (string Key, string Home, (string Numerals, string[] Chords)[] Sections, string Feel)[] Slides =
-    [
-        ("E Phrygian", "E",
-            [("I – ♭II – ♭III – ♭II", ["E", "Fmaj7#11/E", "G6/E", "Fmaj7#11/E"]),
-             ("iv – ♭III – ♭II – I", ["Am", "G6/E", "Fmaj7#11/E", "E"]),
-             ("♭vii – iv – ♭II – I", ["Dm", "Am", "Fmaj7", "E7"])],
-            "Hold an E chord and slide those three fingers up one fret, then up three, and back: the open B and high E strings never move, and the shape walking over them is the Spanish sound."),
-        ("E Phrygian", "E",
-            [("iv – ♭III – ♭II – I", ["Am", "G6/E", "Fmaj7#11/E", "E"]),
-             ("I – ♭II – ♭III – ♭II", ["E", "Fmaj7#11/E", "G6/E", "Fmaj7#11/E"]),
-             ("♭vii – ♭II – ♭III – I", ["Dm", "Fmaj7", "G", "E7"])],
-            "The Andalusian cadence, stepping down to home: from Am, make an E shape three frets up, slide it down to one fret up, then down to the open E. The open strings carry the flamenco ring."),
-        ("G major", "G",
-            [("IV – V – IV – I", ["C", "Dadd9add11", "C", "G"]),
-             ("I – IV – vi – V", ["G", "Cadd9", "Em7", "Dsus4"]),
-             ("vi – IV – ii – V", ["Em7", "Cadd9", "Am7", "Dadd9add11"])],
-            "Play C, then slide every fretted finger up two frets for the V: the open G and high E keep ringing, so it sounds like D with a ninth and an eleventh added for free."),
-    ];
+        [.. Data.Slides.Select(s => (s.Key, s.Home, s.Sections.Select(x => (x.Numerals, x.Chords)).ToArray(), s.Feel))];
 
     private static readonly string[] SectionNames = ["Verse", "Chorus", "Bridge"];
 
@@ -348,23 +275,7 @@ public static class OpenChordJams
     /// back into it (V, or ♭VII in the modes that have no major V), so the chorus after one lands; a
     /// pre-chorus is drawn from them too.</summary>
     private static readonly (ScaleMode Mode, double Weight, int[] Tonics, int[][] Shapes, int[][] Bridges)[] Keys =
-    [
-        (ScaleMode.Ionian, 0.35, [7, 0, 2, 9, 4],
-            [[0, 4, 5, 3], [0, 3, 5, 4], [5, 3, 0, 4], [0, 5, 3, 4], [0, 3, 0, 4], [0, 2, 3, 4], [3, 0, 4, 5], [1, 4, 0, 0], [0, 4, 3, 3], [0, 3, 1, 4]],
-            [[3, 4, 5, 4], [5, 3, 4, 4], [1, 3, 4, 4], [5, 4, 3, 4], [3, 5, 1, 4]]),
-        (ScaleMode.Aeolian, 0.25, [4, 9, 2, 11],
-            [[0, 5, 2, 6], [0, 6, 5, 6], [0, 3, 6, 2], [0, 5, 6, 0], [5, 6, 0, 0], [0, 2, 6, 3], [0, 4, 5, 3]],
-            [[5, 6, 2, 6], [3, 5, 6, 6], [2, 6, 5, 6], [5, 3, 6, 6]]),
-        (ScaleMode.Dorian, 0.15, [4, 9, 2],
-            [[0, 3, 0, 3], [0, 3, 6, 0], [0, 1, 3, 0], [0, 6, 3, 0]],
-            [[2, 3, 6, 6], [6, 2, 3, 3], [1, 2, 3, 3]]),
-        (ScaleMode.Mixolydian, 0.15, [7, 2, 9, 4],
-            [[0, 6, 3, 0], [0, 4, 6, 3], [0, 6, 0, 3], [3, 6, 0, 0]],
-            [[5, 3, 6, 6], [3, 4, 6, 6], [1, 3, 6, 6]]),
-        (ScaleMode.Lydian, 0.10, [0, 5, 7],
-            [[0, 1, 0, 1], [0, 1, 4, 0], [0, 1, 5, 4]],
-            [[5, 4, 1, 1], [2, 5, 1, 1], [4, 5, 1, 1]]),
-    ];
+        [.. Data.Keys.Select(k => (k.Mode, k.Weight, k.Tonics, k.Shapes, k.Bridges))];
 
     /// <summary>A fresh jam; the same seed and settings always give the same one, so a jam can be found again.</summary>
     public static ChordJamDto Generate(int seed, ChordJamSettings? settings = null)

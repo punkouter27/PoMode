@@ -1,7 +1,7 @@
 namespace PoMode.Shared.Analysis;
 
 /// <summary>
-/// How a note relates to its harmonic context, decided server-side (spec §7's canvas colouring).
+/// How a note relates to its harmonic context, decided server-side (the canvas colouring).
 /// The client maps these to CSS variables and draws; it makes no musical decisions of its own.
 /// </summary>
 public enum NoteRole
@@ -19,7 +19,7 @@ public enum NoteRole
     Outside,
 }
 
-/// <summary>One note capsule in the piano-roll lane, with the dual label §7 asks for.</summary>
+/// <summary>One note capsule in the piano-roll lane, with its dual label.</summary>
 /// <param name="Evidence">
 /// The note sounds a tone that separates the song's primary mode from one of its one-note
 /// neighbours (the ♮6 of a Dorian song, the ♭7 of a Mixolydian one) — the notes the "Why this
@@ -43,7 +43,7 @@ public sealed record VisualChord(
     int MeasureNumber,
     string? ModeTag);
 
-/// <summary>One of the twelve scale-degree badges in the HUD grid (spec §7).</summary>
+/// <summary>One of the twelve scale-degree badges in the HUD grid.</summary>
 /// <param name="Interval">Semitones above the tonic, 0-11.</param>
 /// <param name="Sung">The singer actually used this degree in this window.</param>
 /// <param name="InMode">The degree belongs to the window's top-ranked mode.</param>

@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
-using PoMode.Api.Features.Auth;
 
 namespace PoMode.Api.Platform;
 
@@ -13,9 +12,10 @@ namespace PoMode.Api.Platform;
 /// the interactive part of the app to protect the expensive part. Each policy is attached to the
 /// endpoints it is actually about.</para>
 ///
-/// <para>Partitioned by authenticated user, falling back to remote address. One noisy client must not
-/// be able to exhaust another's budget, and the reverse — a shared global bucket — is the failure
-/// mode that makes rate limiting look like an outage.</para>
+/// <para>Partitioned by client address, not by user. Every identity here is free — a guest cookie is
+/// minted on request and any three initials open a collection — so a user-keyed bucket would hand a
+/// script a fresh allowance per cookie. One noisy address must still not exhaust another's budget, and
+/// a shared global bucket is the failure mode that makes rate limiting look like an outage.</para>
 /// </summary>
 public static class PoRateLimits
 {
@@ -25,6 +25,9 @@ public static class PoRateLimits
     /// <summary>Asking a language model. The only endpoint a text box can drive a model from.</summary>
     public const string InterpretPolicy = "po-interpret";
 
+    /// <summary>Minting a guest session: cheap, but each one is a new library owner.</summary>
+    public const string GuestPolicy = "po-guest";
+
     /// <summary>
     /// Generous by design. These are sized to stop a script, not to ration a person: a musician
     /// uploading an album a track at a time must never meet a limit, and nor must the browser test
@@ -32,6 +35,7 @@ public static class PoRateLimits
     /// </summary>
     private const int DefaultUploadPerMinute = 30;
     private const int DefaultInterpretPerMinute = 10;
+    private const int DefaultGuestPerMinute = 10;
 
     /// <summary>
     /// Everything off. Exists for the test fixtures, which boot the real app and are the one caller
@@ -42,7 +46,7 @@ public static class PoRateLimits
         => configuration.GetValue("RateLimits:Enabled", true);
 
     /// <summary>
-    /// Registers the three policies. They are always registered, even when limiting is switched off —
+    /// Registers the policies. They are always registered, even when limiting is switched off —
     /// a disabled policy becomes a no-op limiter rather than disappearing, so the endpoints keep their
     /// <c>RequireRateLimiting</c> metadata and the middleware never has to be conditionally wired.
     /// A missing named policy is a startup exception, and making that possible from a config flag is
@@ -59,6 +63,8 @@ public static class PoRateLimits
                 context, enabled, configuration.GetValue("RateLimits:UploadPerMinute", DefaultUploadPerMinute)));
             options.AddPolicy(InterpretPolicy, context => Partition(
                 context, enabled, configuration.GetValue("RateLimits:InterpretPerMinute", DefaultInterpretPerMinute)));
+            options.AddPolicy(GuestPolicy, context => Partition(
+                context, enabled, configuration.GetValue("RateLimits:GuestPerMinute", DefaultGuestPerMinute)));
 
             options.OnRejected = async (context, ct) =>
             {
@@ -102,12 +108,9 @@ public static class PoRateLimits
     }
 
     /// <summary>
-    /// Who is being limited: the session's user id, never the display name — every guest is called
-    /// "Guest nnnn", and a name-keyed bucket would let thousands of them share one. The address is
-    /// the fallback for the anonymous endpoints.
+    /// Who is being limited: the client's address (after <c>UseForwardedHeaders</c>, the one App
+    /// Service's front end appended). Never the user id or display name; see the class remarks.
     /// </summary>
     private static string PartitionKey(HttpContext context)
-        => PoUser.IdOf(context.User) is { } user
-            ? $"user:{user}"
-            : $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+        => $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
 }

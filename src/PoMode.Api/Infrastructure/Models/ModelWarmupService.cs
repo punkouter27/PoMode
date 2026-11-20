@@ -1,10 +1,10 @@
-namespace PoMode.Api.Infrastructure;
+namespace PoMode.Api.Infrastructure.Models;
 
 /// <summary>
 /// Downloads <see cref="ModelCatalog"/> models sequentially in the background after the host has
 /// started, so local inference tiers (e.g. <c>OnnxPitchTracker</c>) become reachable without a
 /// user-triggered download — without this, <c>IsAvailableAsync</c> only ever sees "not downloaded" and
-/// the planner never selects the local tier. No-ops in Azure mode (spec §5: local models are
+/// the planner never selects the local tier. No-ops in Azure mode (local models are
 /// desktop/on-prem only) and when explicitly disabled via <c>Models:AutoDownload</c>. Because
 /// <see cref="BackgroundService.ExecuteAsync"/> runs after startup completes, this never blocks
 /// application startup — the first upload may still use a fake tracker while a model downloads, later

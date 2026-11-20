@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using PoMode.Api.Features.Analysis;
 using PoMode.Api.Features.Auth;
 using PoMode.Api.Features.ModalMelodies;
+using PoMode.Api.Platform;
 using PoMode.Shared.Analysis;
 using PoMode.Shared.Serialization;
 
@@ -78,6 +79,8 @@ public static class ChordJamEndpoints
             return TypedResults.Ok(state.ToDto());
         })
         .RequireAuthorization()
+        .RequireRateLimiting(PoRateLimits.UploadPolicy)
+        .AddEndpointFilter<QueueCapacityFilter>()
         .DisableAntiforgery()
         .WithName("AnalyzeJamTake")
         .WithSummary("Stores a take sung over a guitar jam song and queues it for analysis against that song's chords.");

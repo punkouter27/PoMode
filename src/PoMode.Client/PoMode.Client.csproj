@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\PoMode.Shared\PoMode.Shared.csproj" />
+    <ProjectReference Include="..\PoMode.ApiClient\PoMode.ApiClient.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />

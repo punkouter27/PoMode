@@ -16,7 +16,8 @@ dotnet test tests/PoMode.E2EAPI          # HTTP contract tests (in-process app)
 dotnet test tests/PoMode.E2EUI           # Playwright browser tests (boots the real app)
 dotnet test tests/PoMode.Unit --filter "FullyQualifiedName~TempoEstimator"   # single test/class
 pwsh scripts/test-caps.ps1              # fails if a suite is over its cap (100/50/25/25); run before a push
-dotnet format whitespace PoMode.slnx     # fixes spacing; scripts/ci-checks.ps1 (run locally) fails on anything it would change
+dotnet format PoMode.slnx                # fixes formatting; the deploy fails on anything it would change
+pwsh scripts/ci-checks.ps1               # test caps, Bicep compile, mobile build (after a Release build)
 pwsh scripts/get-models.ps1              # pre-fetch every ONNX/browser model into models/ (warms the E2EUI cache)
 dotnet run scripts/layout-audit.cs -- capture before        # app running: screenshot + audit every route, phone and desktop
 dotnet run scripts/layout-audit.cs -- compare before after notes.md name   # one annotated SCREENSHOTS/name.html
@@ -104,9 +105,9 @@ These override any default instinct. Where one contradicts a habit, the rule win
 One process: `PoMode.Api` hosts the Blazor WASM client (`PoMode.Client`), the REST endpoints, a SignalR
 hub (`/hubs/analysis`) and the background analysis worker; `PoMode.Shared` holds the DTOs, the
 source-generated `PoModeJsonContext` and the few pure lookups both sides need. Server features
-live under `src/PoMode.Api/Features/`; the root `README.md` is the project overview. There is no
-`docs/` directory in this checkout, so this file and the source are the architecture and decision
-references until one is added.
+live under `src/PoMode.Api/Features/`; the root `README.md` is the project overview, and
+`docs/architecture.md` the shape and the reasons (identity, job ownership, the pipeline, browser
+runtimes, configuration, infrastructure).
 
 # NET_RULES (New project: apply all / Existing project: verify & fix)
 
@@ -129,7 +130,7 @@ references until one is added.
   * `/diag`: Real-time operational summary page; its JSON is `GET /api/diag` (2026-11-17). Must strictly redact all secrets, tokens, and connection strings.
 
 ## 3. UI/UX & Blazor WASM
-* **Layout Structure:** the Po shell header (`po-header`, from `wwwroot/css/po-tokens.css`): `PoMode` upper-left; the route links between; search, the email (signed in) or Sign in (a guest, when Microsoft is offered), then the one settings gear (`po-header__settings`, `/settings`) upper-right, at every width. No theme toggle and no More menu: the account, Sign out, Diagnostics, the dev personas and Install live on `/settings`.
+* **Layout Structure:** the Po shell header (`po-header`, from `wwwroot/css/po-tokens.css`): `PoMode` upper-left; the route links between; search, the guest's three initials (a button that opens the initials prompt; there is no sign-in, see `docs/architecture.md`), then the one settings gear (`po-header__settings`, `/settings`) upper-right, at every width. No theme toggle and no More menu: your initials and library, Diagnostics, the dev personas and Install live on `/settings`.
 * **UI Controls & Styling:** Radzen Blazor library (prefer advanced Radzen controls when possible). Zero inline CSS—use scoped `.razor.css` and global CSS variables only. `po-tokens.css` is the same file in every Po app (never edit one copy alone; link it first); `pm-tokens.css` aliases PoMode's tokens to its `--po-*` ones. Light/dark follow the device only (no `data-theme`), one indigo accent, Inter text and Space Grotesk headings (self-hosted in `wwwroot/fonts`).
 * **Tab developer window:** Tab with nothing focused opens `/po-dev.html` (`js/po-devwindow.js`, `js/po-dev.js`, both kit files) with `/health/live` and `/api/diag`. `FocusOnNavigate` runs only after the first in-app navigation so a fresh page has nothing focused.
 * **Mock Indicator:** Display a persistent warning banner ("USING MOCK DATA") whenever an active state uses mock/local data.

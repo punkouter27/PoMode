@@ -4,7 +4,7 @@ using PoMode.Shared.Analysis;
 namespace PoMode.Shared.Validation;
 
 /// <summary>
-/// FluentValidation rules for song follow-up questions (Rule 11 & Rule 17).
+/// FluentValidation rules for song follow-up questions.
 /// </summary>
 public sealed class SongQuestionRequestValidator : AbstractValidator<SongQuestionRequest>
 {

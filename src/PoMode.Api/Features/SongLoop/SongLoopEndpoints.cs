@@ -9,7 +9,7 @@ public static class SongLoopEndpoints
     public static IEndpointRouteBuilder MapSongLoop(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/analysis");
-        group.AddEndpointFilter<JobIdEndpointFilter>();
+        group.AddEndpointFilter<JobAccessFilter>();
 
         // Derived per request from the stored chords: 204 when the song never comes round twice, 404 when the job is missing.
         group.MapGet("/{jobId}/loop", async Task<Results<Ok<SongLoopDto>, NoContent, NotFound>> (

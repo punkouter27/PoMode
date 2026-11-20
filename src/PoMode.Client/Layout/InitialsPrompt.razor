@@ -1,0 +1,146 @@
+@using FluentValidation
+@using PoMode.Shared.Account
+@inject SessionState Session
+@inject NavigationManager Navigation
+@inject IValidator<InitialsRequest> Validator
+@implements IDisposable
+
+@* Three letters, the way an arcade asks: there is no sign-in, and the initials are the whole key to a
+   collection, so the same letters open the same songs on any device. Asked once on a first visit and
+   again from the header button or Settings. It never covers the header, and never opens by itself
+   over /diag. *@
+@if (ShouldShow)
+{
+    <div class="initials-backdrop">
+        <div class="initials-card" role="dialog" aria-modal="true" aria-labelledby="initials-title" @onkeydown="OnKeyDown">
+            <EditForm EditContext="_editContext" OnValidSubmit="SaveAsync" novalidate>
+                <FluentValidationValidator TModel="InitialsRequest" Validator="Validator" />
+                <h2 id="initials-title" class="initials-title">Your initials</h2>
+                <p class="initials-sub">Your songs are kept under them. Type the same three letters on any device to open them again.</p>
+
+                <div class="initials-slots-wrap">
+                    <div class="initials-slots" aria-hidden="true">
+                        @for (var i = 0; i < 3; i++)
+                        {
+                            <span class="initials-slot @(i == _model.Initials.Length ? "initials-slot--active" : "")">@(i < _model.Initials.Length ? _model.Initials[i] : '_')</span>
+                        }
+                    </div>
+                    <input @ref="_input" id="initials-input" name="initials" type="text" class="initials-input"
+                           autocomplete="off" autocapitalize="characters" spellcheck="false"
+                           aria-label="Three letters, A to Z" value="@_model.Initials" @oninput="OnInput" />
+                </div>
+                <ValidationMessage For="() => _model.Initials" class="pm-field-error" />
+                @if (_serverError is not null)
+                {
+                    <p class="pm-field-error" role="alert">@_serverError</p>
+                }
+
+                <div class="initials-actions">
+                    <RadzenButton ButtonType="ButtonType.Submit" Text="@(_saving ? "Saving…" : "Save")" ButtonStyle="ButtonStyle.Primary"
+                                  Disabled="@_saving" id="initials-save" />
+                    <RadzenButton ButtonType="ButtonType.Button" Text="Not now" ButtonStyle="ButtonStyle.Light"
+                                  Disabled="@_saving" Click="@Session.ClosePrompt" id="initials-later" />
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly InitialsRequest _model = new();
+    private EditContext _editContext = default!;
+    private ElementReference _input;
+    private bool _saving;
+    private bool _wasOpen;
+    private string? _serverError;
+
+    private bool ShouldShow => Session.IsPromptOpen && !OnDiagnostics;
+
+    private bool OnDiagnostics
+        => new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/') is "/diag" or "/diagnostics";
+
+    protected override void OnInitialized()
+    {
+        _editContext = new EditContext(_model);
+        Session.Changed += OnChanged;
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (ShouldShow && !_wasOpen)
+        {
+            _wasOpen = true;
+            _model.Initials = Session.Current?.DisplayName ?? "";
+            _serverError = null;
+            StateHasChanged();
+            try
+            {
+                await _input.FocusAsync();
+            }
+            catch (JSException)
+            {
+                // The page moved on before focus landed; nothing to do.
+            }
+        }
+        else if (!ShouldShow)
+        {
+            _wasOpen = false;
+        }
+    }
+
+    /// <summary>Keeps only A to Z, upper-cased, three at most. A full entry that gets a fourth letter
+    /// starts over from it, so retyping needs no backspacing.</summary>
+    private void OnInput(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? "";
+        if (_model.Initials.Length == 3 && raw.Length > 3 && raw.StartsWith(_model.Initials, StringComparison.OrdinalIgnoreCase))
+        {
+            raw = raw[3..];
+        }
+        _model.Initials = new string([.. raw.Where(char.IsAsciiLetter).Select(char.ToUpperInvariant).Take(3)]);
+        _serverError = null;
+        _editContext.NotifyFieldChanged(FieldIdentifier.Create(() => _model.Initials));
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !_saving)
+        {
+            Session.ClosePrompt();
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        try
+        {
+            _serverError = await Session.SetInitialsAsync(_model.Initials);
+            if (_serverError is null)
+            {
+                // Another collection: every page's songs change, and push re-registers under it on
+                // load. A song page of the old collection would only 404, so land on Songs.
+                Navigation.NavigateTo("/", forceLoad: true);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            _serverError = "The server could not be reached. Try again.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => OnChanged();
+
+    public void Dispose()
+    {
+        Session.Changed -= OnChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}

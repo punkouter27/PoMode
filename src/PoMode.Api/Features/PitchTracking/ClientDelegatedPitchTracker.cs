@@ -5,7 +5,7 @@ using PoMode.Shared.Analysis;
 namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
-/// Tier 2 (spec §4): hands pitch tracking to the user's browser. Free, and the audio never leaves the
+/// Tier 2: hands pitch tracking to the user's browser. Free, and the audio never leaves the
 /// user's machine — which is why it sits above the paid cloud tier and below local inference.
 ///
 /// <para>This executor does no inference. It parks: it registers a waiter, moves the job to
@@ -21,7 +21,7 @@ public sealed class ClientDelegatedPitchTracker(
     IConfiguration configuration,
     ILogger<ClientDelegatedPitchTracker> logger) : IPitchTracker
 {
-    private const int DefaultTimeoutSeconds = 300; // §4's five-minute guard
+    private const int DefaultTimeoutSeconds = 300; // a five-minute guard
 
     public string Name => nameof(ClientDelegatedPitchTracker);
     public ExecutionTier Tier => ExecutionTier.ClientDelegated;
@@ -52,7 +52,7 @@ public sealed class ClientDelegatedPitchTracker(
 
     /// <summary>
     /// Publishes <see cref="JobStage.AwaitingClient"/> so the existing JobStatusChanged event tells the
-    /// subscribed browser to start work (§13.5 collapsed §4's five named hub events into this one).
+    /// subscribed browser to start work (one event, not one per step).
     /// Shared with the browser separator: the browser tells the two apart by whether separation has
     /// completed.
     /// </summary>

@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using PoMode.Api.Audio;
 using PoMode.Api.Features.Analysis;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 using PoMode.Shared.Analysis;
 
 namespace PoMode.Api.Features.SoundSearch;

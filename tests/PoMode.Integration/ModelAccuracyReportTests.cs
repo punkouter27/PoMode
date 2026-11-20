@@ -13,6 +13,7 @@ using PoMode.Api.Features.ModalAnalysis;
 using PoMode.Api.Features.ModalMelodies;
 using PoMode.Api.Features.PitchTracking;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 using PoMode.TestCommon;
@@ -80,12 +81,10 @@ public sealed class ModelAccuracyReportTests : IDisposable
     /// <summary>
     /// A real recording to run the free executors over. There is no ground truth for it, so this
     /// half of the report measures behaviour and cross-model agreement rather than accuracy.
-    /// Override with the <c>POMODE_REAL_SONG</c> environment variable; when the file is missing
+    /// Set the <c>POMODE_REAL_SONG</c> environment variable to a file to include it; without one
     /// (CI, another machine) the section simply reports that and the test still passes.
     /// </summary>
-    private static string RealSongPath =>
-        Environment.GetEnvironmentVariable("POMODE_REAL_SONG")
-        ?? @"C:\Users\punko\OneDrive\VAULT\_SOUND\2023_SlowJen.wav";
+    private static string? RealSongPath => Environment.GetEnvironmentVariable("POMODE_REAL_SONG");
 
     private sealed record RealPitchRow(
         string Name, string Kind, int NotesFound, double NotesPerSecond,
@@ -501,11 +500,10 @@ public sealed class ModelAccuracyReportTests : IDisposable
         IReadOnlyList<(IBeatTracker Tracker, string Kind)> beatTrackers,
         ChordMiniChordRecognizer chordMini)
     {
-        var path = RealSongPath;
-        if (!File.Exists(path))
+        if (RealSongPath is not { } path || !File.Exists(path))
         {
-            Console.WriteLine($"Real-song section skipped: '{path}' not present on this machine.");
-            return new RealSongReport(Present: false, Path.GetFileName(path), 0, 0, 0, [], [], [], 0, 0);
+            Console.WriteLine("Real-song section skipped: POMODE_REAL_SONG is not set to a file on this machine.");
+            return new RealSongReport(Present: false, "(none)", 0, 0, 0, [], [], [], 0, 0);
         }
 
         // A job dir of its own: the synthetic run wrote a vocals.wav into _dir, and the pitch

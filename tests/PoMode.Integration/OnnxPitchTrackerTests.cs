@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using PoMode.Api.Features.PitchTracking;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 using PoMode.TestCommon;

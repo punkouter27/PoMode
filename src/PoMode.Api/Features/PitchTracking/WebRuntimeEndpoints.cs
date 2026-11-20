@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 
 namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
-/// Serves the browser inference runtime (onnxruntime-web + the Basic Pitch model) from our own
+/// Serves the browser inference runtimes (onnxruntime-web, WebLLM, Essentia.js) and models from our own
 /// origin for the ClientDelegated pitch tier. The assets are pinned and SHA-256-verified by
 /// <see cref="ModelRegistry"/> exactly like the local ONNX models, downloaded on first use, and
 /// never committed — so the app keeps working offline after that first use and no CDN is in the
@@ -15,7 +16,7 @@ public static class WebRuntimeEndpoints
     public static IEndpointRouteBuilder MapWebRuntime(this IEndpointRouteBuilder app)
     {
         // The route value selects from this fixed allow-list and never becomes part of a path —
-        // the same no-traversal-surface rule the stem endpoint follows (spec §13.7).
+        // the same no-traversal-surface rule the stem endpoint follows.
         var assets = ModelCatalog.WebRuntime.ToDictionary(d => d.FileName);
 
         var group = app.MapGroup("/web-runtime");
@@ -45,14 +46,14 @@ public static class WebRuntimeEndpoints
 
             var contentType = Path.GetExtension(descriptor.FileName) switch
             {
-                ".mjs" => "text/javascript",
+                ".mjs" or ".js" => "text/javascript",
                 ".wasm" => "application/wasm",
                 ".json" => "application/json",
                 _ => "application/octet-stream",
             };
 
             // Byte copy rather than PhysicalFile: streaming a file in place while the registry
-            // could be writing it is the same handle race §13.4 documents for job artifacts.
+            // could be writing it is the same handle race JobStore guards against for job artifacts.
             var bytes = await File.ReadAllBytesAsync(path, ct);
             return TypedResults.File(bytes, contentType);
         });

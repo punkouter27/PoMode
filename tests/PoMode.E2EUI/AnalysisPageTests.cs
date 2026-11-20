@@ -135,7 +135,7 @@ public class AnalysisPageTests(AppFixture app)
         await using var guard = PlaywrightErrorGuard.Watch(page);
 
         // FakePitchTracker's eight notes all land near the start of the track, so the later windows
-        // genuinely have fewer than the three distinct sung pitch classes spec §6 requires.
+        // genuinely have fewer than the three distinct sung pitch classes the modal engine requires.
         await CanvasTests.ClickCanvasAsync(page.Locator("canvas.analysis-canvas"), 0.9f, 0.85f);
 
         await Assertions.Expect(page.Locator(".hud-chord")).ToBeVisibleAsync(Visible);

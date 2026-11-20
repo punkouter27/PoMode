@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
-/// The rendezvous between a parked stage and the browser doing its work (spec §4's ClientDelegated
+/// The rendezvous between a parked stage and the browser doing its work (the ClientDelegated
 /// protocol): pitch tracking waits for notes, separation for a vocal stem. The pipeline thread awaits
 /// <see cref="WaitAsync"/>; the matching endpoint calls <see cref="TryComplete"/> when the result
 /// arrives, or <see cref="TryDecline"/> when the browser says it will not do the work.

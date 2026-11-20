@@ -10,7 +10,7 @@ public sealed record ChromaGram(float[][] Frames, double FramesPerSecond);
 /// Extracts pitch-class ("chroma") energy vectors from audio: Hann-windowed FFT magnitude spectra
 /// folded into 12 semitone bins (one per pitch class), L2-normalised.
 ///
-/// <para>§13.6 fix (a): the original 4096-sample window at 44.1 kHz gave ~10.8 Hz bin spacing,
+/// <para>The original 4096-sample window at 44.1 kHz gave ~10.8 Hz bin spacing,
 /// which cannot separate adjacent semitones in the bass register — the measured cause of the
 /// A#/A#m ghost chords on the real-track check. Two changes address it: <see cref="Compute"/>
 /// resamples to 22.05 kHz and uses an 8192-sample window (~2.7 Hz spacing, ~4× finer), and
@@ -30,7 +30,7 @@ public static class ChromaExtractor
     /// </summary>
     private const double MaxFrequencyHz = 2000.0;
 
-    /// <summary>The chromagram's fixed analysis rate — also §13.6's named resample target.</summary>
+    /// <summary>The chromagram's fixed analysis rate, and the resample target.</summary>
     public const int TargetSampleRate = 22050;
 
     /// <summary>Computes a chroma vector for one frame of samples. All-zero input yields an all-zero vector.</summary>

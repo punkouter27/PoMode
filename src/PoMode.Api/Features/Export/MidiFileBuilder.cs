@@ -8,7 +8,7 @@ using VocalNoteEvent = PoMode.Shared.Analysis.NoteEvent;
 
 namespace PoMode.Api.Features.Export;
 
-/// <summary>Builds a Standard MIDI File (Type 1) per spec §8. Tempo comes from the analysis result.</summary>
+/// <summary>Builds a Standard MIDI File (Type 1). Tempo comes from the analysis result.</summary>
 public static class MidiFileBuilder
 {
     private const short TicksPerQuarter = 480;

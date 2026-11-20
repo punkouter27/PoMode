@@ -34,7 +34,7 @@ public static class MauiProgram
             http.DefaultRequestHeaders.UserAgent.ParseAdd("PoMode.Mobile/1.0");
             return http;
         });
-        builder.Services.AddSingleton<ApiClient>();
+        builder.Services.AddSingleton<MobileApi>();
         builder.Services.AddSingleton<Session>();
         builder.Services.AddSingleton<Uploads>();
         builder.Services.AddSingleton<ToneMixer>();

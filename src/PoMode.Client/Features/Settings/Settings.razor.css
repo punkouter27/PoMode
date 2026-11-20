@@ -136,10 +136,9 @@
 }
 
 /* The account's address can be long; it wraps rather than pushing the row wider. */
-.settings-email {
+.settings-initials {
+    font-family: var(--pm-font-mono);
+    font-weight: 700;
     overflow-wrap: anywhere;
 }
 
-.settings-build {
-    font-family: var(--pm-font-mono);
-}

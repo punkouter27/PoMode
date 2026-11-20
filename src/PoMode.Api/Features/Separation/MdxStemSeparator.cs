@@ -1,6 +1,7 @@
 using Microsoft.ML.OnnxRuntime;
 using PoMode.Api.Audio;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 

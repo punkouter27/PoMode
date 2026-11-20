@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using PoMode.Shared.Hardware;
 
-namespace PoMode.Api.Infrastructure;
+namespace PoMode.Api.Infrastructure.Models;
 
 /// <summary>
 /// Downloads and SHA-256-verifies ONNX models on first use, caching them under <see cref="RootPath"/>.

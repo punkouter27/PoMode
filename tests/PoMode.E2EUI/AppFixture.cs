@@ -51,6 +51,9 @@ public class AppFixture : IAsyncLifetime
             Environment =
             {
                 ["ASPNETCORE_ENVIRONMENT"] = "Development",
+                // Fresh guests arrive with initials, so the first-visit prompt never covers a page
+                // under test (AuthTests covers picking them).
+                ["Session__DefaultInitials"] = "TST",
                 ["Jobs__RootPath"] = _jobsRoot,
                 // Browser tests assert on the deterministic YIN pitch track; a real model download
                 // completing mid-suite would flip ExecutionPlanner onto the (non-deterministic here) local

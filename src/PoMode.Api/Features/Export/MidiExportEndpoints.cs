@@ -24,7 +24,7 @@ public static class MidiExportEndpoints
                 MidiFileBuilder.Build(notes, chords, result),
                 contentType: "audio/midi",
                 fileDownloadName: $"pomode-{jobId}.mid");
-        }).AddEndpointFilter<JobIdEndpointFilter>();
+        }).AddEndpointFilter<JobAccessFilter>();
 
         return app;
     }

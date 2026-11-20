@@ -33,6 +33,17 @@ public sealed class ModeLabDescriptionFormValidator : AbstractValidator<ModeLabD
     public ModeLabDescriptionFormValidator() => RuleFor(x => x.Text).ModeLabDescription();
 }
 
+/// <summary>Three letters, A to Z, the way an arcade asks: the name a guest's library goes by.</summary>
+public sealed class InitialsRequestValidator : AbstractValidator<PoMode.Shared.Account.InitialsRequest>
+{
+    public InitialsRequestValidator()
+        => RuleFor(x => x.Initials)
+            .Must(IsInitials).WithMessage("Type three letters, A to Z.");
+
+    public static bool IsInitials(string? text)
+        => text is { Length: 3 } && text.All(char.IsAsciiLetterUpper);
+}
+
 /// <summary>The practice page's "save these settings as" box. Presets live in this browser only, so
 /// the page is the only place this rule runs.</summary>
 public sealed class ChordJamPresetForm

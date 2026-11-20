@@ -109,7 +109,7 @@
     private IJSObjectReference? _pitchWorker;
     private IJSObjectReference? _separation;
     private IJSObjectReference? _sfx;
-    private IJSObjectReference? _themeJs;
+    private IJSObjectReference? _layoutJs;
     private AnalysisPreviewDto? _preview;
     private bool _previewFetching;
 
@@ -293,8 +293,8 @@
                 // says. The result arriving is the notice, and a closed tab gets a Web Push.
                 // Tint the chrome with the detected key, then play its tonic (no third — the
                 // arpeggio stays mode-neutral, so no musical decision happens client-side).
-                _themeJs ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/theme.js");
-                await _themeJs.InvokeVoidAsync("setKeyHue", _result.TonicPitchClass * 30);
+                _layoutJs ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/layout.js");
+                await _layoutJs.InvokeVoidAsync("setKeyHue", _result.TonicPitchClass * 30);
                 // And hand the interface its voice: from here the clicks and chimes are sounded from
                 // the mode's own scale. The pitches are derived here, from the shared ScaleModes
                 // table the server graded with, rather than in the browser — sfx.js is given notes
@@ -335,9 +335,9 @@
             }
             await _sfx.DisposeAsync();
         }
-        if (_themeJs is not null)
+        if (_layoutJs is not null)
         {
-            await _themeJs.DisposeAsync();
+            await _layoutJs.DisposeAsync();
         }
     }
 }

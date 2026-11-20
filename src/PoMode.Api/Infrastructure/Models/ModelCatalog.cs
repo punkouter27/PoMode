@@ -1,4 +1,4 @@
-namespace PoMode.Api.Infrastructure;
+namespace PoMode.Api.Infrastructure.Models;
 
 /// <summary>
 /// The fixed set of ONNX models PoMode's local inference pipeline can download and run. Descriptors
@@ -174,7 +174,7 @@ public static class ModelCatalog
     /// <summary>
     /// onnxruntime-web 1.27.0, pinned to the immutable npm-versioned jsdelivr URLs (npm packages
     /// cannot be republished under the same version). Served to the browser by
-    /// <c>WebRuntimeEndpoints</c> for the ClientDelegated pitch tier (spec §4): the app is
+    /// <c>WebRuntimeEndpoints</c> for the ClientDelegated pitch tier: the app is
     /// local-first, so the runtime comes from our own origin, downloaded once and SHA-256-verified
     /// like every model, never from a CDN at page load and never committed. Each SHA-256 below was
     /// computed from a fresh download of the exact pinned URL during Phase 8.
@@ -225,6 +225,37 @@ public static class ModelCatalog
         Sha256: "3ee381d20a80f51a788a1c4a5872f6f1d047538dd4342f4af00062de5f9ea4c6");
 
     /// <summary>
+    /// WebLLM 0.2.85 (MLC, Apache-2.0), the in-browser language model runtime behind
+    /// <c>js/infer/web-llm.js</c>: the package's own pre-bundled <c>lib/index.js</c>, which imports
+    /// nothing further. Pinned and served from our origin rather than imported from a CDN at runtime,
+    /// where a dynamic import() cannot carry an integrity check. 6,586,947 bytes, SHA-256 from a fresh
+    /// download on 2026-11-20.
+    /// </summary>
+    public static readonly ModelDescriptor WebLlm = new(
+        Key: "web-llm",
+        FileName: "web-llm-0.2.85.js",
+        Url: "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.85/lib/index.js",
+        Sha256: "341bae95822bfee1d0fd6a0e6cd2db8613bb8edf809390ac142fba36ec17792c");
+
+    /// <summary>
+    /// Essentia.js 0.1.3 (Music Technology Group, UPF; AGPL-3.0), the second opinion on the key in
+    /// <c>js/infer/key-check.js</c>: the WebAssembly build with its binary embedded. 2,562,601 bytes,
+    /// SHA-256 from a fresh download on 2026-11-20. Served unmodified, with its licence header.
+    /// </summary>
+    public static readonly ModelDescriptor EssentiaWasm = new(
+        Key: "essentia-wasm",
+        FileName: "essentia-wasm-0.1.3.es.js",
+        Url: "https://cdn.jsdelivr.net/npm/essentia.js@0.1.3/dist/essentia-wasm.es.js",
+        Sha256: "8eab136617f42ae7a63bbd24acf69f878e6bbe29a094c510b4ac1db9ce1ea927");
+
+    /// <summary>Essentia.js 0.1.3's JavaScript API over the WebAssembly build. 323,653 bytes.</summary>
+    public static readonly ModelDescriptor EssentiaCore = new(
+        Key: "essentia-core",
+        FileName: "essentia-core-0.1.3.es.js",
+        Url: "https://cdn.jsdelivr.net/npm/essentia.js@0.1.3/dist/essentia.js-core.es.js",
+        Sha256: "45f1a3cdccd039b5b8245bcfe3a74ea2b8498f8097edd010bbd375e8a8b0e640");
+
+    /// <summary>
     /// Everything <c>/web-runtime/{asset}</c> may serve. Deliberately not merged into
     /// <see cref="All"/>: that list drives <c>ModelWarmupService</c>'s startup auto-download and the
     /// /diag model report, and ~40 MB of browser runtime should download on first Tier 2 use, not on
@@ -249,7 +280,8 @@ public static class ModelCatalog
         Sha256: "534b2070fcc7df514b13ef660dc8cbb328679c2374d04354a5c42bb14ecce111");
 
     public static readonly IReadOnlyList<ModelDescriptor> WebRuntime =
-        [OrtBundle, OrtWasm, OrtWasmJsep, OrtWasmGlue, OrtWasmJsepGlue, BasicPitch, MdxVocals, GuitarChords, UkuleleChords];
+        [OrtBundle, OrtWasm, OrtWasmJsep, OrtWasmGlue, OrtWasmJsepGlue, BasicPitch, MdxVocals, GuitarChords, UkuleleChords,
+         WebLlm, EssentiaWasm, EssentiaCore];
 
     /// <summary>Every model the server downloads at start-up and /diag reports. Declared last: static
     /// fields initialise in textual order, and this list names fields declared above it.</summary>

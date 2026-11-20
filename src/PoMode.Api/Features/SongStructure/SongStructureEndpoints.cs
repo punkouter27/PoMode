@@ -34,6 +34,7 @@ public static class SongStructureEndpoints
                 ? TypedResults.NotFound()
                 : TypedResults.Ok(ToDto(analysis));
         })
+        .AddEndpointFilter<JobAccessFilter>()
         .WithTags("Analysis")
         .WithName("GetSongStructure")
         .WithSummary("The bar-by-bar harmonic similarity matrix and novelty curve the song's sections were cut from.");

@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace PoMode.TestCommon;
 
 /// <summary>
-/// Loads the shared Basic Pitch decoder fixture (spec §5: "the decoder algorithm is specified once
+/// Loads the shared Basic Pitch decoder fixture ("the decoder algorithm is specified once
 /// and implemented twice"). The C# unit test and the Playwright JS-port test both assert against
 /// this one file, so a divergence between the two decoders fails a test that names the note.
 /// </summary>

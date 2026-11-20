@@ -3,7 +3,7 @@ using PoMode.Shared.Analysis;
 
 namespace PoMode.Api.Features.ModalAnalysis;
 
-/// <summary>Deterministic modal derivation (spec §6). Pure function over Phase-2 artifacts — no audio, no models.</summary>
+/// <summary>Deterministic modal derivation. Pure function over Phase-2 artifacts — no audio, no models.</summary>
 public static class ModalAnalysisEngine
 {
     private const int MinimumDistinctPitchClasses = 3;

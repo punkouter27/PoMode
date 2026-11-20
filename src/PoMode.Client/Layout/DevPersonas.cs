@@ -1,13 +1,12 @@
 namespace PoMode.Client.Layout;
 
-/// <summary>
-/// Shared dev persona definitions for the header X-Fake-User switcher outside Production (Rule 16).
-/// </summary>
-public static class AccountMenu
+/// <summary>The dev persona switcher on /settings, outside Production: each sends an X-Fake-User
+/// header (DevFakeUserHandler), and "Guest" goes back to the browser's own cookie.</summary>
+public static class DevPersonas
 {
     public sealed record DevPersona(string Label, string? FakeUserHeader);
 
-    public static readonly IReadOnlyList<DevPersona> Personas =
+    public static readonly IReadOnlyList<DevPersona> All =
     [
         new("Guest (Cookie)", null),
         new("Dev User", "dev-user"),

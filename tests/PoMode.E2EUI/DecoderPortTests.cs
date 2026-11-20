@@ -6,7 +6,7 @@ using Xunit;
 namespace PoMode.E2EUI;
 
 /// <summary>
-/// The JS side of spec §5's "specified once, implemented twice" contract: loads the served
+/// The JS side of the decoder's "specified once, implemented twice" contract: loads the served
 /// <c>basic-pitch-decoder.js</c> module in a real browser, runs it on the same fixture the C#
 /// decoder is tested against, and asserts note-for-note agreement. A divergence names the note.
 /// </summary>

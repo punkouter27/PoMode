@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using PoMode.Api.Audio;
 using PoMode.Api.Features.Separation;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 using PoMode.Api.Pipeline;
 using PoMode.TestCommon;
 using Xunit;

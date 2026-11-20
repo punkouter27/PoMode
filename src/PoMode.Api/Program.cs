@@ -28,6 +28,7 @@ using PoMode.Api.Features.SongStructure;
 using PoMode.Api.Features.VoiceProfile;
 using PoMode.Api.Features.Uploads;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 using PoMode.Api.Pipeline;
 using PoMode.Shared.Serialization;
 using Scalar.AspNetCore;
@@ -53,8 +54,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 // Guest cookie sessions in every environment; FakeAuth headers in Development and Test only.
 builder.AddPoAuthentication();
 builder.AddPoTelemetry();
-// App Service terminates TLS in front of Kestrel. Without the forwarded scheme the OIDC redirect URI
-// is built as http://, which does not match the app registration and the sign-in fails at Microsoft.
+// App Service terminates TLS in front of Kestrel. Without the forwarded scheme every request looks
+// like http://, and the Secure session cookie and HSTS would be wrong.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -86,6 +87,9 @@ builder.Services.AddSingleton<IStemSeparator, OnnxStemSeparator>();
 builder.Services.AddSingleton<IStemSeparator, MdxStemSeparator>();
 builder.Services.AddSingleton<IStemSeparator, ClientDelegatedStemSeparator>();
 builder.Services.AddSingleton<IStemSeparator, FakeStemSeparator>();
+// The two fakes exist for the API and browser suites (Test and Development), which pick them by name;
+// Production never lists them.
+var withFakes = !builder.Environment.IsProduction();
 // RMVPE and Basic Pitch share a rank (both local models), so registration order decides the default:
 // RMVPE first, on the accuracy numbers in CLAUDE.md. Basic Pitch still transcribes the backing stem.
 builder.Services.AddSingleton<IPitchTracker, RmvpePitchTracker>();
@@ -93,13 +97,19 @@ builder.Services.AddSingleton<OnnxPitchTracker>();
 builder.Services.AddSingleton<IPitchTracker>(sp => sp.GetRequiredService<OnnxPitchTracker>());
 builder.Services.AddSingleton<IPitchTracker, ClientDelegatedPitchTracker>();
 builder.Services.AddSingleton<IPitchTracker, YinPitchTracker>();
-builder.Services.AddSingleton<IPitchTracker, FakePitchTracker>();
+if (withFakes)
+{
+    builder.Services.AddSingleton<IPitchTracker, FakePitchTracker>();
+}
 // ChordMini before Chroma so it wins their shared local rank, on the numbers: 99% vs 40% of frames
 // on the demo vamp, a tie on the plain triad pad (test-reports/model-accuracy.html).
 builder.Services.AddSingleton<IChordRecognizer, ChordMiniChordRecognizer>();
 builder.Services.AddSingleton<IChordRecognizer, ChromaChordRecognizer>();
 builder.Services.AddSingleton<IChordRecognizer, ViterbiChordRecognizer>();
-builder.Services.AddSingleton<IChordRecognizer, FakeChordRecognizer>();
+if (withFakes)
+{
+    builder.Services.AddSingleton<IChordRecognizer, FakeChordRecognizer>();
+}
 builder.Services.AddSingleton<IBeatTracker, BeatThisBeatTracker>();
 builder.Services.AddSingleton<IBeatTracker, DspBeatTracker>();
 builder.Services.AddSingleton<ArtifactModalAnalyzer>();
@@ -127,7 +137,7 @@ builder.Services.AddSingleton<WebPushOutcomeNotifier>();
 builder.Services.AddSingleton<LyricsTranscriber>();
 // What a finished song is (its tags, else AcoustID) and its published lyrics (LRCLIB), both in
 // aftercare, and the songs that share its chord loop (Hooktheory), asked from the song page. The two
-// with accounts are off until their keys are in Key Vault (docs/architecture.md, Song identity).
+// with accounts are off until their keys are in Key Vault (docs/architecture.md, Configuration and secrets).
 const string userAgent = "PoMode (+https://github.com/punkouter27/PoMode)";
 builder.Services.AddSingleton<AcoustIdClient>();
 builder.Services.AddSingleton<SongIdentifier>();
@@ -197,18 +207,25 @@ if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Test"))
 {
     app.UseHsts();
 }
-// On every response, static files included. The policy only forbids framing: a script-src would have
-// to allow the two inline scripts in index.html, the WASM runtime and the model workers' blobs, and a
-// wrong one fails silently in the one environment nobody is watching.
+// On every response, static files included. Script files and modules come from this origin only
+// (script-src-elem): every browser runtime (onnxruntime, WebLLM, Essentia) is pinned in ModelCatalog and
+// served from /web-runtime, and index.html has no inline <script>. script-src-attr allows inline event
+// attributes because Radzen renders them (onclick="Radzen.togglePopup(this, '<id>')", with ids that no
+// hash could cover). 'unsafe-eval' is for Essentia's Emscripten bindings, which build functions with
+// new Function (it also covers WebAssembly compilation); blob: is for model workers. script-src is the
+// fallback for a browser without the CSP Level 3 directives, so it has to allow all of the above.
 // The commit this build came from (SDK-stamped as "<version>+<sha>"), so a deploy can prove which
 // build is answering: CI checks /health/live for X-Commit equal to the pushed sha.
 var commit = PoPlatform.Version.Split('+') is [_, var sha, ..] ? sha : "unknown";
+const string ContentSecurityPolicy =
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; script-src-elem 'self' blob:; script-src-attr 'unsafe-inline'; "
+    + "object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
 app.Use((context, next) =>
 {
     var headers = context.Response.Headers;
     headers["X-Commit"] = commit;
     headers.XContentTypeOptions = "nosniff";
-    headers.ContentSecurityPolicy = "frame-ancestors 'none'";
+    headers.ContentSecurityPolicy = ContentSecurityPolicy;
     headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     return next();
 });
@@ -240,6 +257,7 @@ app.UseStaticFiles(new StaticFileOptions
     },
 });
 
+app.UseLegacySessionCookie();
 app.UseAuthentication();
 app.UseAuthorization();
 // After authentication on purpose: the limiter partitions by signed-in user where there is one, and

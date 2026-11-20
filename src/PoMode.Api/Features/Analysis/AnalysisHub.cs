@@ -10,9 +10,14 @@ public sealed class AnalysisHub(JobQueue queue) : Hub
     public static string GroupName(string jobId) => $"job-{jobId}";
 
     /// <summary>Joins the job's group, and tells the caller where the job stands if it is still
-    /// waiting: the pushes that follow only say when that changes.</summary>
+    /// waiting: the pushes that follow only say when that changes. Open to anyone with the job's link,
+    /// like its HTTP reads (JobAccessFilter); a malformed id is ignored.</summary>
     public async Task Subscribe(string jobId)
     {
+        if (!JobId.IsValid(jobId))
+        {
+            return;
+        }
         await Groups.AddToGroupAsync(Context.ConnectionId, GroupName(jobId));
         if (queue.Ahead(jobId) is { } ahead)
         {

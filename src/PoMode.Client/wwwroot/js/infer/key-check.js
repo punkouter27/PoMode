@@ -4,8 +4,9 @@
 // It reports what Essentia said; how that stands against the mode is worded server-side
 // (KeyAgreement), as every musical statement is.
 
-const ESSENTIA_WASM = 'https://cdn.jsdelivr.net/npm/essentia.js@0.1.3/dist/essentia-wasm.es.js';
-const ESSENTIA_CORE = 'https://cdn.jsdelivr.net/npm/essentia.js@0.1.3/dist/essentia.js-core.es.js';
+// Pinned and SHA-256-verified, served from this origin (ModelCatalog.Essentia*), never from a CDN.
+const ESSENTIA_WASM = '/web-runtime/essentia-wasm-0.1.3.es.js';
+const ESSENTIA_CORE = '/web-runtime/essentia-core-0.1.3.es.js';
 const RATE = 44100;
 const SECONDS = 60;
 const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];

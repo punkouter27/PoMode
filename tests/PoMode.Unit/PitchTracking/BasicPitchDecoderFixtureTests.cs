@@ -5,7 +5,7 @@ using Xunit;
 namespace PoMode.Unit.PitchTracking;
 
 /// <summary>
-/// Guards the C# side of spec §5's "specified once, implemented twice" contract: the committed
+/// Guards the C# side of the decoder's "specified once, implemented twice" contract: the committed
 /// fixture was generated from <see cref="BasicPitchDecoder"/>, and this test proves the decoder
 /// still reproduces it exactly. The JS port is held to the same file by
 /// <c>PoMode.E2EUI.DecoderPortTests</c> — if either side drifts, one of the two tests names the note.

@@ -10,7 +10,7 @@ namespace PoMode.Mobile.Pages;
 /// </summary>
 public sealed class ModeLabPage : ContentPage
 {
-    private readonly ApiClient _api;
+    private readonly MobileApi _api;
     private readonly ITrackPlayerFactory _players;
     private readonly ContentView _result = new();
     private readonly VerticalStackLayout _controls = Ui.Stack(8);
@@ -20,7 +20,7 @@ public sealed class ModeLabPage : ContentPage
     private GeneratedMelodyDto? _melody;
     private ITrackPlayer? _player;
 
-    public ModeLabPage(ApiClient api, ITrackPlayerFactory players)
+    public ModeLabPage(MobileApi api, ITrackPlayerFactory players)
     {
         _api = api;
         _players = players;
@@ -42,7 +42,7 @@ public sealed class ModeLabPage : ContentPage
 
         try
         {
-            _progressions = await _api.GetProgressionsAsync() ?? [];
+            _progressions = await _api.GetModalProgressionsAsync() ?? [];
         }
         catch (HttpRequestException ex)
         {
@@ -129,7 +129,7 @@ public sealed class ModeLabPage : ContentPage
                     return;
                 }
 
-                ModeLabDescriptionDto? d = await _api.DescribeAsync(describe.Text.Trim(), _request);
+                ModeLabDescriptionDto? d = await _api.DescribeModeLabAsync(describe.Text.Trim(), _request);
                 if (d is null)
                 {
                     await Ui.Toast("That description couldn't be read.");
@@ -160,7 +160,7 @@ public sealed class ModeLabPage : ContentPage
         _result.Content = new ActivityIndicator { IsRunning = true };
         try
         {
-            _melody = await _api.GenerateAsync(_request);
+            _melody = await _api.GenerateModalMelodyAsync(_request);
         }
         catch (HttpRequestException ex)
         {
@@ -195,7 +195,7 @@ public sealed class ModeLabPage : ContentPage
         v.Add(Ui.Row(
             Ui.Secondary("Analyse it", async () =>
             {
-                if (await _api.AnalyzeMelodyAsync(_request) is { } job)
+                if (await _api.AnalyzeModalMelodyAsync(_request) is { } job)
                 {
                     await Shell.Current.GoToAsync($"song?id={job.JobId}");
                 }
@@ -227,7 +227,7 @@ public sealed class ModeLabPage : ContentPage
         string pick = await DisplayActionSheetAsync("Share as", "Cancel", null, "MIDI", "WAV");
         string? path = pick switch
         {
-            "MIDI" => await _api.DownloadAsync($"api/modal-melodies/midi?{ApiClient.BackingQuery(_request)}", $"modelab-{_request.Mode}.mid"),
+            "MIDI" => await _api.DownloadAsync($"api/modal-melodies/midi?{MobileApi.BackingQuery(_request)}", $"modelab-{_request.Mode}.mid"),
             "WAV" => await _api.DownloadBackingWavAsync(_request),
             _ => null,
         };

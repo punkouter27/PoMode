@@ -8,7 +8,7 @@ public static class VoiceProfileEndpoints
 {
     public static IEndpointRouteBuilder MapVoiceProfile(this IEndpointRouteBuilder app)
     {
-        // Open to the job id like the other per-job reads. The first call measures the audio and the
+        // Open to anyone with the job's link, like every read (JobAccessFilter). The first call measures the audio and the
         // result is cached with the job, so the cost is paid once per song, not once per visit.
         app.MapGet("/api/analysis/{jobId}/voice", async Task<Results<Ok<VoiceProfileDto>, NotFound>> (
             string jobId, JobStore store, VoiceProfileService voices, CancellationToken ct) =>
@@ -26,6 +26,7 @@ public static class VoiceProfileEndpoints
             }
             return TypedResults.Ok(VoiceProfiler.Build(await voices.IntonationAsync(state, ct), VoiceSubject.Song));
         })
+        .AddEndpointFilter<JobAccessFilter>()
         .WithTags("Analysis")
         .WithName("GetVoiceProfile")
         .WithSummary("The lead singer's voice type (by range) and the note they sing best, measured from the vocal.");

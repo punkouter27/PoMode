@@ -5,9 +5,9 @@ using PoMode.Shared.Serialization;
 namespace PoMode.Client.Services;
 
 /// <summary>
-/// The browser's session, established once before any page talks to the API. A visitor with no
-/// session is made a guest on the spot: the app is usable before anyone decides whether to sign in,
-/// and every job still lands in a library that belongs to someone.
+/// The browser's session, established once before any page talks to the API. There is no sign-in: a
+/// visitor is made a guest on the spot, so every job lands in a library that belongs to someone, and
+/// is then asked for three initials, which open that person's collection on any device.
 /// </summary>
 public sealed class SessionState(HttpClient http)
 {
@@ -15,8 +15,16 @@ public sealed class SessionState(HttpClient http)
     private static PoModeJsonContext Json => PoModeJsonContext.Default;
 
     private Task<SessionDto>? _ready;
+    private bool _promptRequested;
+    private bool _dismissed;
 
     public SessionDto? Current { get; private set; }
+
+    /// <summary>A guest with no initials yet (until they say "not now"), or someone who asked to
+    /// change theirs.</summary>
+    public bool IsPromptOpen
+        => Current is { Kind: SessionKind.Guest } guest
+           && (_promptRequested || (guest.DisplayName is null && !_dismissed));
 
     public event Action? Changed;
 
@@ -26,6 +34,39 @@ public sealed class SessionState(HttpClient http)
 
     /// <summary>Re-queries the server session (for example after switching dev persona).</summary>
     public Task<SessionDto> RefreshAsync() => _ready = ResolveAsync();
+
+    public void OpenPrompt()
+    {
+        _promptRequested = true;
+        Changed?.Invoke();
+    }
+
+    /// <summary>"Not now". A guest who has no initials yet is asked again on the next visit.</summary>
+    public void ClosePrompt()
+    {
+        _promptRequested = false;
+        _dismissed = true;
+        Changed?.Invoke();
+    }
+
+    /// <summary>Switches to the initials' collection (taking along anything made before there were
+    /// initials). Returns the server's message when it refused them.</summary>
+    public async Task<string?> SetInitialsAsync(string initials)
+    {
+        using var response = await http.PutAsJsonAsync("auth/initials", new InitialsRequest { Initials = initials }, Json.InitialsRequest);
+        if (!response.IsSuccessStatusCode)
+        {
+            // The form runs the same validator first, so this is the server refusing for its own reasons.
+            return await ProblemDetailsParser.TryReadAsync(response) is { Detail: { Length: > 0 } detail }
+                ? detail
+                : "Those initials could not be saved. Try again.";
+        }
+        Current = await response.Content.ReadFromJsonAsync(Json.SessionDto) ?? Current;
+        _ready = Task.FromResult(Current!);
+        _promptRequested = false;
+        Changed?.Invoke();
+        return null;
+    }
 
     private async Task<SessionDto> ResolveAsync()
     {

@@ -35,6 +35,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PoMode.Shared\PoMode.Shared.csproj" />
+    <ProjectReference Include="..\PoMode.ApiClient\PoMode.ApiClient.csproj" />
   </ItemGroup>
 
 </Project>

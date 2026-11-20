@@ -2,19 +2,20 @@ using System.Globalization;
 using PoMode.Mobile.Services;
 using PoMode.Shared.Analysis;
 using PoMode.Shared.Diagnostics;
+using PoMode.Shared.Validation;
 
 namespace PoMode.Mobile.Pages;
 
 /// <summary>The web's /settings: the account, the analysis models, the phone's own switches, and the way to /diag.</summary>
 public sealed class SettingsPage : ContentPage
 {
-    private readonly ApiClient _api;
+    private readonly MobileApi _api;
     private readonly Session _session;
     private readonly MobileConfig _config;
     private readonly IMidiInput _midi;
     private readonly VerticalStackLayout _stack = Ui.Stack(10);
 
-    public SettingsPage(ApiClient api, Session session, MobileConfig config, IMidiInput midi)
+    public SettingsPage(MobileApi api, Session session, MobileConfig config, IMidiInput midi)
     {
         _api = api;
         _session = session;
@@ -35,7 +36,7 @@ public sealed class SettingsPage : ContentPage
         _stack.Clear();
         _stack.Add(Ui.H1("Settings"));
 
-        _stack.Add(Ui.H2("Account"));
+        _stack.Add(Ui.H2("You"));
         try
         {
             await _session.EnsureAsync();
@@ -46,7 +47,27 @@ public sealed class SettingsPage : ContentPage
         }
 
         _stack.Add(Ui.Text(_session.Label));
-        _stack.Add(Ui.Muted("You're a guest on this phone: your songs are kept in this app's session."));
+        Entry initials = new()
+        {
+            Text = _session.Current?.DisplayName ?? "",
+            MaxLength = 3,
+            Placeholder = "ABC",
+            Keyboard = Keyboard.Create(KeyboardFlags.CapitalizeCharacter),
+            WidthRequest = 90,
+        };
+        _stack.Add(Ui.Field("Initials", initials));
+        _stack.Add(Ui.Secondary("Save initials", async () =>
+        {
+            var typed = (initials.Text ?? "").Trim().ToUpperInvariant();
+            if (!InitialsRequestValidator.IsInitials(typed))
+            {
+                await Ui.Toast("Type three letters, A to Z.");
+                return;
+            }
+            await Ui.Toast(await _session.SetInitialsAsync(typed) ? "Saved." : "Those initials could not be saved.");
+            await RenderAsync();
+        }));
+        _stack.Add(Ui.Muted("Your songs are kept under your initials: the same three letters open them on the web and on any phone."));
         _stack.Add(Ui.Secondary("Start over as a new guest", async () =>
         {
             if (await DisplayAlertAsync("Start over", "A new guest starts with an empty library. This guest's songs can't be got back.", "Start over", "Cancel"))
@@ -131,10 +152,10 @@ public sealed class SettingsPage : ContentPage
 /// <summary>The web's /diag: one card per dependency (API, Data, Services), read from the anonymous /api/diag.</summary>
 public sealed class DiagPage : ContentPage
 {
-    private readonly ApiClient _api;
+    private readonly MobileApi _api;
     private readonly VerticalStackLayout _stack = Ui.Stack(8);
 
-    public DiagPage(ApiClient api)
+    public DiagPage(MobileApi api)
     {
         _api = api;
         Title = "Diagnostics";

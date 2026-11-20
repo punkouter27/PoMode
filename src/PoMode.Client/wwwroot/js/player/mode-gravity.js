@@ -320,8 +320,6 @@ export function init(canvas, field) {
     };
     state.scheme = window.matchMedia('(prefers-color-scheme: dark)');
     state.scheme.addEventListener('change', state.onTheme);
-    state.themeObserver = new MutationObserver(state.onTheme);
-    state.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     // With effects off the field still shows which notes are joined, but snaps rather than melts; a
     // level change takes effect in place.
@@ -405,7 +403,6 @@ export function dispose(canvas) {
     canvas.removeEventListener('pointerdown', state.onPointerDown);
     state.resize.disconnect();
     state.scheme.removeEventListener('change', state.onTheme);
-    state.themeObserver.disconnect();
     state.unsubscribe();
     state.field?.dispose();
     states.delete(canvas);

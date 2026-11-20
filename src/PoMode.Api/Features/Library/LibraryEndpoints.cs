@@ -90,7 +90,7 @@ public static class LibraryEndpoints
                 }
             }
             return TypedResults.Ok(alike.OrderByDescending(s => s.Score).Take(5).ToList());
-        }).RequireAuthorization();
+        }).RequireAuthorization().AddEndpointFilter<JobAccessFilter>();
 
         return app;
     }

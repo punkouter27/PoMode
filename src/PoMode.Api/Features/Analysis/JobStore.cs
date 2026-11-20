@@ -138,8 +138,58 @@ public sealed class JobStore(IConfiguration configuration, TimeProvider time, Jo
     /// <summary>Deletes one job's folder and blob mirror. False when a file in it is still open.</summary>
     public bool TryDelete(string jobId) => TryDeleteJobDir(JobDir(jobId));
 
-    public Task SaveAsync(JobState state, CancellationToken ct)
-        => WriteArtifactAsync(state.JobId, "job.json", state, ct);
+    /// <summary>
+    /// Saves a job's state. Ownership is not the saver's to change: the pipeline holds one JobState
+    /// for a whole run, so a save from it would otherwise put back the owner a collection move
+    /// (<see cref="ReassignOwnerAsync"/>) has just changed. The owner already on disk wins.
+    /// </summary>
+    public async Task SaveAsync(JobState state, CancellationToken ct)
+    {
+        var gate = LockFor(state.JobId);
+        await gate.WaitAsync(ct);
+        try
+        {
+            if (await ReadStateUnlockedAsync(state.JobId, ct) is { } stored)
+            {
+                state.OwnerId = stored.OwnerId;
+            }
+            await WriteUnlockedAsync(state.JobId, "job.json", state, ct);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    /// <summary>Moves one job from <paramref name="from"/>'s collection to <paramref name="to"/>'s;
+    /// false when it is not <paramref name="from"/>'s (or is gone).</summary>
+    public async Task<bool> ReassignOwnerAsync(string jobId, string from, string to, CancellationToken ct)
+    {
+        var gate = LockFor(jobId);
+        await gate.WaitAsync(ct);
+        try
+        {
+            if (await ReadStateUnlockedAsync(jobId, ct) is not { } stored || stored.OwnerId != from)
+            {
+                return false;
+            }
+            stored.OwnerId = to;
+            await WriteUnlockedAsync(jobId, "job.json", stored, ct);
+            return true;
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private async Task<JobState?> ReadStateUnlockedAsync(string jobId, CancellationToken ct)
+    {
+        var path = StatePath(jobId);
+        return File.Exists(path)
+            ? JsonSerializer.Deserialize<JobState>(await File.ReadAllTextAsync(path, ct), JsonOptions)
+            : null;
+    }
 
     public async Task<JobState?> LoadAsync(string jobId, CancellationToken ct)
     {
@@ -166,18 +216,23 @@ public sealed class JobStore(IConfiguration configuration, TimeProvider time, Jo
         await gate.WaitAsync(ct);
         try
         {
-            var path = Path.Combine(JobDir(jobId), fileName);
-            var tempPath = path + ".tmp";
-            await File.WriteAllTextAsync(tempPath, JsonSerializer.Serialize(payload, JsonOptions), ct);
-            File.Move(tempPath, path, overwrite: true);
-            if (blobs is not null)
-            {
-                await blobs.MirrorFileAsync(jobId, fileName, path, ct);
-            }
+            await WriteUnlockedAsync(jobId, fileName, payload, ct);
         }
         finally
         {
             gate.Release();
+        }
+    }
+
+    private async Task WriteUnlockedAsync<T>(string jobId, string fileName, T payload, CancellationToken ct)
+    {
+        var path = Path.Combine(JobDir(jobId), fileName);
+        var tempPath = path + ".tmp";
+        await File.WriteAllTextAsync(tempPath, JsonSerializer.Serialize(payload, JsonOptions), ct);
+        File.Move(tempPath, path, overwrite: true);
+        if (blobs is not null)
+        {
+            await blobs.MirrorFileAsync(jobId, fileName, path, ct);
         }
     }
 

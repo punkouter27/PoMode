@@ -12,10 +12,12 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E" />
     <!-- Radzen ships separate light and dark bases. Loading both under prefers-color-scheme media
          queries makes the component library follow the device with no JS. Without the dark base,
-         Radzen cards stay white while the app flips to light text: unreadable. -->
-    <link rel="stylesheet" href="_content/Radzen.Blazor/css/material-base.css?v=12.1.12"
+         Radzen cards stay white while the app flips to light text: unreadable. No ?v= on these:
+         Program.cs serves every .css/.js no-cache and the service worker is network-first, so a
+         Radzen upgrade is picked up without a version string to keep in step. -->
+    <link rel="stylesheet" href="_content/Radzen.Blazor/css/material-base.css"
           media="(prefers-color-scheme: light)" />
-    <link rel="stylesheet" href="_content/Radzen.Blazor/css/material-dark-base.css?v=12.1.12"
+    <link rel="stylesheet" href="_content/Radzen.Blazor/css/material-dark-base.css"
           media="(prefers-color-scheme: dark)" />
     <!-- po-tokens.css first among the app's sheets (Po web standard): the estate's colours, the
          self-hosted Inter and Space Grotesk, and the shell (header, stamp, /diag cards).
@@ -43,11 +45,7 @@
 <body>
     <div id="app">Loading…</div>
     <script src="_framework/blazor.webassembly.js"></script>
-    <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=12.1.12"></script>
-    <script type="module">
-        // Registered from a module so a browser without service workers simply skips it, and after
-        // load so registration never competes with the WASM runtime the user is waiting on.
-        import('./js/shell/pwa.js').then(pwa => pwa.register()).catch(() => { });
-    </script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+    <script type="module" src="js/shell/boot.js"></script>
 </body>
 </html>

@@ -37,7 +37,7 @@ else
             <span class="pm-label inspect-label">Mode match</span>
             @if (Selected.InsufficientEvidence || Selected.ModeTag is null)
             {
-                @* Honest empty state: the engine needs 3+ distinct sung pitch classes (spec §6). *@
+                @* Honest empty state: the engine needs 3+ distinct sung pitch classes. *@
                 <p class="inspect-note">Not enough sung notes in this window to name a mode.</p>
             }
             else

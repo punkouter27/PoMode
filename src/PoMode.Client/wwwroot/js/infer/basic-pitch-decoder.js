@@ -1,4 +1,4 @@
-// The JS side of spec §5's "specified once, implemented twice" contract. This is a direct port of
+// The JS side of the decoder's "specified once, implemented twice" contract. This is a direct port of
 // PoMode.Api/Features/PitchTracking/BasicPitchDecoder.cs — same thresholds, same emit rules, same
 // ordering. Both implementations are asserted against the same fixture file
 // (tests/PoMode.TestCommon/basic-pitch-decoder.fixture.json); change one side and the other's test fails

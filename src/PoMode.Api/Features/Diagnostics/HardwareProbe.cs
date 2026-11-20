@@ -1,4 +1,5 @@
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 using PoMode.Shared.Hardware;
 
 namespace PoMode.Api.Features.Diagnostics;

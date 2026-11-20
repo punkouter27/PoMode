@@ -5,7 +5,7 @@ using PoMode.Shared.Analysis;
 namespace PoMode.Api.Features.Analysis;
 
 /// <summary>
-/// Flattens the three analysis artifacts into the single payload the canvas draws (spec §7). Pure function —
+/// Flattens the three analysis artifacts into the single payload the canvas draws. Pure function —
 /// no audio, no models, no I/O. Every musical decision happens here rather than in JS, so it is unit-testable
 /// and cannot drift out of step with <see cref="ModeDefinitions"/>.
 /// </summary>
@@ -153,7 +153,7 @@ public static class VisualizationBuilder
     }
 
     /// <summary>
-    /// Role rules in priority order (spec §7): chord tone, then characteristic degree, then in-mode, then
+    /// Role rules in priority order: chord tone, then characteristic degree, then in-mode, then
     /// outside. A note is judged against its own window's top-ranked mode; a window with insufficient
     /// evidence (or a note past the last window) falls back to the whole-song primary mode.
     /// </summary>

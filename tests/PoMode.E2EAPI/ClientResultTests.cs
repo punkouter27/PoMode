@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using PoMode.Api.Features.Analysis;
 using PoMode.Api.Features.PitchTracking;
 using PoMode.Shared.Analysis;
 using Xunit;
@@ -27,8 +28,19 @@ public sealed class ClientResultTests : IDisposable
             .UseSetting("Models:RootPath", _modelsRoot)
             .UseSetting("Models:AutoDownload", "false"));
 
-    private static Task<IReadOnlyList<NoteEvent>> ParkAsync(WebApplicationFactory<Program> factory)
+    /// <summary>Parks the pitch stage of a job that belongs to the AuthedFactory's "e2e" user: only
+    /// the browser that owns a job may hand it results (JobAccessFilter).</summary>
+    private static async Task<Task<IReadOnlyList<NoteEvent>>> ParkAsync(WebApplicationFactory<Program> factory)
     {
+        var store = factory.Services.GetRequiredService<JobStore>();
+        Directory.CreateDirectory(store.JobDir(JobId));
+        await store.SaveAsync(new JobState
+        {
+            JobId = JobId,
+            InputFileName = "take.wav",
+            CreatedAt = DateTimeOffset.UtcNow,
+            OwnerId = "test:e2e",
+        }, CancellationToken.None);
         var registry = factory.Services.GetRequiredService<ClientWorkRegistry<IReadOnlyList<NoteEvent>>>();
         return registry.WaitAsync(JobId, TimeSpan.FromMinutes(5), CancellationToken.None);
     }
@@ -40,9 +52,19 @@ public sealed class ClientResultTests : IDisposable
         {
             await using var factory = Factory();
             using var client = factory.CreateClient();
-            var parked = ParkAsync(factory);
+            using var stranger = factory.CreateClient();
+            stranger.DefaultRequestHeaders.Remove("X-Fake-User");
+            stranger.DefaultRequestHeaders.Add("X-Fake-User", "someone-else");
+            var parked = await ParkAsync(factory);
 
             NoteEvent[] notes = [new(60, 0.0, 0.5, 90), new(64, 0.5, 0.5, 88)];
+            // Anyone may read a job by its link; only its own collection may hand it results. Someone
+            // else's post answers like a missing job, and the stage stays parked.
+            Assert.Equal(HttpStatusCode.OK, (await stranger.GetAsync($"/api/analysis/{JobId}")).StatusCode);
+            var hijack = await stranger.PostAsJsonAsync($"/api/analysis/{JobId}/client-result", notes);
+            Assert.Equal(HttpStatusCode.NotFound, hijack.StatusCode);
+            Assert.False(parked.IsCompleted);
+
             var response = await client.PostAsJsonAsync($"/api/analysis/{JobId}/client-result", notes);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -56,7 +78,7 @@ public sealed class ClientResultTests : IDisposable
         {
             await using var factory = Factory();
             using var client = factory.CreateClient();
-            _ = ParkAsync(factory);
+            _ = await ParkAsync(factory);
 
             var badResponse = await client.PostAsJsonAsync(
                 $"/api/analysis/{JobId}/client-result",

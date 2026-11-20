@@ -6,6 +6,9 @@ analysis, library management, and optional song interpretation.
 
 ## Architecture
 
+The shape and the decisions behind it are in [`docs/`](docs/README.md): architecture, the UI rules,
+what was removed and why, and what the AI costs.
+
 - `src/PoMode.Api/` hosts the client, Minimal API endpoints, SignalR analysis hub, and
   background analysis worker. Server features live in `Features/<Feature>/`.
 - `src/PoMode.Client/` contains the Blazor WebAssembly UI.
@@ -30,9 +33,11 @@ The app serves on `http://localhost:5000` and `https://localhost:5001`. The Scal
 reference is at `/scalar`; `/health`, `/health/live`, and `/health/ready` expose health
 status.
 
-Every page carries the Po shell: the name top-left, the email (or Sign in) and the settings
-gear top-right, and the build stamp `vYYMMDD` (UTC commit date) bottom-right. `/diag` shows one
-card per dependency (API, Data, Services) for anyone, signed in or not. Pressing Tab before
+Every page carries the Po shell: the name top-left, your three initials and the settings
+gear top-right, and the build stamp `vYYMMDD` (UTC commit date) bottom-right. There is no sign-in and
+nothing is private: a first visit asks for three initials, and those letters open the same collection
+of songs on any device.
+`/diag` shows one card per dependency (API, Data, Services) for anyone. Pressing Tab before
 anything has focus opens a developer window (`/po-dev.html`) with live health and page stats.
 Light and dark follow the device.
 
@@ -65,9 +70,10 @@ similarity-matrix view of how the sections were found.
 
 ## Deploy
 
-A push to `master` runs `.github/workflows/deploy.yml` (the same file in every Po repo): build,
-publish, deploy, then wait for `/health/live` to report the new commit. It runs no tests;
-run the related tests and `scripts/ci-checks.ps1` locally before pushing.
+A push to `master` runs `.github/workflows/deploy.yml`: format check, build, Unit tests, publish,
+deploy, then wait for `/health/live` to report the new commit. Integration and E2E tests, the test
+caps, Bicep and the mobile build run locally: the related tests and `scripts/ci-checks.ps1` before
+pushing. Azure permissions all come from `scripts/ensure-azure-access.ps1`.
 
 ## Verification
 

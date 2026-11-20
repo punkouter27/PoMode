@@ -4,6 +4,7 @@ using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Tokenizers;
 using PoMode.Api.Audio;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 
 namespace PoMode.Api.Features.SoundSearch;
 

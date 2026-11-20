@@ -22,7 +22,7 @@ public static class AnalysisEndpoints
     public static IEndpointRouteBuilder MapAnalysis(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/analysis");
-        group.AddEndpointFilter<JobIdEndpointFilter>();
+        group.AddEndpointFilter<JobAccessFilter>();
 
         // The one way to start analysing a file: it arrives over tus at /api/uploads (resumable, see
         // ResumableUploads) and this call hands the finished upload to the pipeline. It used to be a
@@ -37,7 +37,7 @@ public static class AnalysisEndpoints
             {
                 return TypedResults.NotFound();
             }
-            // Tier 2 availability is a per-job property of the uploading browser (spec §4): the
+            // Tier 2 availability is a per-job property of the uploading browser: the
             // client probes for onnxruntime-web support and declares it here. Absent or false, the
             // browser tier is simply invisible and planning behaves exactly as before.
             var clientCanInfer = bool.TryParse(request.Query["clientCanInfer"], out var canInfer) && canInfer;
@@ -83,12 +83,10 @@ public static class AnalysisEndpoints
         });
 
         group.MapDelete("/{jobId}", async Task<Results<Ok, NotFound>> (
-            string jobId, HttpContext context, JobStore store, JobCancellationRegistry cancellations, CancellationToken ct) =>
+            string jobId, JobStore store, JobCancellationRegistry cancellations, CancellationToken ct) =>
         {
-            var state = await store.LoadAsync(jobId, ct);
-            // Someone else's job answers exactly like a missing one, so the endpoint cannot be used to
-            // learn which ids exist. An unowned legacy job stays cancellable by any signed-in caller.
-            if (state is null || (state.OwnerId is not null && state.OwnerId != PoUser.IdOf(context.User)))
+            // Ownership is JobAccessFilter's: someone else's job never gets this far.
+            if (await store.LoadAsync(jobId, ct) is not { } state)
             {
                 return TypedResults.NotFound();
             }
@@ -179,7 +177,7 @@ public static class AnalysisEndpoints
             return TypedResults.Ok<IReadOnlyList<NoteEvent>>(chords.Count == 0 ? [] : ChordPadBuilder.Build(chords));
         });
 
-        // Tier 2's return path (spec §4 step 3). The notes come from a browser, so they are untrusted:
+        // Tier 2's return path. The notes come from a browser, so they are untrusted:
         // 404 when nothing is waiting (unknown job, already timed out, or a duplicated post) and 400
         // with a reason when the payload fails validation. Accepting bad notes here would put them in
         // notes.json, the modal engine and the MIDI export.
@@ -300,7 +298,7 @@ public static class AnalysisEndpoints
             return TypedResults.Ok(present.ToArray());
         });
 
-        // Stem audio for the Web Audio mixer (spec §7). The caller's {name} selects from a fixed
+        // Stem audio for the Web Audio mixer. The caller's {name} selects from a fixed
         // allow-list and never becomes part of a path, so there is no traversal surface here at all.
         // Served from disk with range support: stems are ~40MB and written once before the job
         // completes, so buffering them per request would only churn the large-object heap.

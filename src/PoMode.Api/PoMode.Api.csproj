@@ -32,4 +32,9 @@
     <PackageReference Include="Whisper.net.Runtime" />
     <PackageReference Include="z440.atl.core" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The chord jams' tables, read by JamData: in the assembly, not published as a loose file. -->
+    <Content Remove="Features\ChordJams\open-chord-jams.json" />
+    <EmbeddedResource Include="Features\ChordJams\open-chord-jams.json" LogicalName="PoMode.Api.Features.ChordJams.open-chord-jams.json" />
+  </ItemGroup>
 </Project>

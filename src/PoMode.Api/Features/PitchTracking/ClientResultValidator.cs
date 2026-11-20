@@ -4,7 +4,7 @@ using PoMode.Shared.Analysis;
 namespace PoMode.Api.Features.PitchTracking;
 
 /// <summary>
-/// Bounds-checks note events posted by a browser (spec §4 step 3: "the server validates the payload,
+/// Bounds-checks note events posted by a browser ("the server validates the payload,
 /// since it is client-supplied data").
 ///
 /// <para>These notes flow straight into <c>notes.json</c>, the modal engine and the MIDI writer, so a

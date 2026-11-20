@@ -55,6 +55,11 @@ static async Task CaptureAsync(string outDir, string baseUrl)
         await page.GotoAsync(baseUrl);
         await page.WaitForSelectorAsync("h1", new() { State = WaitForSelectorState.Attached, Timeout = 60000 });
         await page.WaitForTimeoutAsync(1500);
+        // A returning guest: with initials picked, no route opens behind the first-visit prompt.
+        await page.EvaluateAsync("""
+            fetch('/auth/initials', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ initials: 'POM' }) })
+            """);
         await context.StorageStateAsync(new() { Path = state });
     }
 
@@ -85,6 +90,8 @@ static async Task CaptureAsync(string outDir, string baseUrl)
             {
                 StorageStatePath = state,
                 IgnoreHTTPSErrors = true,
+                // The app's CSP allows scripts from its own origin only; the audit injects axe-core.
+                BypassCSP = true,
                 ViewportSize = new() { Width = viewport.Width, Height = viewport.Height },
                 HasTouch = viewport.Touch,
                 IsMobile = viewport.Touch,

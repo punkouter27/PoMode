@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/PoMode.Api/PoMode.Api.csproj" />
+    <Project Path="src/PoMode.ApiClient/PoMode.ApiClient.csproj" />
     <Project Path="src/PoMode.Client/PoMode.Client.csproj" />
     <Project Path="src/PoMode.Shared/PoMode.Shared.csproj" />
   </Folder>

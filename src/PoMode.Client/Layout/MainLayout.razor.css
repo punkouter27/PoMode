@@ -176,3 +176,31 @@
 .po-error-actions {
     margin-top: 0.75rem;
 }
+
+/* The guest's initials, upper-right before the gear: a button, since it opens the initials prompt. */
+.who-button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0 0.6rem;
+    background: transparent;
+    color: var(--pm-fg);
+    border: 1px solid var(--po-border);
+    border-radius: var(--po-radius-pill);
+    cursor: pointer;
+}
+
+.who-button:hover {
+    background: var(--pm-surface);
+}
+
+.who-initials {
+    font-family: var(--po-font-mono);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.who-empty {
+    font-size: var(--po-text-sm);
+    color: var(--pm-fg-muted);
+}

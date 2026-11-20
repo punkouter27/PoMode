@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Playwright;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 using PoMode.Shared.Analysis;
 using PoMode.TestCommon;
 using Xunit;
@@ -10,7 +11,7 @@ using Xunit;
 namespace PoMode.E2EUI;
 
 /// <summary>
-/// Boots the app in simulated Azure mode — Tier 2's real target scenario, where §4 hard-disables
+/// Boots the app in simulated Azure mode — Tier 2's real target scenario, where the planner hard-disables
 /// local ONNX — with the browser runtime pre-seeded so the run needs no network. Local tiers are
 /// unavailable by environment, so a capable browser is the best pitch executor.
 /// </summary>

@@ -36,12 +36,12 @@ public sealed class JobState
     /// AcoustID), so the library can name it without opening anything. Null when nothing said.</summary>
     public SongIdentityDto? Identity { get; set; }
 
-    /// <summary>The signed-in user (guest or Microsoft) who created the job, as <c>PoUser.IdOf</c>
-    /// reads it. Settable because a guest who signs in with Microsoft takes their library with
-    /// them. Null on jobs from before ownership existed; those belong to no one's library.</summary>
+    /// <summary>The guest (or test persona) who created the job, as <c>PoUser.IdOf</c> reads it; only
+    /// they can read or change it (JobAccessFilter). Null on jobs from before ownership existed;
+    /// those belong to no one's library.</summary>
     public string? OwnerId { get; set; }
 
-    /// <summary>Owner prefix for jobs the server keeps for itself (the demo template). No sign-in path
+    /// <summary>Owner prefix for jobs the server keeps for itself (the demo template). No identity path
     /// can mint it, so such a job is in nobody's library, and the purge sweeps leave it alone.</summary>
     public const string ServerOwnerPrefix = "system:";
 

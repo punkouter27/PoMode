@@ -125,11 +125,7 @@ export function rgb(colour) {
     return parts.slice(0, 3).map((part) => part / 255);
 }
 
-/// True when the page is drawn dark: an explicit data-theme wins, otherwise the OS preference.
+/// True when the page is drawn dark, which follows the device (there is no theme toggle).
 export function darkTheme() {
-    const chosen = document.documentElement.dataset.theme;
-    if (chosen === 'dark' || chosen === 'light') {
-        return chosen === 'dark';
-    }
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }

@@ -7,7 +7,7 @@ namespace PoMode.Mobile.Pages;
 /// <summary>The web's Home: bring a song in (pick a file, record one), what is on its way up, and the library.</summary>
 public sealed class LibraryPage : ContentPage
 {
-    private readonly ApiClient _api;
+    private readonly MobileApi _api;
     private readonly Uploads _uploads;
     private readonly Session _session;
     private readonly VerticalStackLayout _pending = new() { Spacing = 6 };
@@ -18,7 +18,7 @@ public sealed class LibraryPage : ContentPage
     private List<LibraryEntryDto> _entries = [];
     private Dictionary<string, double>? _soundRank;
 
-    public LibraryPage(ApiClient api, Uploads uploads, Session session)
+    public LibraryPage(MobileApi api, Uploads uploads, Session session)
     {
         _api = api;
         _uploads = uploads;
@@ -57,7 +57,7 @@ public sealed class LibraryPage : ContentPage
         });
         Content = refresh;
         _uploads.Changed += () => _ = RenderPendingAsync();
-        _session.Changed += () => MainThread.BeginInvokeOnMainThread(() => _who.Text = $"Signed in as {_session.Label}");
+        _session.Changed += () => MainThread.BeginInvokeOnMainThread(() => _who.Text = $"You: {_session.Label}");
     }
 
     protected override async void OnAppearing()
@@ -76,7 +76,7 @@ public sealed class LibraryPage : ContentPage
                 await _session.EnsureAsync();
             }
 
-            _entries = await _api.GetLibraryAsync();
+            _entries = await _api.GetLibraryAsync() ?? [];
             await LibraryCache.SaveAsync(_entries);
             _note.Text = "";
         }
@@ -342,7 +342,7 @@ public sealed class RecordSongPage : ContentPage, IDisposable
 public sealed class SongPage : ContentPage, IDisposable
 {
     private static readonly string[] TabNames = ["Overview", "Chords", "Listen", "Stats", "Ask", "More"];
-    private readonly ApiClient _api;
+    private readonly MobileApi _api;
     private readonly JobWatcher _watcher;
     private readonly ITrackPlayerFactory _players;
     private readonly ContentView _body = new();
@@ -362,7 +362,7 @@ public sealed class SongPage : ContentPage, IDisposable
     private List<LyricLineDto>? _lyrics;
     private CancellationTokenSource? _asking;
 
-    public SongPage(ApiClient api, JobWatcher watcher, ITrackPlayerFactory players)
+    public SongPage(MobileApi api, JobWatcher watcher, ITrackPlayerFactory players)
     {
         _api = api;
         _watcher = watcher;

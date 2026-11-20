@@ -6,7 +6,7 @@ using PoMode.Shared.Validation;
 namespace PoMode.Client.Services;
 
 /// <summary>
-/// Shared RFC 7807 ProblemDetails response parser (Rule 14).
+/// Shared RFC 7807 ProblemDetails response parser.
 /// </summary>
 internal static class ProblemDetailsParser
 {

@@ -22,23 +22,33 @@
     <RadzenText TextStyle="TextStyle.H5" TagName="TagName.H1" Text="Settings" />
 
     @* Two columns on a desktop so every setting is on one screen at 1440×900, none behind a tab:
-       what changes how the app looks and reads on the left, the extras and your data on the right. *@
+       you and your library, the look and the analysis on the left; the extras, the shortcuts and
+       the writer on the right, so the two columns end near each other. *@
     <div class="settings-columns">
         <div class="settings-col">
-            @* The account lives here since the Po web standard (2026-11-18): the header keeps only the
-               email (or Sign in) and the gear, so what the More menu held is in this section. *@
+            @* Who you are and what is yours, in one place. There is no sign-in and nothing is private:
+               three initials open a collection on any device, so the copy and the delete sit right
+               beside the line that says so. *@
             <section class="settings-section" aria-labelledby="settings-account" id="account">
-                <h2 class="pm-label" id="settings-account">Account</h2>
+                <h2 class="pm-label" id="settings-account">You</h2>
                 @if (Session.Current is { } session)
                 {
                     <div class="settings-row">
-                        <span class="settings-name">Signed in as</span>
-                        <span class="settings-hint settings-email" id="settings-who">@(session.Email ?? session.DisplayName ?? "Not signed in")</span>
+                        <span class="settings-name">Initials</span>
+                        <span class="settings-hint settings-initials" id="settings-who">@(session.DisplayName ?? "None yet")</span>
+                        @if (session.Kind == SessionKind.Guest)
+                        {
+                            <RadzenButton Text="Change" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                                          Click="@Session.OpenPrompt" id="change-initials" />
+                        }
                     </div>
-                    @if (session.Kind == SessionKind.Guest)
-                    {
-                        <p class="settings-hint">Your library lives in this browser.</p>
-                    }
+                    <p class="settings-hint">Your songs are kept under your initials: the same three letters open them on any device, for anyone who types them.</p>
+                    <div class="settings-actions">
+                        <RadzenButton Text="Download everything" Icon="download" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                      Click="@Export" id="export-data" />
+                        <RadzenButton Text="Delete everything" Icon="delete_forever" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Outlined"
+                                      Size="ButtonSize.Small" Click="@DeleteAsync" Disabled="@_deleting" id="delete-data" />
+                    </div>
                     <div class="settings-actions">
                         @if (_canInstall)
                         {
@@ -56,7 +66,7 @@
                     <div class="settings-row" role="group" aria-label="Dev persona">
                         <span class="settings-name">Dev persona</span>
                         <div class="settings-actions">
-                            @foreach (var persona in AccountMenu.Personas)
+                            @foreach (var persona in DevPersonas.All)
                             {
                                 var active = string.Equals(DevFakeUserHandler.ActiveFakeUser, persona.FakeUserHeader, StringComparison.Ordinal);
                                 <RadzenButton Text="@persona.Label" Size="ButtonSize.Small"
@@ -66,10 +76,6 @@
                         </div>
                     </div>
                 }
-                <div class="settings-row">
-                    <span class="settings-name">Build</span>
-                    <span class="settings-hint settings-build" id="settings-build">v@(BuildVersion.Stamp)</span>
-                </div>
             </section>
 
             <section class="settings-section" aria-labelledby="settings-look">
@@ -141,20 +147,6 @@
                 }
             </section>
 
-            @if (_interpreters is { Count: > 1 })
-            {
-                <section class="settings-section" aria-labelledby="settings-writer">
-                    <h2 class="pm-label" id="settings-writer">Written interpretation</h2>
-                    <div class="settings-row">
-                        <span class="settings-name" id="writer-label">Writer</span>
-                        <RadzenDropDown TValue="string" Data="@_interpreters" TextProperty="Label" ValueProperty="Name"
-                                        Value="@(_interpreter ?? "")" Change="@(value => SetInterpreterAsync(value as string))"
-                                        class="settings-control settings-select" aria-labelledby="writer-label" />
-                    </div>
-                    <p class="settings-hint">Auto uses the best writer the server has. Every writer is checked against the measurements, so none can invent a figure.</p>
-                </section>
-            }
-
             @if (_pushState is "on" or "off" or "blocked")
             {
                 <section class="settings-section" aria-labelledby="settings-notify">
@@ -203,7 +195,7 @@
                 <div class="settings-row">
                     <label class="settings-name" for="tool-diagnostics">Diagnostics</label>
                     <RadzenSwitch Value="@Flags.Tools.Diagnostics" Change="@(on => Flags.SetAsync(Flags.Tools with { Diagnostics = on }))" Name="tool-diagnostics" />
-                    <span class="settings-hint">In the ⋯ menu and Ctrl+K: the server's models, queue and hardware.</span>
+                    <span class="settings-hint">A link on this page and in Ctrl+K: the server's models, queue and hardware.</span>
                 </div>
             </section>
 
@@ -224,16 +216,19 @@
                 </dl>
             </section>
 
-            <section class="settings-section" aria-labelledby="settings-data">
-                <h2 class="pm-label" id="settings-data">Your data</h2>
-                <p class="settings-hint">Everything you added is stored under your name: the audio, its stems and every reading of it.</p>
-                <div class="settings-actions">
-                    <RadzenButton Text="Download everything" Icon="download" ButtonStyle="ButtonStyle.Light"
-                                  Click="@Export" id="export-data" />
-                    <RadzenButton Text="Delete everything" Icon="delete_forever" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Outlined"
-                                  Click="@DeleteAsync" Disabled="@_deleting" id="delete-data" />
-                </div>
-            </section>
+            @if (_interpreters is { Count: > 1 })
+            {
+                <section class="settings-section" aria-labelledby="settings-writer">
+                    <h2 class="pm-label" id="settings-writer">Written interpretation</h2>
+                    <div class="settings-row">
+                        <span class="settings-name" id="writer-label">Writer</span>
+                        <RadzenDropDown TValue="string" Data="@_interpreters" TextProperty="Label" ValueProperty="Name"
+                                        Value="@(_interpreter ?? "")" Change="@(value => SetInterpreterAsync(value as string))"
+                                        class="settings-control settings-select" aria-labelledby="writer-label" />
+                    </div>
+                    <p class="settings-hint">Auto uses the best writer the server has. Every writer is checked against the measurements, so none can invent a figure.</p>
+                </section>
+            }
         </div>
     </div>
 </RadzenCard>

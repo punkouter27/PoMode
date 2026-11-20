@@ -2,6 +2,7 @@ using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using PoMode.Api.Audio;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 
@@ -10,7 +11,7 @@ namespace PoMode.Api.Features.PitchTracking;
 /// <summary>
 /// Real note detection via the Spotify Basic Pitch ONNX model on the CPU execution provider
 /// (the fastest and only collision-free EP measured on ARM64 in the 2026-08-16 spike, ~12.3 ms
-/// per ~2s window). Falls back to <see cref="FakePitchTracker"/> automatically via
+/// per ~2s window). Falls back to <see cref="YinPitchTracker"/> automatically via
 /// <see cref="ExecutionPlanner"/> when the model has not been downloaded yet.
 /// </summary>
 public sealed class OnnxPitchTracker(ModelRegistry registry, ILogger<OnnxPitchTracker> logger)

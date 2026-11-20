@@ -19,7 +19,7 @@ public static class ChordShapesEndpoints
             var chords = await store.ReadArtifactListAsync<ChordSpan>(jobId, "chords.json", ct);
             var shapes = CapoAdvisor.Advise(chords);
             return shapes.Chords.Count == 0 ? TypedResults.NotFound() : TypedResults.Ok(shapes);
-        }).AddEndpointFilter<JobIdEndpointFilter>();
+        }).AddEndpointFilter<JobAccessFilter>();
 
         return app;
     }

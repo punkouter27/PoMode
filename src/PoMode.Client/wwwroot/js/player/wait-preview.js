@@ -347,6 +347,11 @@ async function fetchJson(url) {
 
 /// `dotNet` hears which waveform is on screen ('mix' or 'vocals'), so the caption can say so.
 export function init(canvas, dotNet) {
+    // A status push can arrive before Blazor has put the canvas in the page; the next one, after the
+    // render, initialises it.
+    if (!(canvas instanceof Element)) {
+        return;
+    }
     dispose(canvas);
     const state = {
         canvas,
@@ -381,8 +386,6 @@ export function init(canvas, dotNet) {
     };
     state.scheme = window.matchMedia('(prefers-color-scheme: dark)');
     state.scheme.addEventListener('change', state.onTheme);
-    state.themeObserver = new MutationObserver(state.onTheme);
-    state.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     states.set(canvas, state);
     invalidate(state);
 }
@@ -515,7 +518,6 @@ export function dispose(canvas) {
     }
     state.resize.disconnect();
     state.scheme.removeEventListener('change', state.onTheme);
-    state.themeObserver.disconnect();
     state.unsubscribe();
     states.delete(canvas);
 }

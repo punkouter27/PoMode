@@ -127,7 +127,7 @@ public sealed class PracticePage : ContentPage, IDisposable
     private const int CountInBeats = 4;
     private const double MaxTakeSeconds = 300;
     private static readonly string[] TabNames = ["Sing", "Takes", "Guitar jam", "Drone"];
-    private readonly ApiClient _api;
+    private readonly MobileApi _api;
     private readonly IMicrophone _mic;
     private readonly ITrackPlayerFactory _players;
     private readonly IMidiInput _midi;
@@ -164,7 +164,7 @@ public sealed class PracticePage : ContentPage, IDisposable
     private int _jamSeed = Random.Shared.Next(1, 1_000_000);
     private ChordJamSettings _jamSettings = new();
 
-    public PracticePage(ApiClient api, IMicrophone mic, ITrackPlayerFactory players, IMidiInput midi, ToneMixer mixer, IAudioOut audioOut, IToneSession lockScreen)
+    public PracticePage(MobileApi api, IMicrophone mic, ITrackPlayerFactory players, IMidiInput midi, ToneMixer mixer, IAudioOut audioOut, IToneSession lockScreen)
     {
         _api = api;
         _mic = mic;
@@ -190,7 +190,7 @@ public sealed class PracticePage : ContentPage, IDisposable
         {
             try
             {
-                _progressions = await _api.GetProgressionsAsync() ?? [];
+                _progressions = await _api.GetModalProgressionsAsync() ?? [];
                 _progressionId = _progressions.SignatureFor(_mode)?.Id ?? _progressions.FirstOrDefault()?.Id;
             }
             catch (HttpRequestException ex)
@@ -399,7 +399,7 @@ public sealed class PracticePage : ContentPage, IDisposable
         }
 
         _request = CurrentRequest();
-        _melody = await _api.GenerateAsync(_request);
+        _melody = await _api.GenerateModalMelodyAsync(_request);
         if (_melody is not null)
         {
             _plot.Prepare(_melody.BackingNotes, LoopSec);

@@ -25,7 +25,7 @@ public sealed class ChromaChordRecognizer : IChordRecognizer
             .Select(chroma => ChordMatcher.Match(chroma))
             .ToArray();
 
-        // §13.6 fix (b): chord boundaries snap to the beat grid when the tempo estimate is
+        // Chord boundaries snap to the beat grid when the tempo estimate is
         // confident; Segment falls back to the duration-floor path when it is not (sustained
         // pads, silence — exactly the material with no beats to snap to).
         var grid = context.Beats is null ? TempoEstimator.EstimateGrid(buffer) : null;

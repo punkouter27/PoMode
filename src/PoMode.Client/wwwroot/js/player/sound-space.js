@@ -471,10 +471,7 @@ export function show(root, items) {
         }
     });
 
-    // The colours are theme tokens: a theme switch redraws in the new ones.
-    const theme = new MutationObserver(() => draw(state));
-    theme.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    state.listeners.push(() => theme.disconnect());
+    // The colours are theme tokens: a device theme switch redraws in the new ones.
     try {
         const dark = window.matchMedia('(prefers-color-scheme: dark)');
         const redraw = () => draw(state);

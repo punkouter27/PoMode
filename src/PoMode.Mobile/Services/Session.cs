@@ -8,9 +8,10 @@ using PoMode.Shared.Serialization;
 namespace PoMode.Mobile.Services;
 
 /// <summary>
-/// Who the app is. The first launch mints a persistent guest session whose cookie is the account.
+/// Who the app is. The first launch mints a persistent guest session whose cookie owns the library,
+/// and the guest picks three initials to go by (there is no sign-in, as on the web).
 /// </summary>
-public sealed class Session(ApiClient api)
+public sealed class Session(MobileApi api)
 {
     public SessionDto? Current { get; private set; }
 
@@ -18,9 +19,9 @@ public sealed class Session(ApiClient api)
 
     public string Label => Current switch
     {
-        { Kind: SessionKind.Guest } s => s.DisplayName ?? "Guest",
-        { Kind: SessionKind.Test } s => s.Email ?? s.DisplayName ?? "Test user",
-        _ => "Not signed in",
+        { Kind: SessionKind.Guest } s => s.DisplayName ?? "Guest (no initials yet)",
+        { Kind: SessionKind.Test } s => s.DisplayName ?? "Test user",
+        _ => "No session",
     };
 
     /// <summary>Makes sure there is an identity: the stored guest cookie, else a fresh guest.</summary>
@@ -41,6 +42,18 @@ public sealed class Session(ApiClient api)
 
         Changed?.Invoke();
         return Current;
+    }
+
+    /// <summary>Saves the initials; false when the server refused them.</summary>
+    public async Task<bool> SetInitialsAsync(string initials)
+    {
+        if (await api.SetInitialsAsync(initials) is not { } updated)
+        {
+            return false;
+        }
+        Current = updated;
+        Changed?.Invoke();
+        return true;
     }
 
     /// <summary>Ends the guest session: a new guest starts with an empty library.</summary>

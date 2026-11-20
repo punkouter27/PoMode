@@ -1,4 +1,4 @@
-// Web Audio stem mixer (spec §7): mix, vocals and instrumental played sample-synchronised through
+// Web Audio stem mixer: mix, vocals and instrumental played sample-synchronised through
 // GainNodes, switched by 50 ms ramps so there are no pops and the position is never lost.
 //
 // This module also owns the transport clock. It drives the canvas playhead directly through

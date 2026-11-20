@@ -41,7 +41,7 @@ internal sealed partial class MobileJsonContext : JsonSerializerContext;
 /// the server's offset after a dropped connection or an app restart, inside a background-work session so the screen
 /// can lock. It then waits for the analysis and posts a notification that opens the song when it is done.
 /// </summary>
-public sealed class Uploads(HttpClient http, ApiClient api, IBackgroundWork background, INotifier notifier) : IDisposable
+public sealed class Uploads(HttpClient http, MobileApi api, IBackgroundWork background, INotifier notifier) : IDisposable
 {
     private const int ChunkBytes = 4 * 1024 * 1024;
     private static readonly string Folder = Path.Combine(FileSystem.AppDataDirectory, "uploads");
@@ -177,7 +177,7 @@ public sealed class Uploads(HttpClient http, ApiClient api, IBackgroundWork back
                 return;
             }
 
-            var (status, error) = await api.StartFromUploadAsync(item.TusUrl!.Split('/')[^1], ExecutorChoices(), ct);
+            var (status, error) = await api.StartFromUploadAsync(item.TusUrl!.Split('/')[^1], clientCanInfer: false, ExecutorChoices(), ct: ct);
             if (status is null)
             {
                 await UpdateAsync(item.Id, u => u with { State = UploadState.Failed, Error = error });

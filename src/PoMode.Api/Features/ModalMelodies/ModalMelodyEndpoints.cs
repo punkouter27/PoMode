@@ -132,6 +132,8 @@ public static class ModalMelodyEndpoints
             return TypedResults.Ok(state.ToDto());
         })
         .RequireAuthorization()
+        .RequireRateLimiting(PoRateLimits.UploadPolicy)
+        .AddEndpointFilter<QueueCapacityFilter>()
         .WithName("AnalyzeModalMelodyInAnalyzer")
         .WithSummary("Synthesizes the melody and chords into WAV audio and queues an end-to-end analysis job in the Song Analyzer.");
 
@@ -203,6 +205,8 @@ public static class ModalMelodyEndpoints
             return TypedResults.Ok(state.ToDto());
         })
         .RequireAuthorization()
+        .RequireRateLimiting(PoRateLimits.UploadPolicy)
+        .AddEndpointFilter<QueueCapacityFilter>()
         .DisableAntiforgery()
         .WithName("AnalyzeHumTake")
         .WithSummary("Stores a sung/hummed take recorded over a Mode Lab progression and queues it for analysis against that progression's chords.");
@@ -244,6 +248,7 @@ public static class ModalMelodyEndpoints
             : await history.SongFitAsync(PoUser.IdOf(context.User), jobId, ct) is { } fit ? TypedResults.Ok(fit)
             : TypedResults.NoContent())
         .RequireAuthorization()
+        .AddEndpointFilter<JobAccessFilter>()
         .WithName("GetSongVoiceFit")
         .WithSummary("How far an analysed song's melody is from the caller's own sung range, as a transposition.");
 

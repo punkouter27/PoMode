@@ -5,16 +5,15 @@ name: Build & Deploy
 # and the live site keeps its last good build. Integration, E2E and Bicep run locally, not here.
 #
 # Repo variables: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID (GitHub OIDC sign-in),
-#                 AZURE_WEBAPP_NAME, AZURE_RESOURCE_GROUP (what is deployed, where).
-# Optional hooks: scripts/ci-package.ps1 -PublishDir   adds files to the package
-#                 scripts/pre-deploy.ps1 -BaseUrl      prepares the live site before deploy
-#                 (hooks get $env:APP, $env:RG and $env:BASE_URL)
-# Layout it relies on: one *.slnx at the root, global.json, src/*.Api/*.csproj, tests/*.Unit/*.csproj.
+#                 AZURE_WEBAPP_NAME, AZURE_RESOURCE_GROUP (what is deployed, where); all set by
+#                 scripts/ensure-azure-access.ps1.
+# Layout it relies on: one *.slnx at the root, global.json, src/*.Api/*.csproj, tests/*.Unit/*.csproj
+# (which references the Api, so building it builds what is published).
 
 on:
   push:
     branches: [master]
-    paths-ignore: ['*.md', 'SCREENSHOTS/**']
+    paths-ignore: ['*.md']
   workflow_dispatch:
 
 concurrency:
@@ -36,14 +35,10 @@ jobs:
     environment:
       name: production
       url: https://${{ vars.AZURE_WEBAPP_NAME }}.azurewebsites.net
-    env:   # the hooks read these
-      APP: ${{ vars.AZURE_WEBAPP_NAME }}
-      RG: ${{ vars.AZURE_RESOURCE_GROUP }}
+    env:
       BASE_URL: https://${{ vars.AZURE_WEBAPP_NAME }}.azurewebsites.net
     steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0   # the build stamp and MinVer read git history
+      - uses: actions/checkout@v7   # shallow is enough: the build stamp reads only HEAD's date
 
       - uses: actions/setup-dotnet@v6
         with:
@@ -58,8 +53,8 @@ jobs:
       - name: Check formatting
         run: dotnet format *.slnx --verify-no-changes
 
-      - name: Build
-        run: dotnet build *.slnx -c Release
+      - name: Build (Api, Client, Unit)
+        run: dotnet build tests/*.Unit/*.csproj -c Release
 
       - name: Unit tests
         run: dotnet test tests/*.Unit/*.csproj -c Release --no-build
@@ -67,21 +62,11 @@ jobs:
       - name: Publish
         run: dotnet publish src/*.Api/*.csproj -c Release --no-build -o publish
 
-      - name: Package extras (scripts/ci-package.ps1)
-        if: hashFiles('scripts/ci-package.ps1') != ''
-        shell: pwsh
-        run: ./scripts/ci-package.ps1 -PublishDir publish
-
       - uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Prepare the live site (scripts/pre-deploy.ps1)
-        if: hashFiles('scripts/pre-deploy.ps1') != ''
-        shell: pwsh
-        run: ./scripts/pre-deploy.ps1 -BaseUrl "$env:BASE_URL"
 
       - uses: azure/webapps-deploy@v3
         with:

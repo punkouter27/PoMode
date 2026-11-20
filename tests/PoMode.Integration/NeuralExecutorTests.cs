@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using PoMode.Api.Features.BeatTracking;
 using PoMode.Api.Features.PitchTracking;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 using PoMode.Api.Pipeline;
 using PoMode.TestCommon;
 using Xunit;

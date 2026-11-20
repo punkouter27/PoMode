@@ -22,7 +22,7 @@ public static class SongStatsEndpoints
         {
             var stats = await BuildAsync(jobId, store, ct);
             return stats is null ? TypedResults.NotFound() : TypedResults.Ok(stats);
-        }).AddEndpointFilter<JobIdEndpointFilter>();
+        }).AddEndpointFilter<JobAccessFilter>();
 
         // The interpreter list is job-independent: it describes what this server can do, not what
         // this song is, so the picker can render before any job finishes.
@@ -53,7 +53,7 @@ public static class SongStatsEndpoints
                 ? TypedResults.ServerSentEvents(events)
                 : TypedResults.Ok((await LastAsync(events)).Summary!);
         })
-        .AddEndpointFilter<JobIdEndpointFilter>()
+        .AddEndpointFilter<JobAccessFilter>()
         .RequireRateLimiting(PoRateLimits.InterpretPolicy);
 
         // POST, unlike the summary above, for three reasons: the question is the request rather than
@@ -87,7 +87,7 @@ public static class SongStatsEndpoints
                 ? TypedResults.ServerSentEvents(events)
                 : TypedResults.Ok((await LastAsync(events)).Answer!);
         })
-        .AddEndpointFilter<JobIdEndpointFilter>()
+        .AddEndpointFilter<JobAccessFilter>()
         .RequireRateLimiting(PoRateLimits.InterpretPolicy)
         .RequireAuthorization();
 

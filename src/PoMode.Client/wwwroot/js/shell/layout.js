@@ -15,3 +15,9 @@ export function watchHeader() {
     });
     observer.observe(header);
 }
+
+/// Tints the chrome with the song's key: --pm-key-hue drives the --pm-key* tokens (pm-tokens.css).
+/// The hue is the tonic's pitch class times 30, decided by the page, so no musical choice is made here.
+export function setKeyHue(hue) {
+    document.documentElement.style.setProperty('--pm-key-hue', String(hue));
+}

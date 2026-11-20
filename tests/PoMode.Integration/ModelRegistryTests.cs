@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 using Xunit;
 
 namespace PoMode.Integration;

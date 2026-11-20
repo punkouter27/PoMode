@@ -5,6 +5,7 @@ using Microsoft.ML.OnnxRuntime.Tensors;
 using PoMode.Api.Audio;
 using PoMode.Api.Features.ModalAnalysis;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 using PoMode.Api.Pipeline;
 using PoMode.Shared.Analysis;
 

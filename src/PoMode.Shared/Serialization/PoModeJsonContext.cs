@@ -10,6 +10,7 @@ namespace PoMode.Shared.Serialization;
 [JsonSerializable(typeof(DiagnosticsReport))]
 [JsonSerializable(typeof(ProblemDetailsDto))]
 [JsonSerializable(typeof(SessionDto))]
+[JsonSerializable(typeof(InitialsRequest))]
 [JsonSerializable(typeof(PushConfigDto))]
 [JsonSerializable(typeof(PushSubscriptionDto))]
 [JsonSerializable(typeof(JobStatusDto))]

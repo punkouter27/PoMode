@@ -18,7 +18,7 @@ public static class ChordSegmenter
     public const int MinBeats = 4;
 
     /// <summary>
-    /// Beat-synchronous segmentation (§13.6 fix b): chord changes land on beats, so each beat
+    /// Beat-synchronous segmentation: chord changes land on beats, so each beat
     /// interval takes the majority label of its frames and boundaries fall exactly on the grid —
     /// no arbitrary duration floor absorbing flicker. When the grid's confidence is below
     /// <paramref name="minBeatConfidence"/> there are no beats worth trusting (sustained pads,

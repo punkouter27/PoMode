@@ -1,9 +1,6 @@
 @description('Location for the resources in this resource group')
 param location string = resourceGroup().location
 
-@description('Create the storage role assignment. Needs User Access Administrator; CI passes false because Contributor cannot write role assignments.')
-param assignStorageRole bool = true
-
 @description('Location for the Web App and App Service Plan')
 param webAppLocation string = 'westus3'
 
@@ -25,7 +22,7 @@ param appInsightsName string = 'poappideinsights8f9c9a4e'
 @description('Name of the shared resource group')
 param sharedResourceGroupName string = 'PoShared'
 
-@description('Deploy the optional Azure OpenAI interpreter. Off by default: it is the one resource that bills per use (docs/ai-cost.md).')
+@description('Deploy the optional Azure OpenAI interpreter. Off by default: it is the one resource that bills per use (roughly a cent per written interpretation).')
 param enableCloudInterpreter bool = false
 
 @description('Azure OpenAI account name (also its subdomain, so its endpoint is known before it exists)')
@@ -175,44 +172,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   }
 }
 
-// Grant Storage Blob Data Contributor on stpomode2 to the App Service Managed Identity.
-//
-// Gated because this is the only resource in the template that needs
-// Microsoft.Authorization/roleAssignments/write, which Contributor does not include. Granting the
-// deploy identity User Access Administrator so CI could run it would let the pipeline hand out roles,
-// which is a large standing privilege for a one-time bootstrap. So CI passes false and an operator
-// runs it once with their own credentials. Default true keeps a cold-start provision correct.
-module webAppStorageBlobRole 'storage-role.bicep' = if (assignStorageRole) {
-  name: 'storage-blob-role'
-  params: {
-    storageAccountId: storageAccount.id
-    storageAccountName: storageAccount.name
-    principalId: webApp.identity.principalId
-  }
-}
-
-// Grant Key Vault secret get/list access to the App Service Managed Identity in PoShared
-module webAppKeyVaultAccess 'keyvault-access.bicep' = {
-  name: 'keyvault-access'
-  scope: resourceGroup(sharedResourceGroupName)
-  params: {
-    keyVaultName: keyVaultName
-    principalId: webApp.identity.principalId
-    tenantId: subscription().tenantId
-  }
-}
-
-// Monitoring Metrics Publisher on the shared App Insights, so the OpenTelemetry exporter signs in with
-// the managed identity rather than the connection string's key. A role assignment, so gated like the
-// storage role above.
-module webAppMonitoringRole 'monitoring-role.bicep' = if (assignStorageRole) {
-  name: 'monitoring-role'
-  scope: resourceGroup(sharedResourceGroupName)
-  params: {
-    appInsightsName: appInsightsName
-    principalId: webApp.identity.principalId
-  }
-}
+// Roles and the Key Vault access policy for the app's identity: scripts/ensure-azure-access.ps1.
 
 // The optional cloud interpreter.
 module cloudInterpreter 'openai.bicep' = if (enableCloudInterpreter) {
@@ -221,8 +181,6 @@ module cloudInterpreter 'openai.bicep' = if (enableCloudInterpreter) {
     location: openAiLocation
     accountName: openAiAccountName
     deploymentName: openAiDeploymentName
-    principalId: webApp.identity.principalId
-    assignRole: assignStorageRole
   }
 }
 

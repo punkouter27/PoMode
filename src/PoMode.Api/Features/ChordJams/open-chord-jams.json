@@ -1,0 +1,124 @@
+{
+  "voicings": [
+    {"symbol": "G", "root": 7, "frets": [3, 2, 0, 0, 0, 3], "fingers": [2, 1, 0, 0, 0, 3]},
+    {"symbol": "G", "root": 7, "frets": [3, 2, 0, 0, 3, 3], "fingers": [2, 1, 0, 0, 3, 4]},
+    {"symbol": "G6", "root": 7, "frets": [3, 2, 0, 0, 0, 0], "fingers": [2, 1, 0, 0, 0, 0]},
+    {"symbol": "Gmaj7", "root": 7, "frets": [3, -1, 0, 0, 0, 2], "fingers": [2, 0, 0, 0, 0, 1]},
+    {"symbol": "Gsus2", "root": 7, "frets": [3, 0, 0, 0, 3, 3], "fingers": [2, 0, 0, 0, 3, 4]},
+    {"symbol": "G7", "root": 7, "frets": [3, 2, 0, 0, 0, 1], "fingers": [3, 2, 0, 0, 0, 1]},
+    {"symbol": "G/B", "root": 7, "frets": [-1, 2, 0, 0, 3, 3], "fingers": [0, 1, 0, 0, 3, 4]},
+    {"symbol": "C", "root": 0, "frets": [-1, 3, 2, 0, 1, 0], "fingers": [0, 3, 2, 0, 1, 0]},
+    {"symbol": "Cadd9", "root": 0, "frets": [-1, 3, 2, 0, 3, 3], "fingers": [0, 2, 1, 0, 3, 4]},
+    {"symbol": "Cadd9", "root": 0, "frets": [-1, 3, 2, 0, 3, 0], "fingers": [0, 2, 1, 0, 3, 0]},
+    {"symbol": "Cmaj7", "root": 0, "frets": [-1, 3, 2, 0, 0, 0], "fingers": [0, 3, 2, 0, 0, 0]},
+    {"symbol": "C6", "root": 0, "frets": [-1, 3, 2, 2, 1, 0], "fingers": [0, 4, 2, 3, 1, 0]},
+    {"symbol": "D", "root": 2, "frets": [-1, -1, 0, 2, 3, 2], "fingers": [0, 0, 0, 1, 3, 2]},
+    {"symbol": "Dsus2", "root": 2, "frets": [-1, -1, 0, 2, 3, 0], "fingers": [0, 0, 0, 1, 3, 0]},
+    {"symbol": "Dsus4", "root": 2, "frets": [-1, -1, 0, 2, 3, 3], "fingers": [0, 0, 0, 1, 3, 4]},
+    {"symbol": "Dmaj7", "root": 2, "frets": [-1, -1, 0, 2, 2, 2], "fingers": [0, 0, 0, 1, 1, 1]},
+    {"symbol": "D7", "root": 2, "frets": [-1, -1, 0, 2, 1, 2], "fingers": [0, 0, 0, 2, 1, 3]},
+    {"symbol": "D/F#", "root": 2, "frets": [2, 0, 0, 2, 3, 2], "fingers": [1, 0, 0, 2, 4, 3]},
+    {"symbol": "Dm", "root": 2, "frets": [-1, -1, 0, 2, 3, 1], "fingers": [0, 0, 0, 2, 3, 1]},
+    {"symbol": "Dm7", "root": 2, "frets": [-1, -1, 0, 2, 1, 1], "fingers": [0, 0, 0, 2, 1, 1]},
+    {"symbol": "E", "root": 4, "frets": [0, 2, 2, 1, 0, 0], "fingers": [0, 2, 3, 1, 0, 0]},
+    {"symbol": "E7", "root": 4, "frets": [0, 2, 0, 1, 0, 0], "fingers": [0, 2, 0, 1, 0, 0]},
+    {"symbol": "Esus4", "root": 4, "frets": [0, 2, 2, 2, 0, 0], "fingers": [0, 2, 3, 4, 0, 0]},
+    {"symbol": "E7sus4", "root": 4, "frets": [0, 2, 0, 2, 0, 0], "fingers": [0, 2, 0, 3, 0, 0]},
+    {"symbol": "Em", "root": 4, "frets": [0, 2, 2, 0, 0, 0], "fingers": [0, 2, 3, 0, 0, 0]},
+    {"symbol": "Em7", "root": 4, "frets": [0, 2, 0, 0, 0, 0], "fingers": [0, 2, 0, 0, 0, 0]},
+    {"symbol": "Em7", "root": 4, "frets": [0, 2, 2, 0, 3, 0], "fingers": [0, 1, 2, 0, 3, 0]},
+    {"symbol": "Em7", "root": 4, "frets": [0, 2, 2, 0, 3, 3], "fingers": [0, 1, 2, 0, 3, 4]},
+    {"symbol": "Em9", "root": 4, "frets": [0, 2, 0, 0, 0, 2], "fingers": [0, 2, 0, 0, 0, 3]},
+    {"symbol": "Emadd9", "root": 4, "frets": [0, 2, 2, 0, 0, 2], "fingers": [0, 2, 3, 0, 0, 1]},
+    {"symbol": "F", "root": 5, "frets": [-1, -1, 3, 2, 1, 1], "fingers": [0, 0, 3, 2, 1, 1]},
+    {"symbol": "Fmaj7", "root": 5, "frets": [-1, -1, 3, 2, 1, 0], "fingers": [0, 0, 3, 2, 1, 0]},
+    {"symbol": "Fmaj7#11", "root": 5, "frets": [-1, -1, 3, 2, 0, 0], "fingers": [0, 0, 3, 2, 0, 0]},
+    {"symbol": "Fadd9", "root": 5, "frets": [-1, -1, 3, 2, 1, 3], "fingers": [0, 0, 3, 2, 1, 4]},
+    {"symbol": "A", "root": 9, "frets": [-1, 0, 2, 2, 2, 0], "fingers": [0, 0, 1, 2, 3, 0]},
+    {"symbol": "Asus2", "root": 9, "frets": [-1, 0, 2, 2, 0, 0], "fingers": [0, 0, 1, 2, 0, 0]},
+    {"symbol": "Asus4", "root": 9, "frets": [-1, 0, 2, 2, 3, 0], "fingers": [0, 0, 1, 2, 3, 0]},
+    {"symbol": "A7", "root": 9, "frets": [-1, 0, 2, 0, 2, 0], "fingers": [0, 0, 2, 0, 3, 0]},
+    {"symbol": "A7sus4", "root": 9, "frets": [-1, 0, 2, 0, 3, 0], "fingers": [0, 0, 2, 0, 3, 0]},
+    {"symbol": "Amaj7", "root": 9, "frets": [-1, 0, 2, 1, 2, 0], "fingers": [0, 0, 2, 1, 3, 0]},
+    {"symbol": "A6", "root": 9, "frets": [-1, 0, 2, 2, 2, 2], "fingers": [0, 0, 1, 1, 1, 1]},
+    {"symbol": "Am", "root": 9, "frets": [-1, 0, 2, 2, 1, 0], "fingers": [0, 0, 2, 3, 1, 0]},
+    {"symbol": "Am7", "root": 9, "frets": [-1, 0, 2, 0, 1, 0], "fingers": [0, 0, 2, 0, 1, 0]},
+    {"symbol": "B7", "root": 11, "frets": [-1, 2, 1, 2, 0, 2], "fingers": [0, 2, 1, 3, 0, 4]},
+    {"symbol": "Bm7", "root": 11, "frets": [-1, 2, 0, 2, 0, 2], "fingers": [0, 1, 0, 2, 0, 3]},
+    {"symbol": "Bm7add11", "root": 11, "frets": [-1, 2, 0, 2, 3, 0], "fingers": [0, 1, 0, 2, 3, 0]},
+    {"symbol": "F#m7", "root": 6, "frets": [2, -1, 2, 2, 2, 0], "fingers": [1, 0, 2, 3, 4, 0]},
+    {"symbol": "C#m7", "root": 1, "frets": [-1, 4, 2, 1, 0, 0], "fingers": [0, 4, 2, 1, 0, 0]},
+    {"symbol": "Cmaj9", "root": 0, "frets": [-1, 3, 0, 0, 0, 0], "fingers": [0, 3, 0, 0, 0, 0], "rare": true},
+    {"symbol": "Cmaj7#11", "root": 0, "frets": [-1, 3, 2, 0, 0, 2], "fingers": [0, 3, 2, 0, 0, 1], "rare": true},
+    {"symbol": "C/G", "root": 0, "frets": [3, 3, 2, 0, 1, 0], "fingers": [4, 3, 2, 0, 1, 0], "rare": true},
+    {"symbol": "D6", "root": 2, "frets": [-1, -1, 0, 2, 0, 2], "fingers": [0, 0, 0, 1, 0, 2], "rare": true},
+    {"symbol": "Emaj7", "root": 4, "frets": [0, 2, 1, 1, 0, 0], "fingers": [0, 3, 1, 2, 0, 0], "rare": true},
+    {"symbol": "E6", "root": 4, "frets": [0, 2, 2, 1, 2, 0], "fingers": [0, 2, 3, 1, 4, 0], "rare": true},
+    {"symbol": "Eadd9", "root": 4, "frets": [0, 2, 4, 1, 0, 0], "fingers": [0, 2, 4, 1, 0, 0], "rare": true},
+    {"symbol": "E/G#", "root": 4, "frets": [4, -1, 2, 1, 0, 0], "fingers": [4, 0, 2, 1, 0, 0], "rare": true},
+    {"symbol": "F#m7add11", "root": 6, "frets": [2, -1, 2, 2, 0, 0], "fingers": [1, 0, 2, 3, 0, 0], "rare": true},
+    {"symbol": "Aadd9", "root": 9, "frets": [-1, 0, 2, 4, 2, 0], "fingers": [0, 0, 1, 4, 2, 0], "rare": true},
+    {"symbol": "Amadd9", "root": 9, "frets": [-1, 0, 2, 4, 1, 0], "fingers": [0, 0, 2, 4, 1, 0], "rare": true},
+    {"symbol": "A9", "root": 9, "frets": [-1, 0, 2, 4, 2, 3], "fingers": [0, 0, 1, 3, 2, 4], "rare": true},
+    {"symbol": "B7sus4", "root": 11, "frets": [-1, 2, 2, 2, 0, 0], "fingers": [0, 1, 2, 3, 0, 0], "rare": true},
+    {"symbol": "Fmaj7#11/E", "root": 5, "frets": [0, 3, 3, 2, 0, 0], "fingers": [0, 2, 3, 1, 0, 0], "slid": true},
+    {"symbol": "G6/E", "root": 7, "frets": [0, 5, 5, 4, 0, 0], "fingers": [0, 2, 3, 1, 0, 0], "slid": true},
+    {"symbol": "Dadd9add11", "root": 2, "frets": [-1, 5, 4, 0, 3, 0], "fingers": [0, 3, 2, 0, 1, 0], "slid": true}
+  ],
+  "slides": [
+    {
+      "key": "E Phrygian", "home": "E",
+      "sections": [
+        {"numerals": "I – ♭II – ♭III – ♭II", "chords": ["E", "Fmaj7#11/E", "G6/E", "Fmaj7#11/E"]},
+        {"numerals": "iv – ♭III – ♭II – I", "chords": ["Am", "G6/E", "Fmaj7#11/E", "E"]},
+        {"numerals": "♭vii – iv – ♭II – I", "chords": ["Dm", "Am", "Fmaj7", "E7"]}
+      ],
+      "feel": "Hold an E chord and slide those three fingers up one fret, then up three, and back: the open B and high E strings never move, and the shape walking over them is the Spanish sound."
+    },
+    {
+      "key": "E Phrygian", "home": "E",
+      "sections": [
+        {"numerals": "iv – ♭III – ♭II – I", "chords": ["Am", "G6/E", "Fmaj7#11/E", "E"]},
+        {"numerals": "I – ♭II – ♭III – ♭II", "chords": ["E", "Fmaj7#11/E", "G6/E", "Fmaj7#11/E"]},
+        {"numerals": "♭vii – ♭II – ♭III – I", "chords": ["Dm", "Fmaj7", "G", "E7"]}
+      ],
+      "feel": "The Andalusian cadence, stepping down to home: from Am, make an E shape three frets up, slide it down to one fret up, then down to the open E. The open strings carry the flamenco ring."
+    },
+    {
+      "key": "G major", "home": "G",
+      "sections": [
+        {"numerals": "IV – V – IV – I", "chords": ["C", "Dadd9add11", "C", "G"]},
+        {"numerals": "I – IV – vi – V", "chords": ["G", "Cadd9", "Em7", "Dsus4"]},
+        {"numerals": "vi – IV – ii – V", "chords": ["Em7", "Cadd9", "Am7", "Dadd9add11"]}
+      ],
+      "feel": "Play C, then slide every fretted finger up two frets for the V: the open G and high E keep ringing, so it sounds like D with a ninth and an eleventh added for free."
+    }
+  ],
+  "keys": [
+    {
+      "mode": "Ionian", "weight": 0.35, "tonics": [7, 0, 2, 9, 4],
+      "shapes": [[0, 4, 5, 3], [0, 3, 5, 4], [5, 3, 0, 4], [0, 5, 3, 4], [0, 3, 0, 4], [0, 2, 3, 4], [3, 0, 4, 5], [1, 4, 0, 0], [0, 4, 3, 3], [0, 3, 1, 4]],
+      "bridges": [[3, 4, 5, 4], [5, 3, 4, 4], [1, 3, 4, 4], [5, 4, 3, 4], [3, 5, 1, 4]]
+    },
+    {
+      "mode": "Aeolian", "weight": 0.25, "tonics": [4, 9, 2, 11],
+      "shapes": [[0, 5, 2, 6], [0, 6, 5, 6], [0, 3, 6, 2], [0, 5, 6, 0], [5, 6, 0, 0], [0, 2, 6, 3], [0, 4, 5, 3]],
+      "bridges": [[5, 6, 2, 6], [3, 5, 6, 6], [2, 6, 5, 6], [5, 3, 6, 6]]
+    },
+    {
+      "mode": "Dorian", "weight": 0.15, "tonics": [4, 9, 2],
+      "shapes": [[0, 3, 0, 3], [0, 3, 6, 0], [0, 1, 3, 0], [0, 6, 3, 0]],
+      "bridges": [[2, 3, 6, 6], [6, 2, 3, 3], [1, 2, 3, 3]]
+    },
+    {
+      "mode": "Mixolydian", "weight": 0.15, "tonics": [7, 2, 9, 4],
+      "shapes": [[0, 6, 3, 0], [0, 4, 6, 3], [0, 6, 0, 3], [3, 6, 0, 0]],
+      "bridges": [[5, 3, 6, 6], [3, 4, 6, 6], [1, 3, 6, 6]]
+    },
+    {
+      "mode": "Lydian", "weight": 0.1, "tonics": [0, 5, 7],
+      "shapes": [[0, 1, 0, 1], [0, 1, 4, 0], [0, 1, 5, 4]],
+      "bridges": [[5, 4, 1, 1], [2, 5, 1, 1], [4, 5, 1, 1]]
+    }
+  ]
+}

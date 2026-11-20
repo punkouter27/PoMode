@@ -12,7 +12,7 @@ namespace PoMode.Api.Platform;
 /// <para>The OpenTelemetry export was removed once because no collector was configured anywhere. The
 /// collector existed all along (the App Service already carried the connection string), so this is
 /// that export, pointed at it. It signs in with the managed identity (<see cref="DefaultAzureCredential"/>
-/// and the Monitoring Metrics Publisher role in monitoring-role.bicep) rather than relying on the
+/// and the Monitoring Metrics Publisher role from scripts/ensure-azure-access.ps1) rather than relying on the
 /// connection string's instrumentation key.</para>
 /// </summary>
 public static class Telemetry

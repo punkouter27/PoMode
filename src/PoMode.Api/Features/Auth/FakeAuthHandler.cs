@@ -2,10 +2,9 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
-using PoMode.Api.Features.Auth;
 using PoMode.Shared.Account;
 
-namespace PoMode.Api.Infrastructure;
+namespace PoMode.Api.Features.Auth;
 
 /// <summary>Dev/test-only header auth (X-Fake-User / X-Fake-Roles). Registered only in Development and
 /// Test by <see cref="PoAuth"/>, and still hard-fails in Production per NET_RULES should that ever change.</summary>

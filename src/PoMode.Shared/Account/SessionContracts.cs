@@ -8,9 +8,14 @@ public enum SessionKind
     Test,
 }
 
-/// <summary>Who the browser is signed in as.
-/// <paramref name="Email"/> is populated for a test persona named like an address.</summary>
+/// <summary>Who the browser is. For a guest <paramref name="DisplayName"/> is their three initials, or
+/// null until they pick some; for a test persona it is the persona's name.</summary>
 public sealed record SessionDto(
     SessionKind Kind,
-    string? DisplayName,
-    string? Email = null);
+    string? DisplayName);
+
+/// <summary>The body of <c>PUT /auth/initials</c>.</summary>
+public sealed class InitialsRequest
+{
+    public string Initials { get; set; } = "";
+}

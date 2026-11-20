@@ -1,4 +1,4 @@
-// Analysis canvas (spec §7): the song's sections along the very top, a tempo line under them, note
+// Analysis canvas: the song's sections along the very top, a tempo line under them, note
 // capsules in the middle, chord blocks below. The section and tempo lanes share the other two lanes'
 // time axis, which is the whole reason they are drawn here rather than as separate charts above the
 // canvas — pan and zoom keep all four aligned.
@@ -1096,9 +1096,6 @@ export function init(canvas, dotNetRef, chip) {
     };
     state.scheme.addEventListener('change', state.onSchemeChange);
 
-    // The manual theme toggle flips data-theme on <html>; re-read the palette when it does.
-    state.themeObserver = new MutationObserver(state.onSchemeChange);
-    state.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     readGlassTheme(state);
 
     // The effects level can change while the page is open: 'off' stops the glass and the haze where
@@ -1368,7 +1365,6 @@ export function dispose(canvas) {
     }
     state.resizeObserver.disconnect();
     state.scheme.removeEventListener('change', state.onSchemeChange);
-    state.themeObserver.disconnect();
     state.unsubscribePrefs();
     clearTimeout(state.stillTimer);
     state.glass?.dispose();

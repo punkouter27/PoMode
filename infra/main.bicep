@@ -8,10 +8,10 @@ param location string = 'eastus2'
 @description('Location for Web App and App Service Plan')
 param webAppLocation string = 'westus3'
 
-@description('Create the role assignments (storage, monitoring, OpenAI). CI passes false: its identity is Contributor, which cannot write role assignments.')
-param assignStorageRole bool = true
+// Resources only. Every role and access policy the app needs is granted by
+// scripts/ensure-azure-access.ps1 (AGENTS.md), never here, so there is one list to keep right.
 
-@description('Deploy the optional Azure OpenAI interpreter (bills per use; see docs/ai-cost.md).')
+@description('Deploy the optional Azure OpenAI interpreter (bills per use, roughly a cent per written interpretation).')
 param enableCloudInterpreter bool = false
 
 var resourceGroupName = 'PoMode'
@@ -41,7 +41,6 @@ module resources 'resources.bicep' = {
     keyVaultName: keyVaultName
     appInsightsName: appInsightsName
     sharedResourceGroupName: sharedResourceGroupName
-    assignStorageRole: assignStorageRole
     enableCloudInterpreter: enableCloudInterpreter
   }
 }

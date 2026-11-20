@@ -6,7 +6,8 @@
 // cache on the first click (never on load) with the progress shown, then reused. Its reply is held
 // to the same JSON schema as every other interpreter through WebLLM's grammar-constrained decoding.
 
-const WEB_LLM = 'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.85/+esm';
+// Pinned and SHA-256-verified, served from this origin (ModelCatalog.WebLlm), never imported from a CDN.
+const WEB_LLM = '/web-runtime/web-llm-0.2.85.js';
 const MODEL = 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC';
 
 let engine = null;

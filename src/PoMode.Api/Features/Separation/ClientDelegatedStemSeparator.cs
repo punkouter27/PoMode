@@ -1,3 +1,4 @@
+using PoMode.Api.Infrastructure.Models;
 using PoMode.Api.Audio;
 using PoMode.Api.Features.Analysis;
 using PoMode.Api.Features.PitchTracking;

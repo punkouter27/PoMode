@@ -130,7 +130,7 @@ public static class TempoEstimator
     /// <summary>
     /// Extends <see cref="Estimate"/> with a beat *phase*: the offset (within one period) whose
     /// beat-spaced comb best aligns with the detrended onset envelope. Autocorrelation alone gives
-    /// the period but not where beats fall; §13.6's beat-synchronous chord segmentation needs both.
+    /// the period but not where beats fall; beat-synchronous chord segmentation needs both.
     /// When the tempo estimate itself has zero confidence the phase is meaningless and 0 is
     /// returned — callers gate on <see cref="BeatGrid.Confidence"/>.
     /// </summary>

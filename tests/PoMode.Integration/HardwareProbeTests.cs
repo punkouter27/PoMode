@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using PoMode.Api.Features.Diagnostics;
 using PoMode.Api.Infrastructure;
+using PoMode.Api.Infrastructure.Models;
 
 namespace PoMode.Integration;
 

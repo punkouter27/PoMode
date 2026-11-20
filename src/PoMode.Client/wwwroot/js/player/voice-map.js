@@ -197,8 +197,6 @@ export function init(canvas, map, strongest) {
     state.resize.observe(canvas);
     state.scheme = window.matchMedia('(prefers-color-scheme: dark)');
     state.scheme.addEventListener('change', state.redraw);
-    state.themeObserver = new MutationObserver(state.redraw);
-    state.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     states.set(canvas, state);
     canvas.dataset.low = String(map.lowMidi);
     canvas.dataset.high = String(map.highMidi);
@@ -239,6 +237,5 @@ export function dispose(canvas) {
     cancelAnimationFrame(state.frame);
     state.resize.disconnect();
     state.scheme.removeEventListener('change', state.redraw);
-    state.themeObserver.disconnect();
     states.delete(canvas);
 }

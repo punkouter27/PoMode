@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The one typed client for PoMode's HTTP API, used by the web client and the phone app, so the
+       two cannot drift onto different routes or field names. Shared stays contracts only. -->
+  <PropertyGroup>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PoMode.Shared\PoMode.Shared.csproj" />
+  </ItemGroup>
+</Project>

@@ -597,8 +597,6 @@ export function init(matrix, novelty, data, playheadSource, caustics, tonic) {
     };
     state.scheme = window.matchMedia('(prefers-color-scheme: dark)');
     state.scheme.addEventListener('change', state.onTheme);
-    state.themeObserver = new MutationObserver(state.onTheme);
-    state.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     states.set(matrix, state);
     state.raf = requestAnimationFrame(now => frame(state, now));
@@ -612,7 +610,6 @@ export function dispose(matrix) {
     }
     cancelAnimationFrame(state.raf);
     state.scheme.removeEventListener('change', state.onTheme);
-    state.themeObserver.disconnect();
     if (state.gl) {
         state.gl.gl.deleteTexture(state.gl.texture);
         state.gl.gl.deleteProgram(state.gl.program);
