@@ -200,9 +200,18 @@ h1, h2, h3, .po-display { font-family: var(--po-font-display); letter-spacing: -
   pointer-events: none;
   opacity: 0.9;
 }
-/* Apps with a bottom nav on phones lift the stamp above it by setting --po-stamp-lift. */
+/* On a phone a fixed stamp sits on whatever scrolls under it, so it joins the flow instead: the last
+   thing on the page, bottom-right, above the bottom nav (whose height is --po-stamp-lift). */
 @media (max-width: 768px) {
-  .po-version { bottom: calc(max(var(--po-space-3), env(safe-area-inset-bottom, 0px)) + var(--po-stamp-lift, 0px)); }
+  .po-version {
+    position: static;
+    display: block;
+    width: fit-content;
+    align-self: flex-end;
+    margin: 0 max(var(--po-space-3), env(safe-area-inset-right, 0px))
+            calc(max(var(--po-space-3), env(safe-area-inset-bottom, 0px)) + var(--po-stamp-lift, 0px)) auto;
+    opacity: 1;
+  }
 }
 
 /* ── Shell: /diag status cards ── */
@@ -222,7 +231,8 @@ main {
   padding-bottom: calc(var(--po-space-6) + env(safe-area-inset-bottom, 0px));
 }
 @media (max-width: 768px) {
-  main { padding-bottom: calc(var(--po-space-6) + var(--po-stamp-lift, 0px) + env(safe-area-inset-bottom, 0px)); }
+  /* The stamp follows main on a phone and carries the bottom-nav room itself (above). */
+  main { padding-bottom: var(--po-space-3); }
 }
 
 /* ── Shell: the one Sign in button (and any link that looks like a button), same on every page ── */

@@ -25,9 +25,9 @@
                             <span class="initials-slot @(i == _model.Initials.Length ? "initials-slot--active" : "")">@(i < _model.Initials.Length ? _model.Initials[i] : '_')</span>
                         }
                     </div>
-                    <input @ref="_input" id="initials-input" name="initials" type="text" class="initials-input"
-                           autocomplete="off" autocapitalize="characters" spellcheck="false"
-                           aria-label="Three letters, A to Z" value="@_model.Initials" @oninput="OnInput" />
+                    <RadzenTextBox @ref="_input" id="initials-input" Name="initials" class="initials-input"
+                                   autocomplete="off" autocapitalize="characters" spellcheck="false"
+                                   aria-label="Three letters, A to Z" Value="@_model.Initials" @oninput="OnInput" />
                 </div>
                 <ValidationMessage For="() => _model.Initials" class="pm-field-error" />
                 @if (_serverError is not null)
@@ -49,7 +49,7 @@
 @code {
     private readonly InitialsRequest _model = new();
     private EditContext _editContext = default!;
-    private ElementReference _input;
+    private RadzenTextBox? _input;
     private bool _saving;
     private bool _wasOpen;
     private string? _serverError;
@@ -76,7 +76,7 @@
             StateHasChanged();
             try
             {
-                await _input.FocusAsync();
+                await _input!.Element.FocusAsync();
             }
             catch (JSException)
             {

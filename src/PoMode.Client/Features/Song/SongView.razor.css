@@ -63,7 +63,7 @@
 }
 
 /* Text-sized, but with a target a finger can hit: 24px tall at the least. */
-.song-why-toggle {
+::deep .rz-button.song-why-toggle {
     min-height: 1.5rem;
     background: transparent;
     border: 0;
@@ -75,8 +75,8 @@
     cursor: pointer;
 }
 
-.song-why-toggle:hover { text-decoration: underline; }
-.song-why-toggle:focus-visible { outline: 2px solid var(--pm-accent); outline-offset: 2px; border-radius: 0.2rem; }
+::deep .rz-button.song-why-toggle:hover { text-decoration: underline; }
+::deep .rz-button.song-why-toggle:focus-visible { outline: 2px solid var(--pm-accent); outline-offset: 2px; border-radius: 0.2rem; }
 
 /* Provenance and tuning, as chips under the headline. A hum take names the progression it was sung
    over, so the mode reported reads as an answer about that melody rather than a bare fact. */

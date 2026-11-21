@@ -19,7 +19,7 @@
     }
 }
 
-.compact-mode-card {
+::deep .rz-button.compact-mode-card {
     font: inherit;
     text-align: left;
     color: inherit;
@@ -36,26 +36,26 @@
     user-select: none;
 }
 
-.compact-mode-card.mode-ionian { --mode-color: var(--pm-mode-ionian); }
+::deep .rz-button.compact-mode-card.mode-ionian { --mode-color: var(--pm-mode-ionian); }
 
-.compact-mode-card.mode-dorian { --mode-color: var(--pm-mode-dorian); }
+::deep .rz-button.compact-mode-card.mode-dorian { --mode-color: var(--pm-mode-dorian); }
 
-.compact-mode-card.mode-phrygian { --mode-color: var(--pm-mode-phrygian); }
+::deep .rz-button.compact-mode-card.mode-phrygian { --mode-color: var(--pm-mode-phrygian); }
 
-.compact-mode-card.mode-lydian { --mode-color: var(--pm-mode-lydian); }
+::deep .rz-button.compact-mode-card.mode-lydian { --mode-color: var(--pm-mode-lydian); }
 
-.compact-mode-card.mode-mixolydian { --mode-color: var(--pm-mode-mixolydian); }
+::deep .rz-button.compact-mode-card.mode-mixolydian { --mode-color: var(--pm-mode-mixolydian); }
 
-.compact-mode-card.mode-aeolian { --mode-color: var(--pm-mode-aeolian); }
+::deep .rz-button.compact-mode-card.mode-aeolian { --mode-color: var(--pm-mode-aeolian); }
 
-.compact-mode-card.mode-locrian { --mode-color: var(--pm-mode-locrian); }
+::deep .rz-button.compact-mode-card.mode-locrian { --mode-color: var(--pm-mode-locrian); }
 
-.compact-mode-card:hover {
+::deep .rz-button.compact-mode-card:hover {
     border-color: var(--mode-color, var(--pm-accent));
     background: var(--pm-surface-alt);
 }
 
-.compact-mode-card.selected {
+::deep .rz-button.compact-mode-card.selected {
     border-color: var(--mode-color, var(--pm-accent));
     background: var(--pm-accent-soft);
     box-shadow: var(--pm-shadow), inset 0 0 0 1px var(--mode-color, var(--pm-accent));
@@ -146,7 +146,7 @@
 }
 
 @media (max-width: 720px) {
-    .compact-mode-card {
+    ::deep .rz-button.compact-mode-card {
         padding: 0.3rem 0.35rem;
         gap: 0.15rem;
     }

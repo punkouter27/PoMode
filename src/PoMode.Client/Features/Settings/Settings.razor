@@ -101,7 +101,8 @@
                         }
                         else
                         {
-                            <button type="button" class="settings-text-button" @onclick="@(() => SetFxLevelAsync("system"))">Follow my system instead</button>
+                            <RadzenButton Text="Follow my system instead" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Text" Size="ButtonSize.ExtraSmall"
+                                          Click="@(() => SetFxLevelAsync("system"))" />
                         }
                     </span>
                 </div>

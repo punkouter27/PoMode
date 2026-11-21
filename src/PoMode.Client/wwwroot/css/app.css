@@ -9,6 +9,45 @@
     letter-spacing: normal;
 }
 
+/* Radzen is the component library (owner decision 2026-11-21): every button is a RadzenButton. The ones
+   that keep a component's own look (a mode card, a filter chip, a header icon) are
+   ButtonStyle.Base + Variant.Flat + class "pm-plain": this strips Radzen's fill, padding, type scale
+   and ripple so the component's scoped rules (written "::deep .rz-button.<class>", one class more
+   specific than this) draw the button. The content box steps out of the layout, so a card's own
+   grid or flex rules still see its children. */
+.rz-button.rz-base.pm-plain {
+    background-color: transparent;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: none;
+    padding: 0;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    line-height: inherit;
+    border-radius: 0;
+    overflow: visible;
+}
+
+.rz-button.pm-plain > .rz-button-box {
+    display: contents;
+}
+
+.rz-button.rz-base.pm-plain::before {
+    content: none;
+    position: static;
+    inset: auto;
+    opacity: 1;
+    background: none;
+    transition: none;
+}
+
+.rz-button.pm-plain:active::before {
+    opacity: 1;
+    background: none;
+}
+
 /* A page's heading for assistive tech where the visible page already says what it is. */
 .pm-sr-only {
     position: absolute;

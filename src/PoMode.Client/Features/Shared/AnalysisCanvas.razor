@@ -27,21 +27,28 @@
            The hiding class is on a wrapper: a table treats height as a minimum and grows to its rows,
            so on the table itself it reached 500px past the card and made a one-screen page scroll. *@
         <div class="pm-sr-only">
-            <table id="@_tableId">
+            <RadzenTable id="@_tableId">
                 <caption>Notes and chords, window by window</caption>
-                <thead><tr><th scope="col">Time</th><th scope="col">Chord</th><th scope="col">Mode</th><th scope="col">Notes sung</th></tr></thead>
-                <tbody>
+                <RadzenTableHeader>
+                    <RadzenTableHeaderRow>
+                        <RadzenTableHeaderCell scope="col">Time</RadzenTableHeaderCell>
+                        <RadzenTableHeaderCell scope="col">Chord</RadzenTableHeaderCell>
+                        <RadzenTableHeaderCell scope="col">Mode</RadzenTableHeaderCell>
+                        <RadzenTableHeaderCell scope="col">Notes sung</RadzenTableHeaderCell>
+                    </RadzenTableHeaderRow>
+                </RadzenTableHeader>
+                <RadzenTableBody>
                     @foreach (var window in described.Windows)
                     {
-                        <tr>
-                            <td>@Clock(window.StartSec) to @Clock(window.EndSec)</td>
-                            <td>@window.ChordSymbol</td>
-                            <td>@(window.ModeTag is { } mode ? ScaleModes.DisplayName(mode) : "unclear")</td>
-                            <td>@SungIn(described, window)</td>
-                        </tr>
+                        <RadzenTableRow>
+                            <RadzenTableCell>@Clock(window.StartSec) to @Clock(window.EndSec)</RadzenTableCell>
+                            <RadzenTableCell>@window.ChordSymbol</RadzenTableCell>
+                            <RadzenTableCell>@(window.ModeTag is { } mode ? ScaleModes.DisplayName(mode) : "unclear")</RadzenTableCell>
+                            <RadzenTableCell>@SungIn(described, window)</RadzenTableCell>
+                        </RadzenTableRow>
                     }
-                </tbody>
-            </table>
+                </RadzenTableBody>
+            </RadzenTable>
         </div>
     }
     <p class="canvas-legend">

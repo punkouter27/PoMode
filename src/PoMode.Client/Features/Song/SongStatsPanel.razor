@@ -26,8 +26,8 @@
                            beside the page rather than inside it, as "Why this mode?" does. The fingerings are a
                            quarter-megabyte file most readers never need, so they load only when their drawer opens. *@
                         <div class="stats-drawers">
-                            <button class="stats-drawer-toggle" type="button" aria-haspopup="dialog" @onclick="OpenNumbersAsync">The numbers behind it</button>
-                            <button class="stats-drawer-toggle" type="button" aria-haspopup="dialog" data-shapes @onclick="OpenShapesAsync">Play the chords</button>
+                            <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="pm-plain stats-drawer-toggle" aria-haspopup="dialog" Click="OpenNumbersAsync">The numbers behind it</RadzenButton>
+                            <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="pm-plain stats-drawer-toggle" aria-haspopup="dialog" data-shapes Click="OpenShapesAsync">Play the chords</RadzenButton>
                         </div>
                         @SummaryFooter
                     </div>

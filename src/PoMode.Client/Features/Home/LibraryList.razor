@@ -48,8 +48,8 @@
                 <div class="library-kinds" role="group" aria-label="Show only">
                     @foreach (var (kind, label) in KindToggles)
                     {
-                        <button type="button" class="library-kind" aria-pressed="@(_query.Keeps(kind) ? "true" : "false")"
-                                data-kind="@kind" @onclick="@(() => SetQueryAsync(_query.Toggle(kind)))">@label</button>
+                        <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="pm-plain library-kind" aria-pressed="@(_query.Keeps(kind) ? "true" : "false")"
+                                data-kind="@kind" Click="@(() => SetQueryAsync(_query.Toggle(kind)))">@label</RadzenButton>
                     }
                 </div>
             }
@@ -61,17 +61,17 @@
                 @foreach (var chip in ShownChips)
                 {
                     <li>
-                        <button type="button" class="library-chip" @onclick="@(() => SetQueryAsync(_query.Without(chip)))"
-                                aria-label="@($"Remove filter {chip.Label}")">@chip.Label <span aria-hidden="true">×</span></button>
+                        <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="pm-plain library-chip" Click="@(() => SetQueryAsync(_query.Without(chip)))"
+                                aria-label="@($"Remove filter {chip.Label}")">@chip.Label <span aria-hidden="true">×</span></RadzenButton>
                     </li>
                 }
                 @* The words no file name had, heard as a description: the rows are ranked by sound. *@
                 @if (SoundMatches is not null)
                 {
                     <li>
-                        <button type="button" class="library-chip library-chip--sound" data-sound-search="@_query.Description"
-                                @onclick="@(() => SetQueryAsync(_query.WithoutDescription()))"
-                                aria-label="@($"Remove sound search {_query.Description}")">Sounds like “@_query.Description” <span aria-hidden="true">×</span></button>
+                        <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="pm-plain library-chip library-chip--sound" data-sound-search="@_query.Description"
+                                Click="@(() => SetQueryAsync(_query.WithoutDescription()))"
+                                aria-label="@($"Remove sound search {_query.Description}")">Sounds like “@_query.Description” <span aria-hidden="true">×</span></RadzenButton>
                     </li>
                 }
             </ul>
@@ -172,9 +172,9 @@
                             @* Only the latest run of each song is listed; the badge lists the earlier ones. *@
                             @if (GroupsRuns && IsLatest(entry) && RunCountOf(entry) is > 1 and var runs)
                             {
-                                <button type="button" class="library-runs-badge" @onclick="@(() => ToggleRuns(entry.FileName))"
-                                        aria-expanded="@_expanded.Contains(entry.FileName)"
-                                        title="@(_expanded.Contains(entry.FileName) ? "Hide the earlier runs" : "Show the earlier runs of this song")">×@runs</button>
+                                <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="pm-plain library-runs-badge" Click="@(() => ToggleRuns(entry.FileName))"
+                                        aria-expanded="@(_expanded.Contains(entry.FileName) ? "true" : "false")"
+                                        title="@(_expanded.Contains(entry.FileName) ? "Hide the earlier runs" : "Show the earlier runs of this song")">×@runs</RadzenButton>
                             }
                             else if (GroupsRuns && !IsLatest(entry))
                             {

@@ -50,7 +50,7 @@
 
 /* Small icon-only button used in the header for search. Native button keeps keyboard
    focus and screen-reader support without pulling in another Radzen control. */
-.icon-button {
+::deep .rz-button.icon-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -69,7 +69,7 @@
 
 /* Wider than the other icons because it is labelled where there is room; bordered so it reads as a
    field to type into rather than one more glyph. */
-.search-toggle {
+::deep .rz-button.search-toggle {
     width: auto;
     gap: 0.35rem;
     padding: 0 0.55rem;
@@ -91,7 +91,7 @@
 
 @media (max-width: 640px) {
     /* One more glyph among the header's icons on a phone, with no frame to set it apart. */
-    .search-toggle {
+    ::deep .rz-button.search-toggle {
         width: 2rem;
         padding: 0;
         border-color: transparent;
@@ -103,13 +103,13 @@
     }
 }
 
-.icon-button:hover {
+::deep .rz-button.icon-button:hover {
     background: var(--pm-surface);
     color: var(--pm-fg);
     border-color: var(--pm-border);
 }
 
-.icon-button:focus-visible {
+::deep .rz-button.icon-button:focus-visible {
     outline: 2px solid var(--pm-accent);
     outline-offset: 2px;
 }
@@ -130,6 +130,14 @@
     box-sizing: border-box;
 }
 
+/* Above phone width the version stamp is fixed in the lower-right corner: the content leaves it a
+   gutter on both sides so the stamp never sits on top of a card. */
+@media (min-width: 769px) {
+    .app-main {
+        max-width: min(1280px, calc(100vw - 11rem));
+    }
+}
+
 @media (max-width: 640px) {
     /* The bottom nav carries the routes on a phone. */
     .actions {
@@ -139,8 +147,8 @@
     .app-main {
         padding-block: 0.4rem;
         padding-inline: max(0.5rem, env(safe-area-inset-left)) max(0.5rem, env(safe-area-inset-right));
-        /* The bottom nav (--po-stamp-lift, app.css) plus the badge that sits above it. */
-        padding-bottom: calc(var(--po-stamp-lift, 3.5rem) + var(--po-space-6) + var(--po-space-3));
+        /* The version stamp follows main and keeps the bottom nav's room (po-tokens.css). */
+        padding-bottom: var(--po-space-3);
         gap: 0.5rem;
     }
 }
@@ -167,7 +175,7 @@
 
 /* Touch: the header's icons and the initials button are the smallest targets in the app. */
 @media (pointer: coarse) {
-    .icon-button {
+    ::deep .rz-button.icon-button {
         min-width: 2.75rem;
         min-height: 2.75rem;
     }
@@ -178,7 +186,7 @@
 }
 
 /* The guest's initials, upper-right before the gear: a button, since it opens the initials prompt. */
-.who-button {
+::deep .rz-button.who-button {
     display: inline-flex;
     align-items: center;
     min-height: 2rem;
@@ -190,7 +198,7 @@
     cursor: pointer;
 }
 
-.who-button:hover {
+::deep .rz-button.who-button:hover {
     background: var(--pm-surface);
 }
 

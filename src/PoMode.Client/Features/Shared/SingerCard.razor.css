@@ -54,7 +54,7 @@
     border-radius: 0.25rem;
 }
 
-.singer-notes table {
+.singer-notes ::deep table {
     /* Capped: five short columns spread across a wide card put each number a long way from its note. */
     width: 100%;
     max-width: 36rem;
@@ -64,22 +64,26 @@
     font-variant-numeric: tabular-nums;
 }
 
-.singer-notes th,
-.singer-notes td {
-    padding: 0.25rem 0.5rem;
+/* RadzenTable writes each cell's padding inline from --rz-grid-cell-padding, so the padding is set there. */
+.singer-notes ::deep .rz-grid-table {
+    --rz-grid-cell-padding: 0.25rem 0.5rem;
+}
+
+.singer-notes ::deep th,
+.singer-notes ::deep td {
     text-align: right;
     border-bottom: 1px solid var(--pm-border);
     color: var(--pm-fg-muted);
 }
 
-.singer-notes th[scope="row"],
-.singer-notes thead th:first-child {
+.singer-notes ::deep th[scope="row"],
+.singer-notes ::deep thead th:first-child {
     text-align: left;
     color: var(--pm-fg);
 }
 
-.singer-notes .singer-best-row th,
-.singer-notes .singer-best-row td {
+.singer-notes ::deep .singer-best-row th,
+.singer-notes ::deep .singer-best-row td {
     color: var(--pm-ok);
     background: var(--pm-ok-bg);
     font-weight: 600;
@@ -87,9 +91,8 @@
 
 /* Five columns fit a 320px phone at the small size; the padding is what gives way first. */
 @media (max-width: 640px) {
-    .singer-notes th,
-    .singer-notes td {
-        padding: 0.25rem;
+    .singer-notes ::deep .rz-grid-table {
+        --rz-grid-cell-padding: 0.25rem;
     }
 }
 

@@ -22,12 +22,17 @@
     overflow: hidden;
 }
 
-.palette-input {
+::deep .rz-textbox.palette-input,
+::deep .rz-textbox.palette-input:is(:hover, :focus, :focus-visible) {
+    display: block;
     width: 100%;
+    height: auto;
     min-height: 3rem;
     padding: var(--pm-space-2) var(--pm-space-3);
     border: 0;
     border-bottom: 1px solid var(--pm-border);
+    border-radius: 0;
+    box-shadow: none;
     background: transparent;
     color: var(--pm-fg);
     font: inherit;

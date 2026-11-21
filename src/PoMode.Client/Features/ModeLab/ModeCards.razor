@@ -11,10 +11,10 @@
             var modeNotes = ScaleModes.RelativeScaleNoteNames(Tonic, modeItem.Mode);
             @* The whole card is the button: it was a clickable <div> the keyboard could not reach, with a
                23px "Sample" button inside doing the same thing. *@
-            <button type="button"
-                    class="compact-mode-card @ModeNames.CssClass(modeItem.Mode) @(isSelected ? "selected" : "") @(isSelected && Playing ? "playing" : "")"
+            <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat"
+                    class="@($"pm-plain compact-mode-card {ModeNames.CssClass(modeItem.Mode)} {(isSelected ? "selected" : "")} {(isSelected && Playing ? "playing" : "")}")"
                     aria-pressed="@(isSelected ? "true" : "false")"
-                    @onclick="@(() => OnPick.InvokeAsync(modeItem.Mode))">
+                    Click="@(() => OnPick.InvokeAsync(modeItem.Mode))">
                 <span class="mode-card-top">
                     <span class="compact-mode-title">@CardTitle(modeItem)</span>
                     <span class="compact-degree-badge">@modeItem.Degree</span>
@@ -34,7 +34,7 @@
                 </span>
                 <span class="compact-mode-desc">@modeItem.Mood</span>
                 <span class="compact-card-cta">@(isSelected && Playing ? "🔊 Playing" : "▶ Sample")</span>
-            </button>
+            </RadzenButton>
         }
     </div>
 </div>

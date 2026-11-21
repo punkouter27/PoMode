@@ -67,7 +67,7 @@
 }
 
 /* The real input sits over the slots, invisible, so a tap anywhere on them brings up the keyboard. */
-.initials-input {
+::deep .rz-textbox.initials-input {
     position: absolute;
     inset: 0;
     width: 100%;

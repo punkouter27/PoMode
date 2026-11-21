@@ -31,23 +31,29 @@
         @* The per-note figures behind the "best note" sentence: supporting detail, one click away. *@
         <details class="singer-notes">
             <summary>The notes sung most, and how they were held</summary>
-            <table>
-                <thead>
-                    <tr><th scope="col">Note</th><th scope="col">Sung</th><th scope="col">Held</th><th scope="col">Off pitch</th><th scope="col">Wobble</th></tr>
-                </thead>
-                <tbody>
+            <RadzenTable class="singer-table">
+                <RadzenTableHeader>
+                    <RadzenTableHeaderRow>
+                        <RadzenTableHeaderCell scope="col">Note</RadzenTableHeaderCell>
+                        <RadzenTableHeaderCell scope="col">Sung</RadzenTableHeaderCell>
+                        <RadzenTableHeaderCell scope="col">Held</RadzenTableHeaderCell>
+                        <RadzenTableHeaderCell scope="col">Off pitch</RadzenTableHeaderCell>
+                        <RadzenTableHeaderCell scope="col">Wobble</RadzenTableHeaderCell>
+                    </RadzenTableHeaderRow>
+                </RadzenTableHeader>
+                <RadzenTableBody>
                     @foreach (var note in Voice.Notes)
                     {
-                        <tr class="@(note.Midi == Voice.StrongestMidi ? "singer-best-row" : "")">
-                            <th scope="row">@note.Label</th>
-                            <td>@($"{note.Count}×")</td>
-                            <td>@($"{note.HeldSec:0.0} s")</td>
-                            <td>@(note.OffCents is { } off ? $"{off:0} ¢" : "—")</td>
-                            <td>@(note.WobbleCents is { } wobble ? $"{wobble:0} ¢" : "—")</td>
-                        </tr>
+                        <RadzenTableRow class="@(note.Midi == Voice.StrongestMidi ? "singer-best-row" : "")">
+                            <RadzenTableHeaderCell scope="row">@note.Label</RadzenTableHeaderCell>
+                            <RadzenTableCell>@($"{note.Count}×")</RadzenTableCell>
+                            <RadzenTableCell>@($"{note.HeldSec:0.0} s")</RadzenTableCell>
+                            <RadzenTableCell>@(note.OffCents is { } off ? $"{off:0} ¢" : "—")</RadzenTableCell>
+                            <RadzenTableCell>@(note.WobbleCents is { } wobble ? $"{wobble:0} ¢" : "—")</RadzenTableCell>
+                        </RadzenTableRow>
                     }
-                </tbody>
-            </table>
+                </RadzenTableBody>
+            </RadzenTable>
         </details>
     }
     <p class="singer-how">@Voice.HowJudged</p>

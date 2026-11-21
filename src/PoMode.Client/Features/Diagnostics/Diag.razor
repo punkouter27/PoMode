@@ -11,7 +11,8 @@
 <div class="po-diag" data-testid="diag">
     <div class="po-diag__head">
         <h1>System status</h1>
-        <button type="button" class="po-link-btn outlined small" disabled="@_loading" @onclick="LoadAsync">@(_loading ? "Checking…" : "Check again")</button>
+        <RadzenButton Text="@(_loading ? "Checking…" : "Check again")" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Outlined" Size="ButtonSize.Small"
+                      Disabled="@_loading" Click="LoadAsync" data-testid="diag-refresh" />
     </div>
 
     @if (_error is not null)

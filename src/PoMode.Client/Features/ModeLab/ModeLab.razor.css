@@ -103,7 +103,7 @@
     margin-left: auto;
 }
 
-.match-toggle {
+::deep .rz-button.match-toggle {
     height: 28px;
     min-width: 46px;
     padding: 0 0.6rem;
@@ -116,13 +116,13 @@
     border: 1px solid var(--pm-border);
 }
 
-.match-toggle.on {
+::deep .rz-button.match-toggle.on {
     background: var(--pm-accent-soft);
     border-color: var(--pm-accent);
     color: var(--pm-accent);
 }
 
-.match-toggle:hover {
+::deep .rz-button.match-toggle:hover {
     border-color: var(--pm-accent);
 }
 
@@ -309,6 +309,6 @@
     white-space: normal;
 }
 
-.match-toggle {
+::deep .rz-button.match-toggle {
     flex-shrink: 0;
 }

@@ -30,10 +30,10 @@
                     @if (HasContent && (Visual.Evidence is not null || _stats is not null))
                     {
                         @* No notes means no mode to argue for, so there is nothing to open. *@
-                        <button class="song-why-toggle" type="button" @onclick="ToggleWhy"
+                        <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="pm-plain song-why-toggle" Click="ToggleWhy"
                                 aria-expanded="@(_whyOpen ? "true" : "false")" aria-haspopup="dialog">
                             Why this mode?
-                        </button>
+                        </RadzenButton>
                     }
                 </div>
 
@@ -140,9 +140,9 @@
                             </span>
                             @if (loop.CanFindSongs)
                             {
-                                <button class="song-why-toggle" type="button" @onclick="OpenLoopSongs" aria-haspopup="dialog">
+                                <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="pm-plain song-why-toggle" Click="OpenLoopSongs" aria-haspopup="dialog">
                                     Songs on these chords
-                                </button>
+                                </RadzenButton>
                             }
                         }
                         @if (Status.Origin is { } take)
@@ -170,10 +170,10 @@
                 }
                 @if (Visual.Sections.Count > 0)
                 {
-                    <button class="song-why-toggle" type="button" @onclick="ToggleSections"
+                    <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="pm-plain song-why-toggle" Click="ToggleSections"
                             aria-expanded="@(_sectionsOpen ? "true" : "false")" aria-haspopup="dialog">
                         How were the sections found?
-                    </button>
+                    </RadzenButton>
                 }
             </div>
         </div>

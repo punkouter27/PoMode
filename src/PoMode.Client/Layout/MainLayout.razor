@@ -23,14 +23,14 @@
     <div class="po-header__actions">
         @* The palette searches every song, beat, page and setting; Ctrl+K alone left it to people who
            already knew it was there. A labelled button on a desktop, the glass alone on a phone. *@
-        <button class="icon-button search-toggle" type="button" @onclick="OpenPalette" id="open-search"
+        <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="pm-plain icon-button search-toggle" Click="OpenPalette" id="open-search"
                 title="Search songs, pages and settings (Ctrl K)" aria-label="Search songs, pages and settings" aria-haspopup="dialog">
             <RadzenIcon Icon="search" /><span class="search-label">Search</span><kbd class="search-kbd">Ctrl K</kbd>
-        </button>
+        </RadzenButton>
         @switch (Session.Current)
         {
             case { Kind: SessionKind.Guest } guest:
-                <button type="button" class="who-button" id="session-initials" @onclick="Session.OpenPrompt"
+                <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="pm-plain who-button" id="session-initials" Click="Session.OpenPrompt"
                         title="Switch initials" aria-label="@(guest.DisplayName is { } mine ? $"Your initials, {mine}. Switch to other initials" : "Pick your initials")">
                     @if (guest.DisplayName is { } initials)
                     {
@@ -40,7 +40,7 @@
                     {
                         <span class="who-empty">Set initials</span>
                     }
-                </button>
+                </RadzenButton>
                 break;
             case { Kind: SessionKind.Test } persona:
                 <span class="po-header__email" id="session-persona" title="@persona.DisplayName">@persona.DisplayName</span>

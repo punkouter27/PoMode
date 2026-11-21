@@ -116,11 +116,11 @@
                     <span class="pm-label backing-label" title="Move the backing chords to the selected mode's own tonic, so the mode is heard as a colour rather than as the parent key with a displaced melody. Picking a mode card replaces the chords below; your tempo is left alone.">
                                             Chords follow mode
                     </span>
-                    <button class="match-toggle @(_matchHarmonyToMode ? "on" : "off")" type="button"
+                    <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Flat" class="@(_matchHarmonyToMode ? "pm-plain match-toggle on" : "pm-plain match-toggle off")"
                             id="match-harmony-toggle" data-match-harmony="@(_matchHarmonyToMode ? "on" : "off")"
-                            aria-pressed="@_matchHarmonyToMode" @onclick="ToggleMatchHarmonyAsync">
+                            aria-pressed="@(_matchHarmonyToMode ? "true" : "false")" Click="ToggleMatchHarmonyAsync">
                         @(_matchHarmonyToMode ? "On" : "Off")
-                    </button>
+                    </RadzenButton>
                 </div>
             </Between>
             <ChildContent>

@@ -8,11 +8,14 @@
 @if (Open)
 {
     <div class="palette-backdrop" @onclick="Close">
-        <div class="palette" role="dialog" aria-modal="true" aria-label="Go to" @onclick:stopPropagation>
-            <input @ref="_input" class="palette-input" type="text" role="combobox" aria-expanded="true"
-                   aria-controls="palette-list" aria-activedescendant="@ActiveId" aria-autocomplete="list"
-                   placeholder="Go to a page, a song or a setting…" value="@_query"
-                   @oninput="OnInput" @onkeydown="OnKeyDown" @onkeydown:preventDefault="_suppressKey" />
+        @* The keys are read on the dialog (they bubble up from the box): a Radzen component cannot carry
+           @onkeydown:preventDefault, and the arrows must not move the caret while they move the row. *@
+        <div class="palette" role="dialog" aria-modal="true" aria-label="Go to" @onclick:stopPropagation
+             @onkeydown="OnKeyDown" @onkeydown:preventDefault="_suppressKey">
+            <RadzenTextBox @ref="_input" class="palette-input" role="combobox" aria-expanded="true"
+                           aria-controls="palette-list" aria-activedescendant="@ActiveId" aria-autocomplete="list"
+                           Placeholder="Go to a page, a song or a setting…" Value="@_query"
+                           @oninput="OnInput" />
             <ul class="palette-list" id="palette-list" role="listbox" aria-label="Results">
                 @if (Matches.Count == 0)
                 {
@@ -41,7 +44,7 @@
 
     private sealed record Command(string Group, string Text, Func<Task> Run);
 
-    private ElementReference _input;
+    private RadzenTextBox? _input;
     private string _query = "";
     private int _active;
     private bool _suppressKey;
@@ -113,7 +116,7 @@
         if (Open && _focusPending)
         {
             _focusPending = false;
-            await _input.FocusAsync();
+            await _input!.Element.FocusAsync();
         }
     }
 
