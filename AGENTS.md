@@ -39,9 +39,10 @@ No `.cursorrules`, `.copilotignore`, `SPEC.md`, `tasks/`, `DOCS/` at the root (f
   phones) — or, signed out, one **Sign in** button `class="po-link-btn filled small"` (same style on every page) —
   then the settings gear ONLY if the app has a settings page (the owner removed settings from some apps — don't
   re-add it). Apps without OAuth show nothing in place of the email (no fake identity chips).
-- Version badge `.po-version` fixed bottom-right showing `vYYMMDD`. It must never cover content: `main` gets
-  `padding-bottom: calc(var(--po-space-6) + env(safe-area-inset-bottom))`, and when a mobile bottom nav exists the
-  badge sits above it (`--po-stamp-lift: <nav height>`).
+- Version badge `.po-version` bottom-right showing `vYYMMDD`. It must never cover content: above 768px it is fixed in
+  the corner and `.app-main` leaves it a gutter (`max-width: min(1280px, 100vw - 11rem)`); at 768px and below it
+  joins the flow as the last thing on the page, bottom-right, with the bottom nav's height (`--po-stamp-lift`) below
+  it, because a fixed badge sits on whatever scrolls under it.
 - Colours only from `wwwroot/css/po-tokens.css` (`--po-*`). All text ≥ 4.5:1 contrast in light AND dark mode
   (status banners: use `--po-text` on `--po-*-soft` backgrounds, never warning-on-peach).
 - Login-only data must not be requested for signed-out visitors (no 401s in the console on public pages), and
@@ -99,7 +100,7 @@ Several sessions (people and agents) commit to this repo, sometimes at the same 
 | Format | `dotnet format PoMode.slnx --verify-no-changes` | nothing |
 | Build | `dotnet build PoMode.slnx -c Release` (warnings are errors) | kill a running `PoMode.Api` first (DLL locks) |
 | Unit | `dotnet test tests/PoMode.Unit` (94) | nothing |
-| Integration | `dotnet test tests/PoMode.Integration` (38) | nothing: in-process host + temp folders, no Docker |
+| Integration | `dotnet test tests/PoMode.Integration` (39) | nothing: in-process host + temp folders, no Docker |
 | E2EAPI | `dotnet test tests/PoMode.E2EAPI` (25) | nothing (in-process host) |
 | E2EUI | `dotnet build PoMode.slnx` then `dotnet test tests/PoMode.E2EUI --no-build` (25) | Playwright Chromium (`pwsh tests/PoMode.E2EUI/bin/Debug/net10.0/playwright.ps1 install chromium`); every test skips with one message without it; boots the Debug build itself on :5199 |
 | Run locally | `dotnet run --project src/PoMode.Api` → http://localhost:5000 (`/diag`, `/health/live`) | nothing (file-system storage by default) |
@@ -144,7 +145,7 @@ dotnet run scripts/layout-audit.cs -- compare before after notes.md name   # one
 | Tier | Tests | In CI | Needs |
 |---|---|---|---|
 | `tests/PoMode.Unit` | 94 | yes | nothing |
-| `tests/PoMode.Integration` | 39 | no | nothing (in-process host, temp-folder storage; no Docker) |
+| `tests/PoMode.Integration` | 39 | yes | nothing (in-process host, temp-folder storage; no Docker). `DiagnosticsReportTests` makes live HTTP calls to the /diag services (capped at 4 s each) |
 | `tests/PoMode.E2EAPI` | 25 | no | nothing (in-process host) |
 | `tests/PoMode.E2EUI` | 25 | no | Playwright Chromium; without it every test SKIPS with one clear message (`BrowserFact`). Install: `pwsh tests/PoMode.E2EUI/bin/Debug/net10.0/playwright.ps1 install chromium` |
 
@@ -166,7 +167,10 @@ Suites are capped: 100 Unit, 50 Integration, 25 E2EAPI, 25 E2EUI, counted as the
   Development/Test only) live on `/settings`.
 - `/health/live` (X-Commit = `PoPlatform.Commit`), `/health` and `/health/ready` (job storage). `GET /api/diag` is
   the standard `DiagReportDto` (`PoMode.Shared/Diagnostics/DiagDtos.cs`, built by `DiagnosticsService`): API,
-  Data (job storage), Services (Key Vault, AI interpreters, analysis models, push notifications).
+  Data (job storage on disk, blob storage), Services (Key Vault, Application Insights, AcoustID, LRCLIB, Hooktheory,
+  model downloads from Hugging Face/jsDelivr, AI interpreters, analysis models, push notifications). The outside
+  services are probed live on every request (`Features/Diagnostics/ExternalServiceProbes.cs`, 4 s budget each, in
+  parallel); one configured but keyless (AcoustID, Hooktheory) is Degraded "Reachable, but not set up".
   `GET /api/diag/activity` carries the operator extras (queue depth, guards, interpreter record, the plan a new
   upload would run). `DiagnosticsReportTests` guards that /api/diag names no secret, path or host.
 - Version: `Directory.Build.props` stamps `BuildVersion`; the badge (`Layout/BuildVersion.razor`), `/api/diag` and
@@ -182,7 +186,7 @@ Suites are capped: 100 Unit, 50 Integration, 25 E2EAPI, 25 E2EUI, counted as the
 | `models/` at the root | Local cache of downloaded ONNX/browser models (`scripts/get-models.ps1`); contents are git-ignored. |
 | No `docs/` | Nothing to put there yet; prose lives in this file and README.md. |
 | The header shows the guest's initials (standard: nothing without OAuth) | The initials are the library's key, not a fake identity: they are how a person finds their songs on another device. |
-| `deploy.yml` runs format, build, Unit, publish, deploy; no Integration step, no `mobile` job | Kept lean on the F1 plan; Integration, E2E, Bicep and the mobile build run locally (`scripts/ci-checks.ps1`). |
+| Two raw `<input type="file">` (`IntakeCard`, `DrumStrip`), dressed as Radzen buttons | RadzenUpload posts the file in one request; these hand the file to tus so a dropped upload resumes. Every other control is Radzen. |
 
 ### Working rules
 
@@ -208,7 +212,11 @@ Suites are capped: 100 Unit, 50 Integration, 25 E2EAPI, 25 E2EUI, counted as the
 - Minimal API, vertical slices (`Features/{Name}`), `MapGroup()`, OpenAPI + Scalar in Development.
 - `FakeAuthHandler` (`X-Fake-User`, `X-Fake-Roles`) only outside Production; it throws in Production.
 - Managed identity / `DefaultAzureCredential` + Key Vault (`kv-poshared2` in `PoShared`) for every secret.
-- UI: Radzen Blazor, no inline CSS (scoped `.razor.css` + tokens). `po-tokens.css` is linked first; `pm-tokens.css`
+- UI: Radzen Blazor for every interactive control (owner decision 2026-11-21, "Radzen wins, convert"): buttons are
+  `RadzenButton`, text boxes `RadzenTextBox`, tables `RadzenTable`/`RadzenDataGrid`, dialogs `RadzenDialog`. A button
+  that keeps a component's own look (mode card, filter chip, header icon) is `ButtonStyle.Base` +
+  `Variant.Flat` + `class="pm-plain …"` (reset in `app.css`) and its scoped rules are written
+  `::deep .rz-button.<class>`. No inline CSS (scoped `.razor.css` + tokens). `po-tokens.css` is linked first; `pm-tokens.css`
   aliases PoMode's own tokens (music palette, key hue) to `--po-*`. Light/dark follow the device only.
 - Tab with nothing focused opens the developer window `/po-dev.html` (`js/po-devwindow.js`, `js/po-dev.js`);
   `FocusOnNavigate` runs only after the first in-app navigation so a fresh page has nothing focused.
@@ -219,9 +227,9 @@ Suites are capped: 100 Unit, 50 Integration, 25 E2EAPI, 25 E2EUI, counted as the
 
 ### CI/CD and Azure
 
-- `.github/workflows/deploy.yml` (the only workflow): push to `master` → format → build → Unit → publish →
-  deploy to `AZURE_WEBAPP_NAME` → wait for `/health/live` X-Commit = the pushed sha. Integration, E2E, Bicep and
-  the mobile build run locally before a push.
+- `.github/workflows/deploy.yml` (the only workflow): push to `master` → format → build → Unit → Integration →
+  publish → deploy to `AZURE_WEBAPP_NAME` → wait for `/health/live` X-Commit = the pushed sha; a second `mobile` job
+  builds the Android client without blocking the deploy. E2E and Bicep run locally before a push.
 - Azure sign-in is GitHub OIDC; repo **variables** `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
   `AZURE_WEBAPP_NAME`, `AZURE_RESOURCE_GROUP`. Never secrets, never resource names in the workflow.
 - Every permission the app and CI need lives in `scripts/ensure-azure-access.ps1`; a role granted by hand and not

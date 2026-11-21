@@ -77,10 +77,10 @@ similarity-matrix view of how the sections were found.
 
 ## Deploy
 
-A push to `master` runs `.github/workflows/deploy.yml`: format check, build, Unit tests, publish,
-deploy, then wait for `/health/live` to report the new commit. Integration and E2E tests, the test
-caps, Bicep and the mobile build run locally: the related tests and `scripts/ci-checks.ps1` before
-pushing. Azure permissions all come from `scripts/ensure-azure-access.ps1`.
+A push to `master` runs `.github/workflows/deploy.yml`: format check, build, Unit and Integration
+tests, publish, deploy, then wait for `/health/live` to report the new commit; a separate `mobile`
+job builds the Android client. E2E tests, the test caps and Bicep run locally: the related tests and
+`scripts/ci-checks.ps1` before pushing. Azure permissions all come from `scripts/ensure-azure-access.ps1`.
 
 ## Verification
 
