@@ -46,11 +46,17 @@ public class AppFixture : IAsyncLifetime
 
         var repoRoot = TestPaths.RepoRoot();
         await BeforeServerStartAsync();
+        // POMODE_E2EUI_APP_DIR = a `dotnet publish -c Release` output (scripts/run-e2eui.ps1 sets it): the
+        // suite then drives the same trimmed build that deploys. Unset, it runs the Debug build (quick loop).
+        var publishDir = Environment.GetEnvironmentVariable("POMODE_E2EUI_APP_DIR");
+        var published = !string.IsNullOrWhiteSpace(publishDir);
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"run --no-build --project src/PoMode.Api --urls {BaseUrl}",
-            WorkingDirectory = repoRoot,
+            Arguments = published
+                ? $"\"{Path.Combine(publishDir!, "PoMode.API.dll")}\" --urls {BaseUrl}"
+                : $"run --no-build --project src/PoMode.Api --urls {BaseUrl}",
+            WorkingDirectory = published ? publishDir! : repoRoot,
             UseShellExecute = false,
             CreateNoWindow = true,
             Environment =

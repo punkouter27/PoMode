@@ -58,7 +58,7 @@ No `.cursorrules`, `.copilotignore`, `SPEC.md`, `tasks/`, `DOCS/` at the root (f
   DiagReportDto(string Status, string Environment, string Version, DateTimeOffset CheckedAt, double CheckedMs,
                 DiagCheckDto[] Checks)
   DiagCheckDto(string Name, string Group /* "api" | "data" | "service" */, string Label, string Status
-               /* Healthy|Degraded|Unhealthy */, string Purpose, string Detail, double LatencyMs, string? Problem)
+               /* Healthy|Degraded|Unhealthy|Off */, string Purpose, string Detail, double LatencyMs, string? Problem)
   ```
 - UI route `/diag` ONLY (delete other diagnostics pages/routes such as `/system`, `/diagnostics`, `/status`). Page
   `<title>` and `h1`: **System status**. Layout: overall banner in plain words ("Everything is working" /
@@ -100,9 +100,9 @@ Several sessions (people and agents) commit to this repo, sometimes at the same 
 | Format | `dotnet format PoMode.slnx --verify-no-changes` | nothing |
 | Build | `dotnet build PoMode.slnx -c Release` (warnings are errors) | kill a running `PoMode.Api` first (DLL locks) |
 | Unit | `dotnet test tests/PoMode.Unit` (94) | nothing |
-| Integration | `dotnet test tests/PoMode.Integration` (39) | nothing: in-process host + temp folders, no Docker |
+| Integration | `dotnet test tests/PoMode.Integration` (40) | nothing: in-process host + temp folders, no Docker |
 | E2EAPI | `dotnet test tests/PoMode.E2EAPI` (25) | nothing (in-process host) |
-| E2EUI | `dotnet build PoMode.slnx` then `dotnet test tests/PoMode.E2EUI --no-build` (25) | Playwright Chromium (`pwsh tests/PoMode.E2EUI/bin/Debug/net10.0/playwright.ps1 install chromium`); every test skips with one message without it; boots the Debug build itself on :5199 |
+| E2EUI | `pwsh scripts/run-e2eui.ps1` (25) | publishes `-c Release` (trimmed, as deployed) to a temp folder, installs Playwright Chromium, runs the suite with `POMODE_E2EUI_APP_DIR` so the fixture boots the published app on :5199/:5200/:5201, stops it and deletes the folder. `pwsh scripts/get-models.ps1` first warms `models/`. Quick loop on the Debug build: `dotnet test tests/PoMode.E2EUI` |
 | Run locally | `dotnet run --project src/PoMode.Api` → http://localhost:5000 (`/diag`, `/health/live`) | nothing (file-system storage by default) |
 | Deploy | push to `master` → `.github/workflows/deploy.yml` (format, build, Unit, Integration, publish, deploy; `mobile` job builds Android, non-blocking) | — |
 | Deploy check | `curl -sI https://app-pomode2.azurewebsites.net/health/live` → `X-Commit: <pushed sha>` | — |
@@ -131,7 +131,8 @@ dotnet format PoMode.slnx --verify-no-changes   # the CI format gate
 dotnet test tests/PoMode.Unit            # pure business logic, fast
 dotnet test tests/PoMode.Integration     # in-process app + temp-folder storage (no Docker needed)
 dotnet test tests/PoMode.E2EAPI          # HTTP contract tests (in-process app)
-dotnet test tests/PoMode.E2EUI           # Playwright browser tests (boot the real app from the Debug build)
+pwsh scripts/run-e2eui.ps1               # Playwright browser tests against the trimmed Release publish (the gate)
+dotnet test tests/PoMode.E2EUI           # same tests on the Debug build (quick loop only)
 dotnet test tests/PoMode.Unit --filter "FullyQualifiedName~TempoEstimator"   # one test/class
 pwsh scripts/test-caps.ps1               # fails if a suite is over its cap (100/50/25/25)
 pwsh scripts/ci-checks.ps1               # local extras: test caps, every infra .bicep compiles, mobile Android build
@@ -145,9 +146,9 @@ dotnet run scripts/layout-audit.cs -- compare before after notes.md name   # one
 | Tier | Tests | In CI | Needs |
 |---|---|---|---|
 | `tests/PoMode.Unit` | 94 | yes | nothing |
-| `tests/PoMode.Integration` | 39 | yes | nothing (in-process host, temp-folder storage; no Docker). `DiagnosticsReportTests` makes live HTTP calls to the /diag services (capped at 4 s each) |
+| `tests/PoMode.Integration` | 40 | yes | nothing (in-process host, temp-folder storage; no Docker). `DiagnosticsReportTests` makes live HTTP calls to the /diag services (capped at 4 s each) |
 | `tests/PoMode.E2EAPI` | 25 | no | nothing (in-process host) |
-| `tests/PoMode.E2EUI` | 25 | no | Playwright Chromium; without it every test SKIPS with one clear message (`BrowserFact`). Install: `pwsh tests/PoMode.E2EUI/bin/Debug/net10.0/playwright.ps1 install chromium` |
+| `tests/PoMode.E2EUI` | 25 | no | `pwsh scripts/run-e2eui.ps1` (Release publish). Playwright Chromium; without it every test SKIPS with one clear message (`BrowserFact`) |
 
 Suites are capped: 100 Unit, 50 Integration, 25 E2EAPI, 25 E2EUI, counted as the runner counts them (every
 `InlineData` row is a test). A new test that would breach a cap has to earn its place against an existing one.
@@ -170,7 +171,11 @@ Suites are capped: 100 Unit, 50 Integration, 25 E2EAPI, 25 E2EUI, counted as the
   Data (job storage on disk, blob storage), Services (Key Vault, Application Insights, AcoustID, LRCLIB, Hooktheory,
   model downloads from Hugging Face/jsDelivr, AI interpreters, analysis models, push notifications). The outside
   services are probed live on every request (`Features/Diagnostics/ExternalServiceProbes.cs`, 4 s budget each, in
-  parallel); one configured but keyless (AcoustID, Hooktheory) is Degraded "Reachable, but not set up".
+  parallel). A service switched off on purpose on this server is **Off** (neutral grey pill, never counted
+  against the overall status): AcoustID/Hooktheory without a key, push without a key pair, no language model
+  set up, models not downloadable (Azure, or `Models:AutoDownload=false`), and Key Vault / blob mirror /
+  Application Insights where the environment does not use them. Degraded means something set up is not
+  answering. The API row's latency is the request itself, measured.
   `GET /api/diag/activity` carries the operator extras (queue depth, guards, interpreter record, the plan a new
   upload would run). `DiagnosticsReportTests` guards that /api/diag names no secret, path or host.
 - Version: `Directory.Build.props` stamps `BuildVersion`; the badge (`Layout/BuildVersion.razor`), `/api/diag` and
@@ -186,7 +191,7 @@ Suites are capped: 100 Unit, 50 Integration, 25 E2EAPI, 25 E2EUI, counted as the
 | `models/` at the root | Local cache of downloaded ONNX/browser models (`scripts/get-models.ps1`); contents are git-ignored. |
 | No `docs/` | Nothing to put there yet; prose lives in this file and README.md. |
 | The header shows the guest's initials (standard: nothing without OAuth) | The initials are the library's key, not a fake identity: they are how a person finds their songs on another device. |
-| Two raw `<input type="file">` (`IntakeCard`, `DrumStrip`), dressed as Radzen buttons | RadzenUpload posts the file in one request; these hand the file to tus so a dropped upload resumes. Every other control is Radzen. |
+| Radzen exceptions (the only allowed kinds: native file inputs for resumable uploads, native audio/video, read-only data tables). In use: two native file inputs for resumable uploads, `<input type="file">` in `Features/Home/IntakeCard.razor` and `Features/ModeLab/DrumStrip.razor`, dressed as Radzen buttons. No native audio/video elements or raw tables in markup. | RadzenUpload posts the file in one request; these hand the file to tus so a dropped upload resumes. Every other control is Radzen. |
 
 ### Working rules
 
@@ -223,6 +228,8 @@ Suites are capped: 100 Unit, 50 Integration, 25 E2EAPI, 25 E2EUI, counted as the
 - "USING MOCK DATA" banner whenever a result came from a fake/placeholder executor.
 - Every form validates with a FluentValidation validator in `PoMode.Shared/Validation`, shows the message inline
   and disables its submit while busy; the endpoint runs the same rule and returns `ValidationProblem`.
+  Validators are registered BY TYPE (`AddScoped<IValidator<X>, XValidator>()` in both `Program.cs` files), never
+  by assembly scanning, so trimming can't drop one. A new validator needs its line in each host that uses it.
 - Ports: HTTP 5000, HTTPS 5001. Home page title: exactly `PoMode`.
 
 ### CI/CD and Azure
