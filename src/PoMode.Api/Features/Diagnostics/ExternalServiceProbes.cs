@@ -53,7 +53,7 @@ public sealed class ExternalServiceProbes(
         {
             BlobMirrorStatus.Connected => new("blob-storage", "data", "Blob storage", DiagnosticStatus.Healthy, purpose,
                 "Answering.", ms, null),
-            BlobMirrorStatus.Disabled => new("blob-storage", "data", "Blob storage", DiagnosticStatus.Healthy, purpose,
+            BlobMirrorStatus.Disabled => new("blob-storage", "data", "Blob storage", DiagnosticStatus.Off, purpose,
                 "Not used in this environment; files stay on this server's disk.", ms, null),
             _ => new("blob-storage", "data", "Blob storage", DiagnosticStatus.Degraded, purpose,
                 "Did not answer; files are kept on this server's disk only.", ms,
@@ -67,7 +67,7 @@ public sealed class ExternalServiceProbes(
         var vaultUri = configuration["KeyVault:VaultUri"];
         if (string.IsNullOrWhiteSpace(vaultUri))
         {
-            return new("key-vault", "service", "Key Vault", DiagnosticStatus.Healthy, purpose,
+            return new("key-vault", "service", "Key Vault", DiagnosticStatus.Off, purpose,
                 "Not used in this environment; settings come from configuration.", 0, null);
         }
         if (secretSource.FellBack)
@@ -98,7 +98,7 @@ public sealed class ExternalServiceProbes(
         var ingestion = IngestionEndpoint(configuration[Telemetry.ConnectionStringKey]);
         if (ingestion is null)
         {
-            return new("app-insights", "service", "Application Insights", DiagnosticStatus.Healthy, purpose,
+            return new("app-insights", "service", "Application Insights", DiagnosticStatus.Off, purpose,
                 "Not used in this environment.", 0, null);
         }
         var (code, ms) = await GetStatusAsync(new Uri(ingestion, "v2.1/track"), HttpMethod.Post, ct);
@@ -111,14 +111,17 @@ public sealed class ExternalServiceProbes(
         const string purpose = "Names a song from its sound when its file has no title tags.";
         var (code, ms) = await GetStatusAsync(AcoustIdProbe, HttpMethod.Get, ct);
         var row = Reachable("acoustid", "AcoustID", purpose, code, ms, "Songs are named from their tags only.");
-        return row.Status == DiagnosticStatus.Healthy && !acoustId.IsConfigured
-            ? row with
+        // No key on purpose: the service is switched off here, whether or not it answered.
+        return acoustId.IsConfigured
+            ? row
+            : row with
             {
-                Status = DiagnosticStatus.Degraded,
-                Detail = "Reachable, but not set up on this server.",
-                Problem = "No AcoustID key is configured; songs are named from their tags only.",
-            }
-            : row;
+                Status = DiagnosticStatus.Off,
+                Detail = row.Status == DiagnosticStatus.Healthy
+                    ? "Switched off: no key on this server (the service answered)."
+                    : "Switched off: no key on this server.",
+                Problem = null,
+            };
     }
 
     private async Task<DiagCheckDto> LrclibAsync(CancellationToken ct)
@@ -133,14 +136,17 @@ public sealed class ExternalServiceProbes(
         const string purpose = "Finds published songs built on the same chord loop.";
         var (code, ms) = await GetStatusAsync(HooktheoryClient.BaseAddress, HttpMethod.Get, ct);
         var row = Reachable("hooktheory", "Hooktheory", purpose, code, ms, "\"Songs on these chords\" is unavailable.");
-        return row.Status == DiagnosticStatus.Healthy && !hooktheory.IsConfigured
-            ? row with
+        // No account on purpose: switched off here, and "Songs on these chords" is hidden.
+        return hooktheory.IsConfigured
+            ? row
+            : row with
             {
-                Status = DiagnosticStatus.Degraded,
-                Detail = "Reachable, but not set up on this server.",
-                Problem = "No Hooktheory account is configured; \"Songs on these chords\" is hidden.",
-            }
-            : row;
+                Status = DiagnosticStatus.Off,
+                Detail = row.Status == DiagnosticStatus.Healthy
+                    ? "Switched off: no account on this server, so \"Songs on these chords\" is hidden (the service answered)."
+                    : "Switched off: no account on this server, so \"Songs on these chords\" is hidden.",
+                Problem = null,
+            };
     }
 
     private async Task<DiagCheckDto> ModelHostsAsync(CancellationToken ct)

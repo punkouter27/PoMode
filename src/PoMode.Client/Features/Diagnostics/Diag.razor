@@ -125,6 +125,7 @@
     {
         "Healthy" => "ok",
         "Degraded" => "warn",
+        "Off" => "off",
         _ => "bad",
     };
 
@@ -136,6 +137,7 @@
             return down.Count > 0 ? $"Not working: {string.Join(", ", down)}" : "Not working";
         }
 
+        // "Off" rows are switched off on purpose: they are not a fault and never change the headline.
         var degraded = report.Checks.Count(c => c.Status == "Degraded");
         return degraded switch
         {

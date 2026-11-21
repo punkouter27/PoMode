@@ -304,8 +304,9 @@
 }
 
 /* The longest label in the backing row: on a phone it shares a line with the key and pushed the
-   toggle 10px past the edge, so this one may wrap and the toggle keeps its width. */
-.match-field .backing-label {
+   toggle 10px past the edge, so this one may wrap and the toggle keeps its width. Two classes on the
+   field so it outranks BackingControls' later `.backing ::deep .backing-label` nowrap rule. */
+.backing-field.match-field .backing-label {
     white-space: normal;
 }
 

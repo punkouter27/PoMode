@@ -9,6 +9,7 @@ public static class Ui
     public static readonly Color Good = Color.FromArgb("#15803D");
     public static readonly Color Warn = Color.FromArgb("#B45309");
     public static readonly Color Bad = Color.FromArgb("#B91C1C");
+    public static readonly Color Neutral = Color.FromArgb("#596075");
 
     public static Label H1(string text) => new() { Text = text, FontSize = 24, FontAttributes = FontAttributes.Bold };
 

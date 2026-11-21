@@ -220,6 +220,7 @@ public sealed class DiagPage : ContentPage
     {
         "Healthy" => Ui.Good,
         "Degraded" => Ui.Warn,
+        "Off" => Ui.Neutral,
         _ => Ui.Bad,
     };
 }

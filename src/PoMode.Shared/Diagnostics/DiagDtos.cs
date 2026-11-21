@@ -2,14 +2,20 @@ using PoMode.Shared.Analysis;
 
 namespace PoMode.Shared.Diagnostics;
 
-/// <summary>The three words every check on /diag is summarised to.</summary>
+/// <summary>The four words every check on /diag is summarised to.</summary>
 public static class DiagnosticStatus
 {
     public const string Healthy = "Healthy";
     public const string Degraded = "Degraded";
     public const string Unhealthy = "Unhealthy";
 
-    /// <summary>The worst of <paramref name="statuses"/>; Healthy when there are none.</summary>
+    /// <summary>
+    /// Switched off on purpose on this server (no key, not used in this environment): neutral, never
+    /// counted against the overall status.
+    /// </summary>
+    public const string Off = "Off";
+
+    /// <summary>The worst of <paramref name="statuses"/>, ignoring <see cref="Off"/>; Healthy when there are none.</summary>
     public static string Worst(IEnumerable<string> statuses)
     {
         var worst = Healthy;
@@ -32,7 +38,7 @@ public static class DiagnosticStatus
 /// What <c>GET /api/diag</c> answers (Po web standard, AGENTS.md) and the <c>/diag</c> "System status" page shows.
 /// Anonymous, so plain words only: never a connection string, key, URL, path, host, id, email or exception message.
 /// </summary>
-/// <param name="Status">"Healthy", "Degraded" or "Unhealthy": the worst of <paramref name="Checks"/>.</param>
+/// <param name="Status">"Healthy", "Degraded" or "Unhealthy": the worst of <paramref name="Checks"/> ("Off" rows don't count).</param>
 /// <param name="Environment">The host environment name (Production, Development, …).</param>
 /// <param name="Version">The build's <c>BuildVersion</c> stamp, UTC <c>yyMMdd</c>.</param>
 /// <param name="CheckedAt">When the checks ran (UTC).</param>
@@ -49,7 +55,7 @@ public sealed record DiagReportDto(
 /// <param name="Name">Stable machine id (e.g. "api", "job-storage").</param>
 /// <param name="Group">"api", "data" or "service": the section it is shown in.</param>
 /// <param name="Label">What the page calls it.</param>
-/// <param name="Status">"Healthy", "Degraded" or "Unhealthy".</param>
+/// <param name="Status">"Healthy", "Degraded", "Unhealthy", or "Off" (switched off on purpose).</param>
 /// <param name="Purpose">What the app uses it for, in one line.</param>
 /// <param name="Detail">How it is, in one line.</param>
 /// <param name="LatencyMs">How long the check took.</param>

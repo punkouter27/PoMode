@@ -30,6 +30,8 @@ using PoMode.Api.Features.Uploads;
 using PoMode.Api.Infrastructure;
 using PoMode.Api.Infrastructure.Models;
 using PoMode.Api.Pipeline;
+using PoMode.Shared.Account;
+using PoMode.Shared.Analysis;
 using PoMode.Shared.Serialization;
 using Scalar.AspNetCore;
 
@@ -40,7 +42,11 @@ if (builder.Environment.IsEnvironment("Test"))
     builder.WebHost.UseStaticWebAssets();
 }
 
-builder.Services.AddValidatorsFromAssemblyContaining<SongQuestionRequestValidator>();
+// Validators registered by type, not by assembly scanning, so trimming can never drop one.
+builder.Services.AddScoped<IValidator<SongQuestionRequest>, SongQuestionRequestValidator>();
+builder.Services.AddScoped<IValidator<ModeLabDescriptionRequest>, ModeLabDescriptionRequestValidator>();
+builder.Services.AddScoped<IValidator<ModalMelodyRequest>, ModalMelodyRequestValidator>();
+builder.Services.AddScoped<IValidator<InitialsRequest>, InitialsRequestValidator>();
 
 builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestBodySize = AudioFormatValidator.MaxBytes);

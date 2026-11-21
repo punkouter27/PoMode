@@ -14,7 +14,7 @@ namespace PoMode.Api.Features.Diagnostics;
 
 /// <summary>
 /// Builds the anonymous /api/diag report. Every dependency is summarised to Healthy / Degraded /
-/// Unhealthy with a fixed sentence of our own: health-check descriptions and exceptions are never
+/// Unhealthy (or Off, when it is switched off on purpose on this server) with a fixed sentence of our own: health-check descriptions and exceptions are never
 /// passed through (they can name a path, a host or an account), and where secrets come from is
 /// reported only as the Key Vault check's status.
 /// </summary>
@@ -43,11 +43,13 @@ public sealed class DiagnosticsService(
         var started = Stopwatch.GetTimestamp();
         List<DiagCheckDto> checks =
         [
-            new("api", "api", "PoMode API", DiagnosticStatus.Healthy,
-                "Answers every page, upload and analysis.", "Answering.", 0, null),
             .. await StoresAsync(ct),
             .. await ServicesAsync(ct),
         ];
+        // The API row is this request, measured: the time the API took to answer it, checks included.
+        checks.Add(new("api", "api", "PoMode API", DiagnosticStatus.Healthy,
+            "Answers every page, upload and analysis.", "Answering.",
+            Math.Round(Stopwatch.GetElapsedTime(started).TotalMilliseconds, 1), null));
         // Data rows first, then services: the page groups by Group but keeps this order inside each.
         checks = [.. checks.OrderBy(check => check.Group switch { "api" => 0, "data" => 1, _ => 2 })];
         return new DiagReportDto(
@@ -116,33 +118,46 @@ public sealed class DiagnosticsService(
             }
         }
         var writersLatency = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
-        var ai = new DiagCheckDto(
-            "ai-interpreters", "service", "AI interpreters",
-            anyModel ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
-            "Language models that write a song's summary and answer questions.",
-            anyModel ? "A language model is ready." : "No language model answered; a template writes the summary.",
-            Math.Round(writersLatency, 1),
-            anyModel ? null : "No language model is available.");
+        // Off when no model is set up on purpose (no cloud deployment, no Ollama address): the template
+        // writes the summary by design. Degraded only when a model is set up and did not answer.
+        var llmConfigured = !string.IsNullOrWhiteSpace(configuration["PoMode:AzureOpenAI:Endpoint"])
+            || !string.IsNullOrWhiteSpace(configuration["Llm:Ollama:Endpoint"]);
+        const string aiPurpose = "Language models that write a song's summary and answer questions.";
+        var ai = anyModel
+            ? new DiagCheckDto("ai-interpreters", "service", "AI interpreters", DiagnosticStatus.Healthy, aiPurpose,
+                "A language model is ready.", Math.Round(writersLatency, 1), null)
+            : llmConfigured
+                ? new DiagCheckDto("ai-interpreters", "service", "AI interpreters", DiagnosticStatus.Degraded, aiPurpose,
+                    "No language model answered; a template writes the summary.", Math.Round(writersLatency, 1),
+                    "The language model that is set up did not answer.")
+                : new DiagCheckDto("ai-interpreters", "service", "AI interpreters", DiagnosticStatus.Off, aiPurpose,
+                    "Switched off: no language model on this server; a template writes the summary.",
+                    Math.Round(writersLatency, 1), null);
 
         var probeStarted = Stopwatch.GetTimestamp();
         var hardware = await hardwareProbe.ProbeAsync(ct);
         var ready = hardware.Models.Count(model => model.Available);
         var allReady = ready == hardware.Models.Count;
+        // Model downloads are switched off on purpose on Azure (ModelRegistry refuses there) or by
+        // Models:AutoDownload=false: missing models are then Off, not Degraded.
+        var downloadsOff = hardware.IsAzureHosted || !configuration.GetValue("Models:AutoDownload", true);
         var models = new DiagCheckDto(
             "analysis-models", "service", "Analysis models",
-            allReady ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
+            allReady ? DiagnosticStatus.Healthy : downloadsOff ? DiagnosticStatus.Off : DiagnosticStatus.Degraded,
             "Neural models for stems, pitch, chords and beats.",
-            $"{ready} of {hardware.Models.Count} ready.",
+            allReady || !downloadsOff
+                ? $"{ready} of {hardware.Models.Count} ready."
+                : $"{ready} of {hardware.Models.Count} ready; the rest are switched off on this server and simpler analysers stand in.",
             Math.Round(Stopwatch.GetElapsedTime(probeStarted).TotalMilliseconds, 1),
-            allReady ? null : "Some models are not downloaded; simpler analysers stand in.");
+            allReady || downloadsOff ? null : "Some models are not downloaded; simpler analysers stand in.");
 
         var notifications = new DiagCheckDto(
             "push", "service", "Push notifications",
-            push.Available ? DiagnosticStatus.Healthy : DiagnosticStatus.Degraded,
+            push.Available ? DiagnosticStatus.Healthy : DiagnosticStatus.Off,
             "Tells a closed tab that its song has finished.",
-            push.Available ? "Set up." : "Not set up on this server.",
+            push.Available ? "Set up." : "Switched off: no push key pair on this server.",
             0,
-            push.Available ? null : "No push key pair is configured.");
+            null);
 
         var externalRows = await externalTask;
         return [.. externalRows, ai, models, notifications];

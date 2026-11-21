@@ -1,6 +1,9 @@
 using System.Net;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using PoMode.Shared.Diagnostics;
+using PoMode.Shared.Serialization;
 using Xunit;
 
 namespace PoMode.Integration;
@@ -62,5 +65,31 @@ public sealed class DiagnosticsReportTests : IDisposable
         }
         // Escaped backslashes would be a Windows path, whatever its root.
         Assert.DoesNotContain("\\\\", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Services_switched_off_on_purpose_read_Off_and_never_lower_the_overall_status()
+    {
+        // No vault, no blob mirror, no AcoustID/Hooktheory key, no model downloads: all off on purpose.
+        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b
+            .UseSetting("Jobs:RootPath", _root)
+            .UseSetting("Jobs:Storage:Mode", "FileSystem")
+            .UseSetting("Models:RootPath", _modelsRoot)
+            .UseSetting("Models:AutoDownload", "false")
+            .UseSetting("Demo:Enabled", "false"));
+        using var client = factory.CreateClient();
+
+        var report = await client.GetFromJsonAsync("/api/diag", PoModeJsonContext.Default.DiagReportDto);
+
+        Assert.NotNull(report);
+        var byName = report.Checks.ToDictionary(check => check.Name);
+        foreach (var name in new[] { "blob-storage", "key-vault", "acoustid", "hooktheory", "analysis-models" })
+        {
+            Assert.Equal(DiagnosticStatus.Off, byName[name].Status);
+            Assert.Null(byName[name].Problem);
+        }
+        Assert.True(byName["api"].LatencyMs > 0, "the API row is measured, not a constant");
+        Assert.Equal(DiagnosticStatus.Worst(report.Checks.Where(c => c.Status != DiagnosticStatus.Off).Select(c => c.Status)), report.Status);
+        Assert.Equal(DiagnosticStatus.Healthy, DiagnosticStatus.Worst([DiagnosticStatus.Off, DiagnosticStatus.Healthy]));
     }
 }
