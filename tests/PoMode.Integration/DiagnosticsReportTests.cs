@@ -45,6 +45,11 @@ public sealed class DiagnosticsReportTests : IDisposable
         Assert.Contains("\"checks\":", json, StringComparison.Ordinal);
         Assert.Contains("\"group\":\"api\"", json, StringComparison.Ordinal);
         Assert.Contains("\"version\":", json, StringComparison.Ordinal);
+        // Every outside service the app calls has its own row (AGENTS.md, Health + /diag contract).
+        foreach (var name in new[] { "job-storage", "blob-storage", "key-vault", "app-insights", "acoustid", "lrclib", "hooktheory", "model-hosts", "ai-interpreters", "analysis-models", "push" })
+        {
+            Assert.Contains($"\"name\":\"{name}\"", json, StringComparison.Ordinal);
+        }
         string[] forbidden =
         [
             FakeSecret, "secret-openai-host", "gpt-secret-deployment", _root, _modelsRoot,

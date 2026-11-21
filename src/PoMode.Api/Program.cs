@@ -71,6 +71,7 @@ builder.Services.AddPoRateLimiting(builder.Configuration);
 builder.Services.AddSingleton<ModelRegistry>();
 builder.Services.AddSingleton<HardwareProbe>();
 builder.Services.AddSingleton<DiagnosticsService>();
+builder.Services.AddSingleton<ExternalServiceProbes>();
 builder.Services.AddHealthChecks()
     .AddCheck<JobStorageHealthCheck>("job-storage");
 
@@ -159,6 +160,12 @@ builder.Services.AddHttpClient(HooktheoryClient.HttpClientName, client =>
     client.BaseAddress = HooktheoryClient.BaseAddress;
     client.Timeout = TimeSpan.FromSeconds(15);
     client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+});
+// /diag's live reachability checks of the services above (and the model hosts), each capped by its own budget.
+builder.Services.AddHttpClient(ExternalServiceProbes.HttpClientName, client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
 });
 builder.Services.AddSingleton<JobAftercare>();
 builder.Services.AddHostedService(services => services.GetRequiredService<JobAftercare>());

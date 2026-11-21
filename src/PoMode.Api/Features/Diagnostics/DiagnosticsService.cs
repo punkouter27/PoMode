@@ -20,7 +20,7 @@ namespace PoMode.Api.Features.Diagnostics;
 /// </summary>
 public sealed class DiagnosticsService(
     IHostEnvironment environment,
-    SecretSourceInfo secretSource,
+    ExternalServiceProbes external,
     HardwareProbe hardwareProbe,
     HealthCheckService healthChecks,
     JobQueue queue,
@@ -48,6 +48,8 @@ public sealed class DiagnosticsService(
             .. await StoresAsync(ct),
             .. await ServicesAsync(ct),
         ];
+        // Data rows first, then services: the page groups by Group but keeps this order inside each.
+        checks = [.. checks.OrderBy(check => check.Group switch { "api" => 0, "data" => 1, _ => 2 })];
         return new DiagReportDto(
             Status: DiagnosticStatus.Worst(checks.Select(check => check.Status)),
             Environment: environment.EnvironmentName,
@@ -83,7 +85,7 @@ public sealed class DiagnosticsService(
                     Label: entry.Key == "job-storage" ? "Job storage" : entry.Key,
                     Status: status,
                     Purpose: entry.Key == "job-storage"
-                        ? "Keeps uploads, stems and finished analyses, mirrored to blob storage where configured."
+                        ? "Keeps uploads, stems and finished analyses on this server's disk."
                         : "A storage dependency of the app.",
                     Detail: Plain(status),
                     LatencyMs: Math.Round(entry.Value.Duration.TotalMilliseconds, 1),
@@ -94,15 +96,9 @@ public sealed class DiagnosticsService(
 
     private async Task<List<DiagCheckDto>> ServicesAsync(CancellationToken ct)
     {
-        // Where the secrets came from is not reported, only whether the vault was reachable when it
-        // was meant to be: falling back to environment variables is the degraded case.
-        var vault = new DiagCheckDto(
-            "key-vault", "service", "Key Vault",
-            secretSource.FellBack ? DiagnosticStatus.Degraded : DiagnosticStatus.Healthy,
-            "Holds the app's secrets; read once at start-up.",
-            secretSource.FellBack ? "Settings came from the environment instead." : "Read at start-up.",
-            0,
-            secretSource.FellBack ? "The vault could not be read at start-up." : null);
+        // Blob storage, Key Vault, Application Insights and the web services, probed live in parallel
+        // while the local checks below run.
+        var externalTask = external.ProbeAllAsync(ct);
 
         // Capped: an Ollama that is not running can hold a probe for seconds, and the page waits on it.
         var started = Stopwatch.GetTimestamp();
@@ -148,7 +144,8 @@ public sealed class DiagnosticsService(
             0,
             push.Available ? null : "No push key pair is configured.");
 
-        return [vault, ai, models, notifications];
+        var externalRows = await externalTask;
+        return [.. externalRows, ai, models, notifications];
     }
 
     private static string Plain(string status) => status switch
