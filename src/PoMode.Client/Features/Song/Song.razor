@@ -20,12 +20,12 @@
     <h1 class="pm-sr-only">@($"Analysis of {_status?.FileName ?? "a song"}")</h1>
 }
 
-@* Where this song sits: the header lights Songs, and this names the way back. A hum take was sung on
-   the Practice page and is listed there as well, so it leads back to its takes. *@
+@* Where this song sits: the header lights Songs, and this names the way back. A hum or jam take was
+   sung on the Practice page and is listed there as well, so it leads back to its takes. *@
 @if (_status is { } crumb)
 {
     <nav class="song-crumbs" aria-label="Breadcrumb">
-        @if (crumb.Origin?.Kind == TakeOrigin.HumTake)
+        @if (crumb.Origin?.Kind is TakeOrigin.HumTake or TakeOrigin.JamTake)
         {
             <a href="practice/takes" id="crumb-parent">Your takes</a>
         }
@@ -41,7 +41,7 @@
 @if (_missing)
 {
     <div class="song-missing" role="alert">
-        <p>This song isn't in your library. It may have been deleted, or the link belongs to another account.</p>
+        <p>This song isn't in your library. It may have been deleted, or the link belongs to someone else's library.</p>
         <RadzenButton Text="Back to your songs" Icon="library_music" ButtonStyle="ButtonStyle.Primary" Click="@BackToLibrary" />
     </div>
 }
@@ -51,10 +51,7 @@
    provenance the page reports a mode on an unexplained file. The demo says it was synthesized. *@
 @if (_visual is null && _status?.Origin is { } origin)
 {
-    <div class="take-origin" role="note" data-take-origin="@origin.Kind">
-        <span class="take-origin-icon" aria-hidden="true">@(origin.Kind == TakeOrigin.Demo ? "🎹" : "🎤")</span>
-        <span class="take-origin-text">@origin.Description</span>
-    </div>
+    <div class="song-origin"><OriginBadge Origin="origin" /></div>
 }
 
 @if (_status is not null && (_status.Stage != JobStage.Complete || _visual is null))
@@ -64,7 +61,7 @@
     {
         @* Without this a failed or cancelled job is a dead end. *@
         <div class="analyze-another">
-            <RadzenButton Text="Analyze another file" Icon="upload_file" ButtonStyle="ButtonStyle.Primary"
+            <RadzenButton Text="Analyze another track" Icon="upload_file" ButtonStyle="ButtonStyle.Primary"
                           Click="@BackToLibrary" />
         </div>
     }
@@ -99,7 +96,7 @@
     private ModalResult? _result;
     private HubConnection? _hub;
 
-    /// <summary>A stale or mistyped link, or a song another account owns.</summary>
+    /// <summary>A stale or mistyped link, or a song in someone else's library.</summary>
     private bool _missing;
 
     /// <summary>Jobs that will run before the tracked one, while it waits; pushed by the hub.</summary>

@@ -23,25 +23,8 @@
 /* Provenance for a job whose audio the server can explain — a hum take names the progression it was
    sung over, so the mode reported below reads as an answer about that melody rather than a bare fact
    about an unnamed file. */
-.take-origin {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.song-origin {
     margin: 0.5rem 0;
-    padding: 0.35rem 0.7rem;
-    border: 1px solid var(--pm-hot-edge);
-    border-radius: 6px;
-    background: var(--pm-hot-bg);
-    color: var(--pm-hot);
-    font-size: var(--pm-text-sm);
-}
-
-.take-origin-icon {
-    line-height: 1;
-}
-
-.take-origin-text {
-    font-weight: 600;
 }
 
 /* One quiet line above the song: its name, and the list it was opened from. */

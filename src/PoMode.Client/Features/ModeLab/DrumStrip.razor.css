@@ -113,11 +113,6 @@
     color: var(--pm-fg-muted);
 }
 
-.drums-error {
-    margin: var(--pm-space-2) 0 0;
-    color: var(--pm-danger);
-}
-
 @media (max-width: 720px) {
     .drums-pick {
         flex-basis: 100%;

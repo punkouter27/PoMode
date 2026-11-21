@@ -78,7 +78,7 @@
     }
     else if (Status.Stage == JobStage.Failed)
     {
-        <RadzenText class="error-text" Text="@($"Analysis failed: {Status.Error}")" />
+        <RadzenText class="pm-inline-error" Text="@($"Analysis failed: {Status.Error}")" />
     }
     else if (Status.Stage == JobStage.Cancelled)
     {

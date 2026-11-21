@@ -153,8 +153,8 @@
         await InitPushAsync();
     }
 
-    /// <summary>After the session exists: /api/push answers signed-in callers only, and a browser
-    /// that is already subscribed re-registers itself with whoever that is, on every visit. The
+    /// <summary>After the session exists: /api/push answers callers with a session only, and a browser
+    /// that is already subscribed re-registers itself with that session, on every visit. The
     /// toggle itself is on the Settings page.</summary>
     private async Task InitPushAsync()
     {

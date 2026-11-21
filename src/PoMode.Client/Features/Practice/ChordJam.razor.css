@@ -453,11 +453,6 @@
     font-size: var(--pm-text-sm);
 }
 
-.jam-take-error {
-    color: var(--pm-danger);
-    font-size: var(--pm-text-sm);
-}
-
 /* The verdict on a sent take: the mode the voice was read in, plainly, with the way to the full reading. */
 .jam-verdict {
     display: flex;

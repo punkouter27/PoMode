@@ -147,10 +147,7 @@
                         }
                         @if (Status.Origin is { } take)
                         {
-                            <span class="take-origin" role="note" data-take-origin="@take.Kind">
-                                <span aria-hidden="true">@(take.Kind == TakeOrigin.Demo ? "🎹" : "🎤")</span>
-                                @take.Description
-                            </span>
+                            <OriginBadge Origin="take" />
                         }
                         <TuningNotice Cents="Result.TuningOffsetCents" />
                     </div>

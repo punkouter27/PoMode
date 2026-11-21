@@ -1,0 +1,29 @@
+@* A take that has been sung and not yet sent, the same on Practice and on the guitar jam: hear it over
+   what it was sung over, find its mode, sing it again or throw it away, and the voice-timing nudge.
+   One component so the two pages say the same thing for the same action. *@
+<RadzenButton Text="@(Reviewing ? "Stop" : "Hear it back")" Icon="@(Reviewing ? "stop" : "replay")"
+              ButtonStyle="ButtonStyle.Light" Disabled="@Sending" Click="@OnHear" id="@($"{IdPrefix}-review")"
+              title="@HearTitle" />
+<RadzenButton Text="@(Sending ? "Analyzing…" : "What mode did I sing?")" Icon="insights"
+              ButtonStyle="ButtonStyle.Primary" Disabled="@Sending" Click="@OnAnalyze" id="@($"{IdPrefix}-analyze")" />
+<RadzenButton Text="Sing it again" Icon="mic" ButtonStyle="ButtonStyle.Light" Disabled="@Sending"
+              Click="@OnAgain" id="@($"{IdPrefix}-again")" title="Throw this take away and sing again" />
+<RadzenButton Text="Discard" Icon="delete" ButtonStyle="ButtonStyle.Light" Disabled="@Sending"
+              Click="@OnDiscard" id="@($"{IdPrefix}-discard")" />
+<VoiceTiming Id="@($"{IdPrefix}-timing")" Ms="@NudgeMs" MsChanged="@NudgeMsChanged"
+             BeforeMeasure="@BeforeMeasure" Disabled="@Sending" />
+
+@code {
+    /// <summary>Prefix of the buttons' ids: <c>practice</c> gives <c>practice-review</c>, <c>practice-analyze</c>, …</summary>
+    [Parameter, EditorRequired] public string IdPrefix { get; set; } = "";
+    [Parameter] public string HearTitle { get; set; } = "Your take over what it was sung over";
+    [Parameter] public bool Reviewing { get; set; }
+    [Parameter] public bool Sending { get; set; }
+    [Parameter] public EventCallback OnHear { get; set; }
+    [Parameter] public EventCallback OnAnalyze { get; set; }
+    [Parameter] public EventCallback OnAgain { get; set; }
+    [Parameter] public EventCallback OnDiscard { get; set; }
+    [Parameter] public int NudgeMs { get; set; }
+    [Parameter] public EventCallback<int> NudgeMsChanged { get; set; }
+    [Parameter] public EventCallback BeforeMeasure { get; set; }
+}

@@ -45,3 +45,16 @@
     flex: 1 1 16rem;
     font-size: var(--pm-text-sm);
 }
+
+@media (max-width: 640px) {
+    .voice-timing-prompt {
+        margin-top: var(--pm-space-1);
+        padding: 0.35rem 0.6rem;
+        gap: 0.35rem 0.5rem;
+    }
+
+    .voice-timing-prompt-text {
+        font-size: var(--pm-text-xs);
+        line-height: 1.35;
+    }
+}

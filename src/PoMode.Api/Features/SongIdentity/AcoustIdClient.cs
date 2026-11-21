@@ -12,7 +12,7 @@ namespace PoMode.Api.Features.SongIdentity;
 /// <c>api.acoustid.org/v2/lookup</c>. Off unless <c>PoMode:AcoustId:ClientKey</c> is set (Key Vault).
 /// </summary>
 /// <remarks>
-/// AcoustID's web service is free for non-commercial use only (docs/architecture.md, Configuration and secrets).
+/// AcoustID's web service is free for non-commercial use only; its key is read from Key Vault.
 /// A match counts only from a score of 0.8 and only when the recording carries a title and an artist;
 /// a near miss naming the wrong song is worse than the file name.
 /// </remarks>

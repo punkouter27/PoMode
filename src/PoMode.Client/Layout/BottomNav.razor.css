@@ -11,7 +11,7 @@
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         padding: 0.3rem env(safe-area-inset-right) calc(0.3rem + env(safe-area-inset-bottom)) env(safe-area-inset-left);
-        background: var(--pm-header-bg);
+        background: var(--pm-surface-glass);
         backdrop-filter: blur(10px);
         border-top: 1px solid var(--pm-border);
     }

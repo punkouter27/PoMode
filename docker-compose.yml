@@ -1,7 +1,7 @@
 # Local Azurite (blob emulator) on the well-known ports: docker compose up -d
 services:
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:latest
+    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
     container_name: pomode-azurite
     restart: unless-stopped
     ports:

@@ -85,22 +85,14 @@
                     <span class="jam-take-text">Take recorded: @($"{_takeSeconds / 60:0}:{_takeSeconds % 60:00}") over “@(_takeSong?.Title ?? _takeSong?.Key)”.</span>
                     @* Hear it before deciding: the take over the song it was sung over, from bar one, then
                        keep it (find its mode) or sing it again. *@
-                    <RadzenButton Text="@(_reviewing ? "Stop" : "Hear it back")" Icon="@(_reviewing ? "stop" : "replay")"
-                                  ButtonStyle="ButtonStyle.Light" Disabled="@_sendingTake"
-                                  Click="@ToggleHearTakeAsync" id="jam-take-hear"
-                                  title="Your take over the song it was sung over" />
-                    <RadzenButton Text="@(_sendingTake ? "Sending…" : "Find my melody's mode")" Icon="insights" ButtonStyle="ButtonStyle.Primary"
-                                  Disabled="@_sendingTake" Click="@AnalyzeTakeAsync" id="jam-take-analyze" />
-                    <RadzenButton Text="Record again" Icon="mic" ButtonStyle="ButtonStyle.Light" Disabled="@_sendingTake"
-                                  Click="@ToggleRecordAsync" id="jam-take-retry"
-                                  title="Throw this take away and sing over the song again from the top" />
-                    <RadzenButton Text="Discard" Icon="delete" ButtonStyle="ButtonStyle.Light" Disabled="@_sendingTake"
-                                  Click="@DiscardAsync" id="jam-take-discard" />
-                    <VoiceTiming Id="jam-take-timing" Ms="@_nudgeMs" MsChanged="@SetNudgeAsync" BeforeMeasure="@StopAsync" Disabled="@_sendingTake" />
+                    <TakeReview IdPrefix="jam-take" HearTitle="Your take over the song it was sung over"
+                                Reviewing="@_reviewing" Sending="@_sendingTake" OnHear="@ToggleHearTakeAsync"
+                                OnAnalyze="@AnalyzeTakeAsync" OnAgain="@ToggleRecordAsync" OnDiscard="@DiscardAsync"
+                                NudgeMs="@_nudgeMs" NudgeMsChanged="@SetNudgeAsync" BeforeMeasure="@StopAsync" />
                 }
                 @if (_takeError is not null)
                 {
-                    <span class="jam-take-error">@_takeError</span>
+                    <span class="pm-inline-error">@_takeError</span>
                 }
             </div>
         }

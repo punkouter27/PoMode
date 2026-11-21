@@ -7,11 +7,11 @@ using Xunit;
 
 namespace PoMode.E2EAPI;
 
-public sealed class LiveAndLibraryEndpointTests : IClassFixture<AuthedFactory>
+public sealed class LibraryEndpointTests : IClassFixture<AuthedFactory>
 {
     private readonly AuthedFactory _factory;
 
-    public LiveAndLibraryEndpointTests(AuthedFactory factory) => _factory = factory;
+    public LibraryEndpointTests(AuthedFactory factory) => _factory = factory;
 
     /// <summary>The library is the caller's own: an upload shows up for its owner, is invisible to
     /// every other user, and the listing refuses anyone without a session.</summary>

@@ -25,7 +25,7 @@ public static class PoRateLimits
     /// <summary>Asking a language model. The only endpoint a text box can drive a model from.</summary>
     public const string InterpretPolicy = "po-interpret";
 
-    /// <summary>Minting a guest session: cheap, but each one is a new library owner.</summary>
+    /// <summary>Minting a guest session or switching initials: cheap, but each opens a library.</summary>
     public const string GuestPolicy = "po-guest";
 
     /// <summary>

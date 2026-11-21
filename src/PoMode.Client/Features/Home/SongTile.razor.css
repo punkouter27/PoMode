@@ -16,33 +16,33 @@
     fill: var(--pm-fg-muted);
 }
 
-/* Fills, the same per-mode hues as the library's mode timelines, so a tile and a timeline agree. */
-.tile-ionian .tile-ground { fill: #2563eb; }
-.tile-dorian .tile-ground { fill: #059669; }
-.tile-phrygian .tile-ground { fill: #dc2626; }
-.tile-lydian .tile-ground { fill: #7c3aed; }
-.tile-mixolydian .tile-ground { fill: #d97706; }
-.tile-aeolian .tile-ground { fill: #475569; }
-.tile-locrian .tile-ground { fill: #be185d; }
-.tile-minorpentatonic .tile-ground { fill: #0891b2; }
-.tile-majorpentatonic .tile-ground { fill: #65a30d; }
+/* Fills: the per-mode tokens (pm-tokens.css), the same the library's timelines and the mode cards use. */
+.tile-ionian .tile-ground { fill: var(--pm-mode-ionian); }
+.tile-dorian .tile-ground { fill: var(--pm-mode-dorian); }
+.tile-phrygian .tile-ground { fill: var(--pm-mode-phrygian); }
+.tile-lydian .tile-ground { fill: var(--pm-mode-lydian); }
+.tile-mixolydian .tile-ground { fill: var(--pm-mode-mixolydian); }
+.tile-aeolian .tile-ground { fill: var(--pm-mode-aeolian); }
+.tile-locrian .tile-ground { fill: var(--pm-mode-locrian); }
+.tile-minorpentatonic .tile-ground { fill: var(--pm-mode-minorpentatonic); }
+.tile-majorpentatonic .tile-ground { fill: var(--pm-mode-majorpentatonic); }
 
 /* The tilt, under effects only. Each key's class carries its angle (the stripes' own, 30 degrees a
    semitone); a tile tips about that line when its row is pointed at or focused, so two songs in one
    key tip the same way. The light that crosses the raised face is the mode's colour token, the same
-   one the analysis page titles its cards in; the pentatonics have none and take the accent. */
-.tile-key-0 { --pm-key: 0deg; }
-.tile-key-1 { --pm-key: 30deg; }
-.tile-key-2 { --pm-key: 60deg; }
-.tile-key-3 { --pm-key: 90deg; }
-.tile-key-4 { --pm-key: 120deg; }
-.tile-key-5 { --pm-key: 150deg; }
-.tile-key-6 { --pm-key: 180deg; }
-.tile-key-7 { --pm-key: 210deg; }
-.tile-key-8 { --pm-key: 240deg; }
-.tile-key-9 { --pm-key: 270deg; }
-.tile-key-10 { --pm-key: 300deg; }
-.tile-key-11 { --pm-key: 330deg; }
+   one the analysis page titles its cards in. */
+.tile-key-0 { --pm-tile-tilt: 0deg; }
+.tile-key-1 { --pm-tile-tilt: 30deg; }
+.tile-key-2 { --pm-tile-tilt: 60deg; }
+.tile-key-3 { --pm-tile-tilt: 90deg; }
+.tile-key-4 { --pm-tile-tilt: 120deg; }
+.tile-key-5 { --pm-tile-tilt: 150deg; }
+.tile-key-6 { --pm-tile-tilt: 180deg; }
+.tile-key-7 { --pm-tile-tilt: 210deg; }
+.tile-key-8 { --pm-tile-tilt: 240deg; }
+.tile-key-9 { --pm-tile-tilt: 270deg; }
+.tile-key-10 { --pm-tile-tilt: 300deg; }
+.tile-key-11 { --pm-tile-tilt: 330deg; }
 
 .tile-keyed { --pm-tile-light: var(--pm-accent); }
 .tile-keyed.tile-ionian { --pm-tile-light: var(--pm-mode-ionian); }
@@ -52,6 +52,8 @@
 .tile-keyed.tile-mixolydian { --pm-tile-light: var(--pm-mode-mixolydian); }
 .tile-keyed.tile-aeolian { --pm-tile-light: var(--pm-mode-aeolian); }
 .tile-keyed.tile-locrian { --pm-tile-light: var(--pm-mode-locrian); }
+.tile-keyed.tile-minorpentatonic { --pm-tile-light: var(--pm-mode-minorpentatonic); }
+.tile-keyed.tile-majorpentatonic { --pm-tile-light: var(--pm-mode-majorpentatonic); }
 
 /* Clipped to its own corners so the band of light never shows outside the tile. */
 .tile-keyed {
@@ -78,7 +80,7 @@
 
 :root:not([data-fx="off"]) tr:hover .tile-keyed,
 :root:not([data-fx="off"]) tr:focus-within .tile-keyed {
-    transform: perspective(80px) rotate3d(cos(var(--pm-key)), sin(var(--pm-key)), 0, calc(var(--pm-tilt) * -1));
+    transform: perspective(80px) rotate3d(cos(var(--pm-tile-tilt)), sin(var(--pm-tile-tilt)), 0, calc(var(--pm-tilt) * -1));
 }
 
 :root:not([data-fx="off"]) tr:hover .tile-specular,

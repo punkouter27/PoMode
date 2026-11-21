@@ -2,7 +2,7 @@ namespace PoMode.Client.Services;
 
 /// <summary>
 /// Attaches <c>X-Fake-User</c> on outbound API calls during Development/Test when a dev persona is
-/// chosen via the header account switcher.
+/// chosen on the Settings page.
 /// </summary>
 public sealed class DevFakeUserHandler : DelegatingHandler
 {

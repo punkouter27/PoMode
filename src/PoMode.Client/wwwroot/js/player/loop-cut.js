@@ -36,7 +36,7 @@ export function loopBars(played) {
     return bars;
 }
 
-export function loopFrameCount(bpm, bars, sampleRate) {
+function loopFrameCount(bpm, bars, sampleRate) {
     return Math.round(bars * 4 * 60 / bpm * sampleRate);
 }
 

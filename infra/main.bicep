@@ -11,7 +11,7 @@ param webAppLocation string = 'westus3'
 // Resources only. Every role and access policy the app needs is granted by
 // scripts/ensure-azure-access.ps1 (AGENTS.md), never here, so there is one list to keep right.
 
-@description('Deploy the optional Azure OpenAI interpreter (bills per use, roughly a cent per written interpretation).')
+@description('Deploy the optional Azure OpenAI interpreter (bills per use, a fraction of a cent per written interpretation).')
 param enableCloudInterpreter bool = false
 
 var resourceGroupName = 'PoMode'
@@ -46,5 +46,3 @@ module resources 'modules/resources.bicep' = {
 }
 
 output webAppUrl string = resources.outputs.webAppUrl
-output storageAccountName string = resources.outputs.storageAccountName
-output webAppPrincipalId string = resources.outputs.webAppPrincipalId

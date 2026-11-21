@@ -8,15 +8,18 @@ Live: https://app-pomode2.azurewebsites.net (status page: `/diag`).
 
 ## Architecture
 
-The shape and the decisions behind it are in [`docs/`](docs/README.md): architecture, the UI rules,
-what was removed and why, and what the AI costs.
+The rules, the decisions and the commands are in [`AGENTS.md`](AGENTS.md).
 
 - `src/PoMode.Api/` hosts the client, Minimal API endpoints, SignalR analysis hub, and
   background analysis worker. Server features live in `Features/<Feature>/`.
 - `src/PoMode.Client/` contains the Blazor WebAssembly UI.
 - `src/PoMode.Shared/` contains contracts and source-generated JSON support shared by the
   API and client.
-- `tests/` contains Unit (94), Integration (38), E2E API (25) and Playwright E2E UI (25) projects.
+- `src/PoMode.ApiClient/` is the one typed HTTP client for the API, used by the web client and
+  the mobile app.
+- `src/PoMode.Mobile/` is the native .NET MAUI app (outside the solution; `scripts/ci-checks.ps1`
+  builds it).
+- `tests/` contains Unit (94), Integration (39), E2E API (25) and Playwright E2E UI (25) projects.
 
 The solution is `PoMode.slnx`. `AGENTS.md` is the detailed guide: the Po web standard this repo
 follows, the architecture, constraints, test tiers and development workflow.

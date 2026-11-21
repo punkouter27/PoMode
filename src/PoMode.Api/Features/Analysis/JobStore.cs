@@ -195,6 +195,7 @@ public sealed class JobStore(IConfiguration configuration, TimeProvider time, Jo
     {
         var gate = LockFor(jobId);
         await gate.WaitAsync(ct);
+        var found = false;
         try
         {
             var path = StatePath(jobId);
@@ -202,11 +203,18 @@ public sealed class JobStore(IConfiguration configuration, TimeProvider time, Jo
             {
                 return null;
             }
+            found = true;
             return JsonSerializer.Deserialize<JobState>(await File.ReadAllTextAsync(path, ct), JsonOptions);
         }
         finally
         {
             gate.Release();
+            // Any well-formed id reaches here, so a miss must not leave a lock behind for good: a
+            // script asking for made-up ids would otherwise grow this map without bound.
+            if (!found && gate.CurrentCount == 1)
+            {
+                _locks.TryRemove(new KeyValuePair<string, SemaphoreSlim>(jobId, gate));
+            }
         }
     }
 

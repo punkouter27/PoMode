@@ -19,7 +19,7 @@ namespace PoMode.Api.Features.SongStatistics;
 /// managed identity in Azure and the developer's own sign-in locally.</para>
 ///
 /// <para>It ranks after a local model and before the template (SongInterpreterSelector): free first,
-/// then paid, then the honest fallback. What it costs is in docs/ai-cost.md.</para>
+/// then paid, then the honest fallback. It costs a fraction of a cent per written interpretation.</para>
 /// </summary>
 public sealed class AzureOpenAiSongInterpreter(IConfiguration configuration) : ISongInterpreter
 {

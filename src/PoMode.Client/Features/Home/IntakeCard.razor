@@ -60,7 +60,7 @@
         <span id="upload-pick-error" class="pm-field-error" role="alert">@_pickError</span>
         @if (_recordError is not null)
         {
-            <RadzenText class="upload-error" Text="@_recordError" />
+            <RadzenText class="pm-inline-error" Text="@_recordError" />
         }
 
         @* First run: a finished analysis is one click away, so the canvas, mixer and stats can be seen
@@ -90,7 +90,7 @@
         }
         @if (_uploadError is not null)
         {
-            <RadzenText class="upload-error" Text="@_uploadError" role="alert" />
+            <RadzenText class="pm-inline-error" Text="@_uploadError" role="alert" />
         }
     </div>
     @* Machine-readable probe result: browser tests wait for it before uploading, so a capability

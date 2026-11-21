@@ -112,6 +112,31 @@ public sealed class WriteEndpointAuthTests : IDisposable
         Assert.Equal(AnonymousAllowList, anonymous);
     }
 
+    [Fact]
+    public async Task Scalar_csp_relaxes_script_src_elem_only_in_development()
+    {
+        await using var prodFactory = Factory();
+        using var prodClient = prodFactory.CreateClient();
+        var prodHome = await prodClient.GetAsync("/health/live");
+        var prodCsp = Assert.Single(prodHome.Headers.GetValues("Content-Security-Policy"));
+        Assert.Contains("script-src-elem 'self' blob:", prodCsp, StringComparison.Ordinal);
+
+        await using var devFactory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(b => b
+                .UseEnvironment("Development")
+                .UseSetting("Jobs:RootPath", _root)
+                .UseSetting("Jobs:Storage:Mode", "FileSystem")
+                .UseSetting("Models:RootPath", _modelsRoot)
+                .UseSetting("Models:AutoDownload", "false"));
+        using var devClient = devFactory.CreateClient();
+        var devScalar = await devClient.GetAsync("/scalar/v1");
+        var devCsp = Assert.Single(devScalar.Headers.GetValues("Content-Security-Policy"));
+        Assert.Contains("script-src-elem 'self' 'unsafe-inline' blob:", devCsp, StringComparison.Ordinal);
+        var devHealth = await devClient.GetAsync("/health/live");
+        var devHealthCsp = Assert.Single(devHealth.Headers.GetValues("Content-Security-Policy"));
+        Assert.Contains("script-src-elem 'self' blob:", devHealthCsp, StringComparison.Ordinal);
+    }
+
     private static bool IsHostOrStaticAsset(RouteEndpoint endpoint) =>
         endpoint.RoutePattern.RawText!.TrimStart('/').StartsWith("_framework", StringComparison.Ordinal)
         || endpoint.Metadata.Any(m => m.GetType().Name is "StaticAssetDescriptor" or "ComponentTypeMetadata" or "RootComponentMetadata");

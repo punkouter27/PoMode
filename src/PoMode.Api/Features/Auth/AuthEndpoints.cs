@@ -78,6 +78,8 @@ public static class AuthEndpoints
             })
             .RequireAuthorization()
             .DisableAntiforgery()
+            // Initials are the whole key to a collection (26³ of them), so walking them is throttled.
+            .RequireRateLimiting(PoRateLimits.GuestPolicy)
             .WithTags("Auth")
             .WithSummary("Sets the three initials this guest goes by.");
 

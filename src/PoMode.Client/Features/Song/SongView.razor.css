@@ -5,14 +5,14 @@
     margin-top: 0.25rem;
 }
 
-.song-main-card {
+.song-container ::deep .rz-card.song-main-card {
     background: var(--pm-surface);
     border: 1px solid var(--pm-border);
     border-radius: 8px;
-    padding: 0.85rem 1.25rem;
+    padding: 0.65rem 1.25rem;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.4rem;
 }
 
 .song-header-row {
@@ -92,20 +92,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--pm-space-1) var(--pm-space-2);
-}
-
-.take-origin {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.15rem 0.55rem;
-    border: 1px solid var(--pm-hot-edge);
-    border-radius: 999px;
-    background: var(--pm-hot-bg);
-    color: var(--pm-hot);
-    font-size: var(--pm-text-xs);
-    font-weight: 600;
-    min-width: 0;
 }
 
 .song-identity,
@@ -293,8 +279,3 @@
 }
 
 /* The demo is the app's own example, not something the user made — a calmer tone than a take. */
-.take-origin[data-take-origin="Demo"] {
-    border-color: var(--pm-info-edge);
-    background: var(--pm-info-bg);
-    color: var(--pm-info);
-}

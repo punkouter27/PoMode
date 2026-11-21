@@ -29,7 +29,7 @@
         else if (_loadError is not null)
     {
             @* A read that failed, not a library that is empty — the difference matters most here. *@
-            <p class="library-load-error" role="alert">@_loadError</p>
+            <p class="pm-error-panel" role="alert">@_loadError</p>
         }
         else
         {
@@ -182,20 +182,9 @@
                             }
                             @* A sung take, a beat or the first-run demo is not an uploaded song, and the row
                                should not read like one; the tooltip carries the server's sentence about it. *@
-                            @if (entry.Origin is { Kind: TakeOrigin.Demo } demo)
+                            @if (entry.Origin is { } origin)
                             {
-                                <span class="library-origin-badge library-origin-badge--demo" title="@demo.Description"
-                                      data-origin-kind="@demo.Kind">🎹 demo</span>
-                            }
-                            else if (entry.Origin is { Kind: TakeOrigin.Beat } beat)
-                            {
-                                <span class="library-origin-badge" title="@beat.Description"
-                                      data-origin-kind="@beat.Kind">🥁 beat</span>
-                            }
-                            else if (entry.Origin is { } origin)
-                            {
-                                <span class="library-origin-badge" title="@origin.Description"
-                                      data-origin-kind="@origin.Kind">@(origin.Kind == TakeOrigin.JamTake ? "🎸 jam" : "🎤 hum")</span>
+                                <OriginBadge Origin="origin" Compact="true" />
                             }
                             @if (_offline.Contains(entry.JobId))
                             {

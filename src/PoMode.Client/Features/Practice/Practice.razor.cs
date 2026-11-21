@@ -598,6 +598,12 @@ public partial class Practice
         }
     }
 
+    private async Task SingAgainAsync()
+    {
+        await DiscardTakeAsync();
+        await StartTakeAsync();
+    }
+
     private async Task DiscardTakeAsync()
     {
         await StopEverythingAsync();

@@ -4,37 +4,27 @@
 
 @* "Try another model": the same song again from one stage on, with that stage done by a different
    model, as a new run beside this one. The library lists the two as runs of one song, and ticking
-   both compares them. Same popover contract as DownloadMenu: Escape and a click outside close it,
-   and it takes focus when it opens. *@
-<div class="rerun-menu">
-    <RadzenButton Text="Try another model" Icon="science" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
-                  Click="@ToggleAsync" Disabled="@_busy" aria-haspopup="true" aria-expanded="@(_open ? "true" : "false")"
-                  title="Run this song again with a different model for one step, to compare" />
-    @if (_open)
+   both compares them. A Radzen split button that always opens its list, like DownloadMenu. *@
+<RadzenSplitButton Text="Try another model" Icon="science" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                   AlwaysOpenPopup="true" Click="@RunAsync" Disabled="@_busy" class="rerun-menu"
+                   ButtonAriaLabel="Run this song again with a different model for one step, to compare"
+                   OpenAriaLabel="Choose a model">
+    @if (_choices is null)
     {
-        <div class="rerun-scrim" @onclick="Close" aria-hidden="true"></div>
-        <div class="rerun-list" role="menu" tabindex="-1" @ref="_list" @onkeydown="OnKeyDown">
-            @if (_choices is null)
-            {
-                <span class="rerun-empty">Loading the models…</span>
-            }
-            else if (_choices.Count == 0)
-            {
-                <span class="rerun-empty">This server has no other model for any step.</span>
-            }
-            else
-            {
-                @foreach (var choice in _choices)
-                {
-                    <button type="button" class="rerun-item" role="menuitem" @onclick="@(() => RunAsync(choice))">
-                        <span class="pm-label">@ExecutorChoices.StageLabel(choice.Stage)</span>
-                        <span>@choice.Label</span>
-                    </button>
-                }
-            }
-        </div>
+        <RadzenSplitButtonItem Text="Loading the models…" Disabled="true" />
     }
-</div>
+    else if (_choices.Count == 0)
+    {
+        <RadzenSplitButtonItem Text="This server has no other model for any step." Disabled="true" />
+    }
+    else
+    {
+        @foreach (var choice in _choices)
+        {
+            <RadzenSplitButtonItem Text="@($"{ExecutorChoices.StageLabel(choice.Stage)}: {choice.Label}")" Value="@($"{choice.Stage}|{choice.Executor}")" />
+        }
+    }
+</RadzenSplitButton>
 
 @code {
     private sealed record Choice(string Stage, string Executor, string Label);
@@ -46,20 +36,12 @@
 
     [Parameter] public EventCallback<JobStatusDto> OnStarted { get; set; }
 
-    private bool _open;
-    private bool _focus;
     private bool _busy;
     private List<Choice>? _choices;
-    private ElementReference _list;
 
-    private async Task ToggleAsync()
+    // One small read when the song page shows the button, so the list is ready when it opens.
+    protected override async Task OnInitializedAsync()
     {
-        _open = !_open;
-        _focus = _open;
-        if (!_open || _choices is not null)
-        {
-            return;
-        }
         try
         {
             var stages = await Analysis.GetExecutorsAsync() ?? [];
@@ -74,23 +56,16 @@
         }
     }
 
-    private void Close() => _open = false;
-
-    private void OnKeyDown(KeyboardEventArgs e)
+    private async Task RunAsync(RadzenSplitButtonItem? item)
     {
-        if (e.Key == "Escape")
+        if (item?.Value?.Split('|') is not [var stage, var executor])
         {
-            _open = false;
+            return;
         }
-    }
-
-    private async Task RunAsync(Choice choice)
-    {
-        _open = false;
         _busy = true;
         try
         {
-            var (status, error) = await Analysis.RerunAsync(JobId, choice.Stage, choice.Executor);
+            var (status, error) = await Analysis.RerunAsync(JobId, stage, executor);
             if (status is null)
             {
                 Notifications.Notify(NotificationSeverity.Error, "Not started", error ?? "The server would not run it again.");
@@ -105,15 +80,6 @@
         finally
         {
             _busy = false;
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (_focus)
-        {
-            _focus = false;
-            await _list.FocusAsync();
         }
     }
 }

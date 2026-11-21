@@ -248,6 +248,12 @@
         min-height: 2.25rem;
     }
 
+    /* The download split button opens its list from the label too, so in this tight cell the arrow
+       goes and "Download" gets the whole width. */
+    .studio-transport ::deep .download-menu .rz-splitbutton-menubutton {
+        display: none;
+    }
+
     .studio-transport ::deep .send-analyzer {
         margin-left: 0;
     }

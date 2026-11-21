@@ -57,7 +57,7 @@
     private bool ShouldShow => Session.IsPromptOpen && !OnDiagnostics;
 
     private bool OnDiagnostics
-        => new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/') is "/diag" or "/diagnostics";
+        => new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/') is "/diag";
 
     protected override void OnInitialized()
     {

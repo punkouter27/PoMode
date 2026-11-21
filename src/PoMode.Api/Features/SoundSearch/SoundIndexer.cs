@@ -60,12 +60,19 @@ public sealed class SoundIndexer(JobStore store, ClapEncoder clap, ILogger<Sound
                 {
                     var audio = await Task.Run(() => AudioDecoder.Decode(input), stoppingToken);
                     var vector = await clap.EmbedAudioAsync(audio, stoppingToken);
-                    await store.WriteArtifactAsync(state.JobId, ArtifactName, new SoundVector(Model, vector), stoppingToken);
+                    if (Directory.Exists(store.JobDir(state.JobId)))
+                    {
+                        await store.WriteArtifactAsync(state.JobId, ArtifactName, new SoundVector(Model, vector), stoppingToken);
+                    }
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 throw;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // The job was deleted or purged while CLAP was embedding its audio.
             }
             catch (Exception ex)
             {

@@ -49,6 +49,25 @@
     display: none;
 }
 
+/* Something that went wrong, said in a sentence next to where it happened (a take that would not
+   send, a reading that failed). The one look for inline errors outside a form field. */
+.pm-inline-error {
+    margin: var(--pm-space-2) 0 0;
+    color: var(--pm-danger);
+    font-size: var(--pm-text-sm);
+}
+
+/* A failure that replaces content (a library or a mix that would not load): a boxed message, often
+   with its Retry beside it. */
+.pm-error-panel {
+    margin: var(--pm-space-2) 0;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--po-error-border);
+    border-radius: var(--po-radius);
+    background: var(--po-error-bg);
+    color: var(--pm-fg);
+}
+
 /* The build stamp (.po-version, po-tokens.css) sits above the bottom nav where the nav shows. */
 @media (max-width: 640px) {
     :root {

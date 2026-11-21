@@ -158,16 +158,16 @@
     border-radius: 0.15rem;
 }
 
-/* One fixed hue per mode so the same mode reads the same in every card. */
-.mode-ionian { background: #2563eb; }
-.mode-dorian { background: #059669; }
-.mode-phrygian { background: #dc2626; }
-.mode-lydian { background: #7c3aed; }
-.mode-mixolydian { background: #d97706; }
-.mode-aeolian { background: #475569; }
-.mode-locrian { background: #be185d; }
-.mode-minorpentatonic { background: #0891b2; }
-.mode-majorpentatonic { background: #65a30d; }
+/* One hue per mode (pm-tokens.css), the same on every card, tile and timeline. */
+.mode-ionian { background: var(--pm-mode-ionian); }
+.mode-dorian { background: var(--pm-mode-dorian); }
+.mode-phrygian { background: var(--pm-mode-phrygian); }
+.mode-lydian { background: var(--pm-mode-lydian); }
+.mode-mixolydian { background: var(--pm-mode-mixolydian); }
+.mode-aeolian { background: var(--pm-mode-aeolian); }
+.mode-locrian { background: var(--pm-mode-locrian); }
+.mode-minorpentatonic { background: var(--pm-mode-minorpentatonic); }
+.mode-majorpentatonic { background: var(--pm-mode-majorpentatonic); }
 .mode-unclear { background: var(--pm-chord-block); }
 
 .library-filters {
@@ -343,29 +343,6 @@
     font-style: italic;
 }
 
-/* Marks a row that is a sung take rather than an uploaded song; the tooltip carries the progression
-   it was hummed over, which is the row's actual subject. */
-.library-origin-badge {
-    display: inline-block;
-    margin-left: 0.35rem;
-    padding: 0.05rem 0.35rem;
-    border-radius: 999px;
-    border: 1px solid var(--pm-hot-edge);
-    background: var(--pm-hot-bg);
-    color: var(--pm-hot);
-    font-size: var(--pm-text-xs);
-    font-weight: 700;
-    white-space: nowrap;
-    cursor: help;
-}
-
-/* The demo is the app's own example, not something the user made — a calmer tone than a take. */
-.library-origin-badge--demo {
-    border-color: var(--pm-info-edge);
-    background: var(--pm-info-bg);
-    color: var(--pm-info);
-}
-
 
 /* A filter that matches nothing. The grid's own "No records to display." left the reader with no
    idea the search box was why, and no way back from it. */
@@ -381,22 +358,13 @@
 
 .library-empty-icon {
     font-size: 1.5rem;
-    color: var(--pm-fg-subtle, var(--pm-fg-muted));
+    color: var(--pm-fg-muted);
 }
 
 .library-empty-text {
     margin: 0;
 }
 
-/* A read that failed is not an empty library, and must not look like one. */
-.library-load-error {
-    margin: 0.5rem 0;
-    padding: 0.75rem 1rem;
-    border: var(--po-error-border) solid;
-    border-radius: var(--pm-radius, 8px);
-    background: var(--po-error-bg);
-    color: var(--pm-fg);
-}
 
 /* The sound search chip reads as a different kind of filter: a ranking, not a yes or no. */
 .library-chip--sound {

@@ -91,7 +91,7 @@ builder.Services.AddSingleton<IStemSeparator, FakeStemSeparator>();
 // Production never lists them.
 var withFakes = !builder.Environment.IsProduction();
 // RMVPE and Basic Pitch share a rank (both local models), so registration order decides the default:
-// RMVPE first, on the accuracy numbers in CLAUDE.md. Basic Pitch still transcribes the backing stem.
+// RMVPE first, on the accuracy numbers in test-reports/model-accuracy.html. Basic Pitch still transcribes the backing stem.
 builder.Services.AddSingleton<IPitchTracker, RmvpePitchTracker>();
 builder.Services.AddSingleton<OnnxPitchTracker>();
 builder.Services.AddSingleton<IPitchTracker>(sp => sp.GetRequiredService<OnnxPitchTracker>());
@@ -137,7 +137,7 @@ builder.Services.AddSingleton<WebPushOutcomeNotifier>();
 builder.Services.AddSingleton<LyricsTranscriber>();
 // What a finished song is (its tags, else AcoustID) and its published lyrics (LRCLIB), both in
 // aftercare, and the songs that share its chord loop (Hooktheory), asked from the song page. The two
-// with accounts are off until their keys are in Key Vault (docs/architecture.md, Configuration and secrets).
+// with accounts are off until their keys are in Key Vault.
 const string userAgent = "PoMode (+https://github.com/punkouter27/PoMode)";
 builder.Services.AddSingleton<AcoustIdClient>();
 builder.Services.AddSingleton<SongIdentifier>();
@@ -220,12 +220,19 @@ var commit = PoPlatform.Commit;
 const string ContentSecurityPolicy =
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; script-src-elem 'self' blob:; script-src-attr 'unsafe-inline'; "
     + "object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
+// Scalar's Development UI boots from an inline <script>, so /scalar relaxes script-src-elem only in Dev/Test.
+const string ScalarDevContentSecurityPolicy =
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; script-src-elem 'self' 'unsafe-inline' blob:; script-src-attr 'unsafe-inline'; "
+    + "object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
+var allowScalarUi = app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Test");
 app.Use((context, next) =>
 {
     var headers = context.Response.Headers;
     headers["X-Commit"] = commit;
     headers.XContentTypeOptions = "nosniff";
-    headers.ContentSecurityPolicy = ContentSecurityPolicy;
+    headers.ContentSecurityPolicy = allowScalarUi && context.Request.Path.StartsWithSegments("/scalar")
+        ? ScalarDevContentSecurityPolicy
+        : ContentSecurityPolicy;
     headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     return next();
 });

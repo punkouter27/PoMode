@@ -1,0 +1,31 @@
+@using PoMode.Shared.Analysis
+
+@* Single source of truth for where a song came from, like TierBadge for tiers: one glyph and one short
+   word per kind, so the library, the song page and its header cannot drift. Compact (the library row)
+   shows the word and keeps the server's sentence for the tooltip; otherwise the sentence is shown. *@
+<span class="origin-badge @(Compact ? "" : "origin-badge--full")" role="note" title="@Origin.Description"
+      data-take-origin="@(Compact ? null : Origin.Kind)" data-origin-kind="@(Compact ? Origin.Kind : null)">
+    <span aria-hidden="true">@Glyph</span>
+    @(Compact ? Word : Origin.Description)
+</span>
+
+@code {
+    [Parameter, EditorRequired] public TakeOrigin Origin { get; set; } = default!;
+    [Parameter] public bool Compact { get; set; }
+
+    private string Glyph => Origin.Kind switch
+    {
+        TakeOrigin.Demo => "🎹",
+        TakeOrigin.Beat => "🥁",
+        TakeOrigin.JamTake => "🎸",
+        _ => "🎤",
+    };
+
+    private string Word => Origin.Kind switch
+    {
+        TakeOrigin.Demo => "demo",
+        TakeOrigin.Beat => "beat",
+        TakeOrigin.JamTake => "jam",
+        _ => "hum",
+    };
+}

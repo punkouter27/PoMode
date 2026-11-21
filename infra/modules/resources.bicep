@@ -1,29 +1,29 @@
 @description('Location for the resources in this resource group')
-param location string = resourceGroup().location
+param location string
 
 @description('Location for the Web App and App Service Plan')
-param webAppLocation string = 'westus3'
+param webAppLocation string
 
 @description('Name of the Storage Account')
-param storageAccountName string = 'stpomode2'
+param storageAccountName string
 
 @description('Name of the App Service (Web App)')
-param webAppName string = 'app-pomode2'
+param webAppName string
 
 @description('Name of the App Service Plan on F1 Free Linux tier')
-param appServicePlanName string = 'asp-pomode-f1'
+param appServicePlanName string
 
 @description('Name of the shared Key Vault in PoShared')
-param keyVaultName string = 'kv-poshared2'
+param keyVaultName string
 
 @description('Name of the shared Application Insights component in PoShared')
-param appInsightsName string = 'poappideinsights8f9c9a4e'
+param appInsightsName string
 
 @description('Name of the shared resource group')
-param sharedResourceGroupName string = 'PoShared'
+param sharedResourceGroupName string
 
-@description('Deploy the optional Azure OpenAI interpreter. Off by default: it is the one resource that bills per use (roughly a cent per written interpretation).')
-param enableCloudInterpreter bool = false
+@description('Deploy the optional Azure OpenAI interpreter. Off by default: it is the one resource that bills per use (a fraction of a cent per written interpretation).')
+param enableCloudInterpreter bool
 
 @description('Azure OpenAI account name (also its subdomain, so its endpoint is known before it exists)')
 param openAiAccountName string = 'oai-pomode'
@@ -118,9 +118,8 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
       minTlsVersion: '1.2'
       appSettings: concat([
         {
-          // Must match the key SecretsBootstrap reads, 'KeyVault:VaultUri'. Under the old name the
-          // value never reached configuration, so the app silently used environment variables while
-          // the access policy below granted secrets to an identity that never called the vault.
+          // Must match the key SecretsBootstrap reads, 'KeyVault:VaultUri'. The app identity's get/list
+          // on this vault is granted by scripts/ensure-azure-access.ps1.
           name: 'KeyVault__VaultUri'
           value: sharedKeyVault.properties.vaultUri
         }
@@ -138,14 +137,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
           name: 'Jobs__Storage__AccountUri'
           value: storageAccount.properties.primaryEndpoints.blob
         }
-        {
-          name: 'Jobs__Storage__Container'
-          value: 'pomode-jobs'
-        }
-        {
-          name: 'Jobs__Storage__Mode'
-          value: 'Auto'
-        }
+        // Jobs:Storage:Container and :Mode keep their appsettings.json defaults (pomode-jobs, Auto).
         {
           // The demo template runs the real pipeline on the server; on F1 that CPU comes out of the
           // 60-minute daily quota. New libraries start empty here instead.
@@ -197,6 +189,4 @@ module healthAvailabilityTest 'availability-test.bicep' = {
 }
 
 // Outputs
-output storageAccountName string = storageAccount.name
 output webAppUrl string = 'https://${webApp.properties.defaultHostName}'
-output webAppPrincipalId string = webApp.identity.principalId

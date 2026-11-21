@@ -6,11 +6,11 @@
 //   dotnet run scripts/layout-audit.cs -- compare before after <notes.md> <name>
 //
 // capture writes SCREENSHOTS/audit/<label>/ (one PNG per route and viewport, plus results.json) and
-// checks what docs/ui-rules.md promises: no sideways scroll, no page taller than a desktop viewport (a
+// checks the layout rules: no sideways scroll, no page taller than a desktop viewport (a
 // phone allows the documents marked MayScroll), no text under 12px, no pointer target under 24px, no layout shift
 // after first paint. compare writes one self-contained SCREENSHOTS/<name>.html with both states side
 // by side, each annotated with its findings, and the notes file as the summary of what changed.
-#:package Microsoft.Playwright@1.62.0
+#:package Microsoft.Playwright@1.64.1
 #:property ManagePackageVersionsCentrally=false
 #:property PublishAot=false
 

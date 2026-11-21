@@ -125,12 +125,6 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    background: var(--pm-danger-bg);
-    border: 1px solid var(--pm-danger-edge);
-    border-radius: 6px;
-    padding: 0.4rem 0.75rem;
-    font-size: var(--pm-text-sm);
-    color: var(--pm-danger);
 }
 
 .mixer-loading-slot {

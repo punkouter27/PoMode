@@ -63,8 +63,8 @@
         new("Page", "Practice · Guitar jam", () => GoAsync("practice/jam")),
         new("Page", "Settings", () => GoAsync("settings")),
         .. Flags.Tools.Diagnostics ? (Command[])[new("Page", "Diagnostics", () => GoAsync("diag"))] : [],
-        new("Setting", "Account: diagnostics, install the app", () => GoAsync("settings#account")),
-        new("Setting", "Analysis models", () => GoAsync("settings")),
+        new("Setting", "You: initials, download, delete, install", () => GoAsync("settings#account")),
+        new("Setting", "Analysis models", () => GoAsync("settings#models")),
         new("Setting", "More tools: inspector, rerun, MIDI, diagnostics, purity, describe", () => GoAsync("settings#more-tools")),
         new("Setting", "Keyboard shortcuts", () => GoAsync("settings#shortcuts")),
         new("Setting", "Download everything I added", () => { Navigation.NavigateTo("api/account/export", forceLoad: true); return Task.CompletedTask; }),
@@ -93,6 +93,7 @@
         _query = "";
         _active = 0;
         _matches = null;
+        await Flags.LoadAsync();
         try
         {
             _songs = [.. (await Analysis.GetLibraryAsync() ?? [])

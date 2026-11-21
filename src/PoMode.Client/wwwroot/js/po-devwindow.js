@@ -56,6 +56,12 @@
     var nothingFocused = !a || a === document.body || a === document.documentElement;
     if (!nothingFocused) return;
     tabUsed = true;
-    if (openDevWindow()) e.preventDefault();
+    if (openDevWindow()) {
+      e.preventDefault();
+      // The Tab still lands where it would have: on the page's first stop ("Skip to content"), so a
+      // keyboard visitor who closes the window carries on from there rather than from nowhere.
+      var first = document.querySelector('.skip-link, a[href], button, input, [tabindex="0"]');
+      if (first) first.focus();
+    }
   }, true);
 })();

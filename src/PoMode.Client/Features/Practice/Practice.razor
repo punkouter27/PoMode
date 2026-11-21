@@ -136,17 +136,10 @@
 
                             case TakeState.Captured:
                                 <span class="take-length">Take: @($"{_takeSec:0.0}s")</span>
-                                <RadzenButton Text="@(_reviewing ? "Stop" : "Hear it back")" Icon="replay"
-                                              ButtonStyle="ButtonStyle.Light" Disabled="@_sending"
-                                              Click="@ToggleReviewAsync" id="practice-review"
-                                              title="Your take against the chords it was sung over" />
-                                <RadzenButton Text="@(_sending ? "Analyzing…" : "What mode did I sing? →")"
-                                              ButtonStyle="ButtonStyle.Primary" Disabled="@_sending"
-                                              Click="@AnalyzeTakeAsync" id="practice-analyze" />
-                                <RadzenButton Text="Redo" Icon="delete" ButtonStyle="ButtonStyle.Light"
-                                              Disabled="@_sending" Click="@DiscardTakeAsync" id="practice-redo" />
-                                <VoiceTiming Id="practice-timing" Ms="@_nudgeMs" MsChanged="@SetNudgeAsync"
-                                             BeforeMeasure="@StopEverythingAsync" Disabled="@_sending" />
+                                <TakeReview IdPrefix="practice" HearTitle="Your take against the chords it was sung over"
+                                            Reviewing="@_reviewing" Sending="@_sending" OnHear="@ToggleReviewAsync"
+                                            OnAnalyze="@AnalyzeTakeAsync" OnAgain="@SingAgainAsync" OnDiscard="@DiscardTakeAsync"
+                                            NudgeMs="@_nudgeMs" NudgeMsChanged="@SetNudgeAsync" BeforeMeasure="@StopEverythingAsync" />
                                 break;
                         }
                         @* A beat to sing against, not only chord changes: it plays under the preview, the take and
@@ -163,14 +156,14 @@
 
                     @if (_error is { } error)
                     {
-                        <p class="take-error">@error</p>
+                        <p class="pm-inline-error">@error</p>
                     }
                 </RadzenCard>
             }
             else if (_loadError is { } loadError)
             {
                 <RadzenCard>
-                    <p class="take-error">@loadError</p>
+                    <p class="pm-inline-error">@loadError</p>
                 </RadzenCard>
             }
             else

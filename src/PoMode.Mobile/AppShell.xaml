@@ -7,8 +7,8 @@
 
     <TabBar>
         <ShellContent Title="Songs" Route="songs" ContentTemplate="{DataTemplate pages:LibraryPage}" />
-        <ShellContent Title="Practice" Route="practice" ContentTemplate="{DataTemplate pages:PracticePage}" />
         <ShellContent Title="Mode Lab" Route="modes" ContentTemplate="{DataTemplate pages:ModeLabPage}" />
+        <ShellContent Title="Practice" Route="practice" ContentTemplate="{DataTemplate pages:PracticePage}" />
         <ShellContent Title="Settings" Route="settings" ContentTemplate="{DataTemplate pages:SettingsPage}" />
     </TabBar>
 

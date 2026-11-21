@@ -120,7 +120,6 @@ img, svg, video, canvas {
 
 /* The noise veil, generated rather than fetched — a tiny inline SVG turbulence costs no request
    and no cache entry, which matters for a network-first service worker. */
-.pm-grain::after,
 .rz-card::after {
     content: "";
     position: absolute;
@@ -175,8 +174,7 @@ img, svg, video, canvas {
 }
 
 :root[data-fx="off"] .rz-card::before,
-:root[data-fx="off"] .rz-card::after,
-:root[data-fx="off"] .pm-grain::after {
+:root[data-fx="off"] .rz-card::after {
     display: none;
 }
 
@@ -209,13 +207,6 @@ img, svg, video, canvas {
     :root:not([data-fx="full"]) .rz-button:active {
         transform: none;
     }
-}
-
-/* A key-tinted glow for the element the user should be looking at — the active take, the card the
-   playhead is inside. One class so "this is live" looks the same everywhere. */
-.pm-keyed {
-    border-color: var(--pm-key-edge) !important;
-    box-shadow: var(--pm-shadow), 0 0 0 1px var(--pm-key-edge), 0 0 28px -6px var(--pm-key-glow);
 }
 
 /* Skeleton shimmer for loading states; collapses to a static block under reduced motion. */

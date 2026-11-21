@@ -4,7 +4,7 @@ namespace PoMode.Client.Services;
 /// The extra tools a page shows only once someone switches them on in Settings, off by default so a
 /// first visit carries the essentials. Shared state: the command palette and the Settings page both
 /// read it, so turning Diagnostics on shows its link without a reload. Each flag
-/// hides one control in place; none swaps a page for a second arrangement (docs/removed.md).
+/// hides one control in place; none swaps a page for a second arrangement.
 /// </summary>
 public sealed class FeatureFlags(BrowserPrefs prefs)
 {

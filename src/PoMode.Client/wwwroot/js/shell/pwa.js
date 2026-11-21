@@ -27,16 +27,14 @@ export function register() {
 }
 
 /// Captures the browser's install prompt so the app can offer it at a sensible moment instead of
-/// whenever Chrome decides. Returns nothing; `canInstall` reports whether one was captured.
-export function watchInstall(dotNetHelper) {
+/// whenever Chrome decides. Returns nothing; `canInstall` reports whether one was captured, and
+/// `onInstallChange` tells an open page when that changes.
+export function watchInstall() {
     window.addEventListener('beforeinstallprompt', (event) => {
         // Without this the browser shows its own mini-infobar, and the app has no say in when.
         event.preventDefault();
         installPrompt = event;
         publish();
-        if (dotNetHelper) {
-            try { dotNetHelper.invokeMethodAsync('OnInstallAvailable'); } catch { }
-        }
     });
     window.addEventListener('appinstalled', () => {
         installPrompt = null;
@@ -122,7 +120,20 @@ export function takeSharedFile() {
 
 /// Mirrored onto the document like the other modules, so Playwright can assert on install state
 /// without reaching into this module.
+const installListeners = new Set();
+
+/// Calls `OnInstallChanged(bool)` on the .NET object whenever the prompt arrives or is used, so a
+/// page open before Chrome offered it (Settings, usually) still shows the Install button. Returns a
+/// function that stops listening.
+export function onInstallChange(dotNetHelper) {
+    installListeners.add(dotNetHelper);
+    return { dispose: () => installListeners.delete(dotNetHelper) };
+}
+
 function publish() {
+    for (const listener of installListeners) {
+        try { listener.invokeMethodAsync('OnInstallChanged', installPrompt !== null); } catch { }
+    }
     try {
         if (!document.body) return;
         document.body.dataset.pwaInstallable = installPrompt ? 'yes' : 'no';

@@ -68,7 +68,7 @@ public sealed class LivePlot : IDrawable
             canvas.FillRectangle(rect);
 
             // Chord tones, every octave, in quarter-second strips.
-            canvas.FillColor = Color.FromArgb("#4F46E5").WithAlpha(0.18f);
+            canvas.FillColor = Ui.Accent.WithAlpha(0.18f);
             for (double t = from; t < from + Span; t += 0.25)
             {
                 foreach (int pc in ChordTonesAt(t))
@@ -104,7 +104,7 @@ public sealed class LivePlot : IDrawable
                 if (last is { } l && p.Sec - l.Sec < 0.12)
                 {
                     bool lit = ChordTonesAt(p.Sec).Contains(((int)Math.Round(p.Midi) % 12 + 12) % 12);
-                    canvas.StrokeColor = lit ? Color.FromArgb("#15803D") : Color.FromArgb("#B45309");
+                    canvas.StrokeColor = lit ? Ui.Good : Ui.Warn;
                     canvas.DrawLine(X(l.Sec), Y(l.Midi), X(p.Sec), Y(p.Midi));
                 }
 

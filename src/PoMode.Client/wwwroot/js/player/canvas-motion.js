@@ -1,6 +1,6 @@
 // The analysis canvas's motion, split out of canvas.js: the reveal (notes springing onto their rows,
 // the ink sweep over a hum take), the onset bursts and the note drop. Each one moves a fact the
-// analysis measured (docs/ui-rules.md, "Effects that carry data"); canvas.js decides when they run.
+// analysis measured (an effect carries data or is not drawn); canvas.js decides when they run.
 
 import { clamp, firstIndexFrom, timeToX, colourForRole, roundedRect } from './canvas-geometry.js';
 

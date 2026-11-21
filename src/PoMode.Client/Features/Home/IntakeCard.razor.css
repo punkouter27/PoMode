@@ -1,7 +1,3 @@
-.upload-error {
-    color: var(--pm-warn-bg);
-}
-
 .upload-progress {
     margin-top: 0.75rem;
     display: flex;

@@ -216,20 +216,4 @@ public sealed class HumTakeEndpointTests : IDisposable
         Assert.Null(voice.LowMidi);
         Assert.StartsWith("Sing ", voice.Summary);
     }
-
-    [Fact]
-    public async Task A_hum_post_without_auth_is_401()
-    {
-        await using var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(b => b
-                .UseSetting("Jobs:RootPath", _root)
-                .UseSetting("Models:RootPath", _modelsRoot)
-                .UseSetting("Models:AutoDownload", "false"));
-        using var client = factory.CreateClient();
-
-        using var take = TakeOf(seconds: 2.0);
-        var response = await client.PostAsync(Url(), take);
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
 }

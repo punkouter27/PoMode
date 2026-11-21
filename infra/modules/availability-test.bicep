@@ -1,4 +1,4 @@
-// Availability (ping) test for the web app's /health/live endpoint.
+// Availability test (a standard test: Microsoft retired the classic URL ping tests) for /health/live.
 // Must live in the same resource group and location as the App Insights component (PoShared/eastus2).
 
 @description('Resource ID of the App Insights component to link the test to')
@@ -19,25 +19,31 @@ resource healthAvailabilityTest 'Microsoft.Insights/webtests@2022-06-15' = {
   tags: {
     'hidden-link:${appInsightsId}': 'Resource'
   }
-  kind: 'ping'
+  kind: 'standard'
   properties: {
     SyntheticMonitorId: 'avail-${webAppName}-health'
     Name: '${webAppName}-health'
-    Description: 'Ping test for ${webAppName} /health/live endpoint'
+    Description: 'Availability test for ${webAppName} /health/live'
     Enabled: true
     // One location every 15 minutes, against the dependency-free probe. The F1 site gets 60 CPU
     // minutes a day; three locations every 5 minutes on the deep /health meant ~860 wake-ups a day.
     Frequency: 900
     Timeout: 30
-    Kind: 'ping'
+    Kind: 'standard'
     RetryEnabled: true
     Locations: [
       {
         Id: 'us-ca-sjc-azr' // West US
       }
     ]
-    Configuration: {
-      WebTest: '<WebTest Name="${webAppName}-health" Enabled="True" CssProjectStructure="" CssIteration="" Timeout="30" WorkItemIds="" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><Items><Request Method="GET" Guid="a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d" Version="1.1" Url="https://${webAppHostName}/health/live" ThinkTime="0" Timeout="30" ParseDependentRequests="False" FollowRedirects="True" RecordResult="True" Cache="False" ResponseTimeGoal="0" Encoding="utf-8" ExpectedHttpStatusCode="200" ExpectedResponseUrl="" ReportingName="" IgnoreHttpStatusCode="False" /></Items></WebTest>'
+    Request: {
+      RequestUrl: 'https://${webAppHostName}/health/live'
+      HttpVerb: 'GET'
+      ParseDependentRequests: false
+    }
+    ValidationRules: {
+      ExpectedHttpStatusCode: 200
+      SSLCheck: false
     }
   }
 }

@@ -17,10 +17,17 @@ const VERSION = 'pomode-v1';
 const SHELL_CACHE = `${VERSION}-shell`;
 const SHARE_CACHE = `${VERSION}-share`;
 
-/// Enough to boot the SPA shell offline. Everything else is cached as it is fetched.
+/// Enough to boot the SPA shell offline, styled: the same stylesheets and fonts index.html links.
+/// Everything else (the framework, Radzen) is cached as it is fetched.
 const SHELL = [
     '/',
+    '/css/po-tokens.css',
+    '/css/pm-tokens.css',
+    '/css/po-motion.css',
     '/css/app.css',
+    '/PoMode.Client.styles.css',
+    '/fonts/inter-latin.woff2',
+    '/fonts/space-grotesk-latin.woff2',
     '/manifest.webmanifest',
     '/icons/icon-192.png',
     '/icons/icon-512.png',
@@ -141,7 +148,7 @@ async function receiveShare(request) {
 }
 
 // "Your analysis is ready", sent by the server (WebPushOutcomeNotifier) to a browser whose owner opted
-// in from the header menu. An analysis takes minutes and the tab is usually closed by the end; this
+// in from the Settings page. An analysis takes minutes and the tab is usually closed by the end; this
 // is the only way the news reaches them. Every word is decided server-side — this only displays it.
 self.addEventListener('push', (event) => {
     let message = {};

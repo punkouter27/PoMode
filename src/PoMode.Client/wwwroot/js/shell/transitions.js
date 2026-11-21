@@ -35,11 +35,15 @@ export function install() {
         event.stopPropagation();
         key.classList.add(NAME_CLASS);
         const url = link.getAttribute('href');
-        document.startViewTransition(async () => {
+        const transition = document.startViewTransition(async () => {
             key.classList.remove(NAME_CLASS);
             window.Blazor.navigateTo(url);
             await headlineRendered();
         });
+        // An aborted or timed-out transition rejects these promises; swallow so it never logs an uncaught error.
+        transition.ready.catch(() => { });
+        transition.updateCallbackDone.catch(() => { });
+        transition.finished.catch(() => { });
     }, true);
 }
 
@@ -47,10 +51,21 @@ export function install() {
 /// slow load should cut over, not freeze the old page.
 function headlineRendered() {
     return new Promise((resolve) => {
-        const started = performance.now();
-        const check = () => {
-            if (document.querySelector(`[data-morph-target].${NAME_CLASS}`) || performance.now() - started > WAIT_MS) {
+        let settled = false;
+        const finish = () => {
+            if (!settled) {
+                settled = true;
+                clearTimeout(timer);
                 resolve();
+            }
+        };
+        const timer = setTimeout(finish, WAIT_MS);
+        const check = () => {
+            if (settled) {
+                return;
+            }
+            if (document.querySelector(`[data-morph-target].${NAME_CLASS}`)) {
+                finish();
             } else {
                 requestAnimationFrame(check);
             }

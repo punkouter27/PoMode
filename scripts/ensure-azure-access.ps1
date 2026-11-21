@@ -1,6 +1,6 @@
 # Makes Azure and GitHub match what PoMode needs: the app identity's roles, the CI deploy identity, and the
 # repo variables the deploy workflow reads. Run by a subscription owner:  pwsh scripts/ensure-azure-access.ps1
-$Repo = 'PoMode'; $Branch = 'master'; $ResourceGroup = 'PoMode'; $App = 'app-pomode2'
+$Repo = 'PoMode'; $ResourceGroup = 'PoMode'; $App = 'app-pomode2'
 $Identity = 'system'          # 'system', or the name of a user-assigned identity in PoShared
 $KeyVaultAccess = $true
 $DeployResourceGroups = @('PoMode')
@@ -37,10 +37,16 @@ if (!$appId) { $appId = az ad app create --display-name $name --query appId -o t
 $spId = az ad sp list --filter "appId eq '$appId'" --query "[0].id" -o tsv
 if (!$spId) { $spId = az ad sp create --id $appId --query id -o tsv }
 $repoId = gh api "repos/punkouter27/$Repo" -q .id
-$have = @(az ad app federated-credential list --id $appId --query "[].subject" -o tsv)
-$i = $have.Count
-foreach ($s in "repo:punkouter27/${Repo}:ref:refs/heads/$Branch", "repo:punkouter27/${Repo}:environment:production",
-               "repo:punkouter27@121304072/${Repo}@${repoId}:ref:refs/heads/$Branch", "repo:punkouter27@121304072/${Repo}@${repoId}:environment:production") {
+# Only the production environment is trusted: the deploy job runs in it, so its token's subject is
+# always environment:production. A branch subject would let any workflow on the branch get a token
+# without the environment's protection rules, so one left from an older run is removed here.
+$have = @(az ad app federated-credential list --id $appId --query "[].{n:name,s:subject}" -o json | ConvertFrom-Json)
+foreach ($old in $have | Where-Object { $_.s -like '*:ref:refs/heads/*' }) {
+    az ad app federated-credential delete --id $appId --federated-credential-id $old.n -o none; Step "deploy: untrust $($old.s)"
+}
+$have = @($have | Where-Object { $_.s -notlike '*:ref:refs/heads/*' } | ForEach-Object { $_.s })
+$i = (az ad app federated-credential list --id $appId --query "length([])" -o tsv) -as [int]
+foreach ($s in "repo:punkouter27/${Repo}:environment:production", "repo:punkouter27@121304072/${Repo}@${repoId}:environment:production") {
     if ($s -in $have) { continue }
     $i++; $f = Join-Path $env:TEMP "fc-$Repo-$i.json"
     @{ name = "gh27-$i"; issuer = 'https://token.actions.githubusercontent.com'; subject = $s; audiences = @('api://AzureADTokenExchange') } | ConvertTo-Json -Compress | Set-Content $f

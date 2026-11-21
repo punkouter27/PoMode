@@ -63,3 +63,24 @@ export async function savedIds() {
 export async function isSaved(jobId) {
     return (await savedIds()).includes(jobId);
 }
+
+/// "Delete everything", on this device: every pomode: preference, the songs kept offline, the
+/// readings the service worker cached on the way past (the app shell itself stays), shared files
+/// not yet picked up, and uploads that never finished sending.
+export async function forgetEverything() {
+    try {
+        Object.keys(localStorage).filter((key) => key.startsWith('pomode:')).forEach((key) => localStorage.removeItem(key));
+    } catch { }
+    try {
+        await caches.delete(CACHE);
+        await caches.delete('pomode-v1-share');
+        const shell = await caches.open('pomode-v1-shell');
+        const keys = await shell.keys();
+        await Promise.all(keys
+            .filter((request) => /^\/(api|song)\//.test(new URL(request.url).pathname))
+            .map((request) => shell.delete(request)));
+    } catch { }
+    try {
+        indexedDB.deleteDatabase('pomode:uploads');
+    } catch { }
+}

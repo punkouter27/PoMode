@@ -119,10 +119,6 @@
     font-weight: 700;
 }
 
-.error-text {
-    color: var(--pm-warn-bg);
-}
-
 /* The stage illustration. A short band rather than a hero panel: the checklist under it is what
    the user is actually reading, and this is the thing to glance at while waiting. */
 .wait-preview {

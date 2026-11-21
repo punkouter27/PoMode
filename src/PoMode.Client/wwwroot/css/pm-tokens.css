@@ -26,8 +26,6 @@
 
 :root {
     color-scheme: light dark;
-    --po-error-border: light-dark(#e5a3a3, #6b2626);
-    --po-error-bg: light-dark(#fff5f5, #2a1414);
 }
 
 /* Theme tokens. Light is the base on :root; the prefers-color-scheme block below holds the dark
@@ -48,7 +46,7 @@
     --pm-warn-fg: #ffffff;
     --pm-shadow: var(--po-shadow);
 
-    /* Hue of the detected key (0-360), set at runtime by the analysis page; 262 matches the
+    /* Hue of the detected key (0-360), set at runtime by the analysis page; 243 matches the
        neutral accent so nothing changes until a song is analyzed. */
     --pm-key-hue: 243;
 
@@ -115,7 +113,7 @@
     --pm-violet-bg: rgb(124 58 237 / 0.12);
     --pm-violet-edge: #7c3aed;
 
-    /* The seven church modes get one colour each, and it has to change with the theme for the same
+    /* The seven church modes and the two pentatonics get one colour each, and it has to change with the theme for the same
        reason the status palette does: these are used as *text* on the mode cards. */
     --pm-mode-ionian: #92400e;
     --pm-mode-dorian: #065f46;
@@ -124,6 +122,8 @@
     --pm-mode-mixolydian: #9a3412;
     --pm-mode-aeolian: #3730a3;
     --pm-mode-locrian: #6b21a8;
+    --pm-mode-minorpentatonic: #155e75;
+    --pm-mode-majorpentatonic: #3f6212;
 
     /* ErrorBoundary fallback (shared Po convention). */
     --po-error-border: #b3261e;
@@ -191,6 +191,8 @@
         --pm-mode-mixolydian: #fb923c;
         --pm-mode-aeolian: #818cf8;
         --pm-mode-locrian: #c084fc;
+        --pm-mode-minorpentatonic: #67e8f9;
+        --pm-mode-majorpentatonic: #a3e635;
 
         --po-error-border: #f2b8b5;
         --po-error-bg: rgb(242 184 181 / 0.10);

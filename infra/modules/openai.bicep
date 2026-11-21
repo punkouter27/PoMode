@@ -50,5 +50,3 @@ resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01
     }
   }
 }
-
-output endpoint string = account.properties.endpoint

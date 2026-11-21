@@ -22,8 +22,8 @@
         @* Every load failure lands in this branch, so its Retry lives here too. *@
         @if (_loadError is not null)
         {
-            <div class="mixer-error-bar">
-                <span class="mixer-error-msg">⚠️ @_loadError</span>
+            <div class="mixer-error-bar pm-error-panel">
+                <span class="mixer-error-msg">@_loadError</span>
                 <RadzenButton class="mixer-retry-btn" Text="Retry" Icon="refresh" Size="ButtonSize.Small"
                               ButtonStyle="ButtonStyle.Light" Click="@RetryLoad" />
             </div>

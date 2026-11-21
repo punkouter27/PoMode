@@ -77,7 +77,7 @@ public sealed class SettingsPage : ContentPage
             }
         }));
 
-        _stack.Add(Ui.Danger("Delete all my songs", async () =>
+        _stack.Add(Ui.Danger("Delete everything", async () =>
         {
             if (await DisplayAlertAsync("Delete everything", "Delete every song and take you have on PoMode?", "Delete", "Keep"))
             {

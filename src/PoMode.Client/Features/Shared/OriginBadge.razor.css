@@ -1,0 +1,27 @@
+/* A take, a beat or the demo is not an uploaded song; this says so wherever the song is shown. */
+.origin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.05rem 0.45rem;
+    border: 1px solid var(--pm-hot-edge);
+    border-radius: var(--po-radius-pill);
+    background: var(--pm-hot-bg);
+    color: var(--pm-hot);
+    font-size: var(--pm-text-xs);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.origin-badge--full {
+    font-weight: 600;
+    white-space: normal;
+    min-width: 0;
+}
+
+/* The demo is the app's own example, not something the user made: a calmer tone than a take. */
+.origin-badge:is([data-take-origin="Demo"], [data-origin-kind="Demo"]) {
+    border-color: var(--pm-info-edge);
+    background: var(--pm-info-bg);
+    color: var(--pm-info);
+}

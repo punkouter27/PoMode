@@ -117,7 +117,7 @@
                 </div>
             </section>
 
-            <section class="settings-section" aria-labelledby="settings-models">
+            <section class="settings-section" aria-labelledby="settings-models" id="models">
                 <h2 class="pm-label" id="settings-models">Analysis models</h2>
                 <p class="settings-hint">Auto lets the server pick the best model it has for each step. Pin one to use it for every song you add from this browser.</p>
                 @if (_stages is null)
@@ -252,11 +252,26 @@
 
     private bool _canInstall;
     private IJSObjectReference? _pwa;
+    private IJSObjectReference? _installWatch;
+    private DotNetObjectReference<Settings>? _self;
+
+    /// <summary>The browser offered (or used up) its install prompt while this page was open.</summary>
+    [JSInvokable]
+    public void OnInstallChanged(bool available)
+    {
+        _canInstall = available;
+        StateHasChanged();
+    }
 
     protected override async Task OnInitializedAsync()
     {
         Session.Changed += OnSessionChanged;
         await Flags.LoadAsync();
+        await Task.WhenAll(LoadStagesAsync(), LoadInterpretersAsync());
+    }
+
+    private async Task LoadStagesAsync()
+    {
         try
         {
             var stages = await Analysis.GetExecutorsAsync();
@@ -268,6 +283,11 @@
         {
             _stages = [];
         }
+        StateHasChanged();
+    }
+
+    private async Task LoadInterpretersAsync()
+    {
         try
         {
             var servers = await Analysis.GetInterpretersAsync() ?? [];
@@ -300,6 +320,7 @@
         catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException or TaskCanceledException)
         {
         }
+        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -315,6 +336,8 @@
             // The same module instance the layout captured the install prompt with.
             _pwa = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/pwa.js");
             _canInstall = await _pwa.InvokeAsync<bool>("canInstall");
+            _self = DotNetObjectReference.Create(this);
+            _installWatch = await _pwa.InvokeAsync<IJSObjectReference>("onInstallChange", _self);
             _push = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/push.js");
             _pushState = await _push.InvokeAsync<string>("init");
         }
@@ -447,7 +470,7 @@
     private async Task DeleteAsync()
     {
         var confirmed = await Dialogs.Confirm(
-            "Every song, recording and beat you added, with all their readings, is deleted from the server, and this browser forgets your settings. This cannot be undone.",
+            "Every song, recording and beat you added, with all their readings, is deleted from the server, and this browser forgets your settings and the songs kept offline. This cannot be undone.",
             "Delete everything?",
             new ConfirmOptions { OkButtonText = "Delete everything", CancelButtonText = "Keep it" });
         if (confirmed != true)
@@ -458,11 +481,12 @@
         try
         {
             var deleted = await Analysis.DeleteMyDataAsync();
-            foreach (var key in new[] { BrowserPrefs.LibraryFiltersKey, BrowserPrefs.ExecutorPinsKey, BrowserPrefs.PracticeBackingKey, BrowserPrefs.InterpreterKey })
+            // Every pomode: key, the songs kept offline and their cached readings, in one place.
+            await using (var offline = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shell/offline.js"))
             {
-                await Prefs.RemoveAsync(key);
+                await offline.InvokeVoidAsync("forgetEverything");
             }
-            // Through the shared state, not just storage, so the header's menu drops Diagnostics now.
+            // Through the shared state too, not just storage, so this page drops Diagnostics now.
             await Flags.SetAsync(new());
             Notifications.Notify(NotificationSeverity.Success, "Deleted", $"{deleted} {(deleted == 1 ? "item" : "items")} removed.");
             Navigation.NavigateTo("");
@@ -480,6 +504,7 @@
     public async ValueTask DisposeAsync()
     {
         Session.Changed -= OnSessionChanged;
+        _self?.Dispose();
         try
         {
             if (_prefsJs is not null)
@@ -489,6 +514,11 @@
             if (_push is not null)
             {
                 await _push.DisposeAsync();
+            }
+            if (_installWatch is not null)
+            {
+                await _installWatch.InvokeVoidAsync("dispose");
+                await _installWatch.DisposeAsync();
             }
             if (_pwa is not null)
             {

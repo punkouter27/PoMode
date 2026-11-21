@@ -1,10 +1,10 @@
-// "Notify me when analysis finishes": the opt-in behind the header menu's toggle.
+// "Notify me when analysis finishes": the opt-in behind the Notifications switch on /settings.
 //
 // Permission is requested from `enable` and nowhere else, and `enable` runs only from a click on that
 // item. A prompt on page load is how a site gets its permission denied for good, and browsers now
 // silence or refuse a prompt that no gesture asked for.
 //
-// Every state this module reaches is returned to the layout and mirrored onto
+// Every state this module reaches is returned to the caller and mirrored onto
 // `document.body.dataset.pushState`: `unavailable` (this server sends no pushes, or this browser
 // cannot receive them — the item is hidden), `blocked` (the person said no in the browser), `off`, `on`.
 
@@ -14,7 +14,7 @@ let config = null;
 
 /// Works out the current state without asking the person anything. When this browser is already
 /// subscribed the subscription is re-sent to the server on every visit: that is what re-registers it
-/// under whoever is signed in now, and what replaces it when the server's key has changed (a new key
+/// under this browser's session, and what replaces it when the server's key has changed (a new key
 /// pair, or Development's throwaway one after a restart).
 export async function init() {
     if (!supported()) {
@@ -74,16 +74,6 @@ export async function disable() {
         await subscription.unsubscribe();
     }
     return publish('off');
-}
-
-/// Drops this browser from the signed-in account's notifications while keeping the browser's own
-/// subscription. Called just before signing out: the account being left must not go on notifying a
-/// browser someone else may now be using. The next visit re-registers it for whoever is signed in.
-export async function forget() {
-    const subscription = await currentSubscription();
-    if (subscription) {
-        await forgetOnServer(subscription.endpoint);
-    }
 }
 
 function supported() {

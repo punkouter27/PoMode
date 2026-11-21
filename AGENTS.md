@@ -115,7 +115,8 @@ the sung line and stems, explains them, and lets you practise over them. Live: h
 
 One process: `PoMode.Api` hosts the Blazor WASM client (`PoMode.Client`), the REST endpoints, a SignalR hub
 (`/hubs/analysis`) and the background analysis worker; `PoMode.Shared` holds the DTOs, the source-generated
-`PoModeJsonContext` and the few pure lookups both sides need. Server features live under
+`PoModeJsonContext` and the few pure lookups both sides need; `PoMode.ApiClient` is the one typed HTTP client
+for the API, shared by the web client and the mobile app. Server features live under
 `src/PoMode.Api/Features/`. `src/PoMode.Mobile` is a native .NET MAUI client on the same API and contracts (not in
 `PoMode.slnx`; `scripts/ci-checks.ps1` builds its Android target).
 
@@ -143,7 +144,7 @@ dotnet run scripts/layout-audit.cs -- compare before after notes.md name   # one
 | Tier | Tests | In CI | Needs |
 |---|---|---|---|
 | `tests/PoMode.Unit` | 94 | yes | nothing |
-| `tests/PoMode.Integration` | 38 | no | nothing (in-process host, temp-folder storage; no Docker) |
+| `tests/PoMode.Integration` | 39 | no | nothing (in-process host, temp-folder storage; no Docker) |
 | `tests/PoMode.E2EAPI` | 25 | no | nothing (in-process host) |
 | `tests/PoMode.E2EUI` | 25 | no | Playwright Chromium; without it every test SKIPS with one clear message (`BrowserFact`). Install: `pwsh tests/PoMode.E2EUI/bin/Debug/net10.0/playwright.ps1 install chromium` |
 
