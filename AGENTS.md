@@ -1,9 +1,16 @@
 # AGENTS.md — PoMode
 
-Read this before changing anything; CLAUDE.md only points here. The first half is the Po web standard this repo
-follows; the second half ("This repo") is what is specific to PoMode, including where it deviates and why.
+Read this before changing anything; CLAUDE.md only points here. Sections 1-3 are the rules every session follows;
+"This repo" below them is what is specific to PoMode, including where it deviates from the standard and why.
 
-## Po Web App Standard
+## 1. Standard
+
+> This repo owns every file in it. Nothing here is generated from, synced with, or required to stay identical to
+> another repository. Headers like "SAME FILE IN EVERY PO …", "Generated from po-shared … DO NOT EDIT", and scripts
+> that copy files into or check other repos are forbidden. Only Azure resources in the `PoShared` resource group
+> may be shared.
+
+The Po Web App Standard as this repo applies it:
 
 This repo is one of several independent Po apps. It follows the conventions below, but it owns every file:
 nothing is generated from, synced with, or required to stay identical to another repository. Change anything
@@ -74,6 +81,32 @@ installs the `maui-android` workload and builds the Android target, so the clien
 
 ### Azure naming
 App Service `app-<repo lowercase>`; per-app resources named `<type>-<repo lowercase>`; shared things only in `PoShared`.
+
+## 2. Concurrent work
+
+Several sessions (people and agents) commit to this repo, sometimes at the same time.
+- Before every commit and every push: `git fetch origin && git rebase --autostash origin/master`.
+- Stage only the files you changed (`git add <paths>`); never `git add -A` / `git add .`; check `git diff --cached`.
+- Never revert, reformat or overwrite changes you didn't make; keep the owner's recent decisions (e.g. features
+  removed on purpose stay removed — Microsoft sign-in was dropped on 2026-11-20 and stays dropped).
+- Don't commit or sync from the IDE while an agent is working in this folder.
+- Pushing `master` deploys production; changes to `.github/workflows/*` need a token with the `workflow` scope.
+
+## 3. Verification
+
+| Step | Command (tested 2026-11-20) | Needs / skips |
+|---|---|---|
+| Format | `dotnet format PoMode.slnx --verify-no-changes` | nothing |
+| Build | `dotnet build PoMode.slnx -c Release` (warnings are errors) | kill a running `PoMode.Api` first (DLL locks) |
+| Unit | `dotnet test tests/PoMode.Unit` (94) | nothing |
+| Integration | `dotnet test tests/PoMode.Integration` (38) | nothing: in-process host + temp folders, no Docker |
+| E2EAPI | `dotnet test tests/PoMode.E2EAPI` (25) | nothing (in-process host) |
+| E2EUI | `dotnet build PoMode.slnx` then `dotnet test tests/PoMode.E2EUI --no-build` (25) | Playwright Chromium (`pwsh tests/PoMode.E2EUI/bin/Debug/net10.0/playwright.ps1 install chromium`); every test skips with one message without it; boots the Debug build itself on :5199 |
+| Run locally | `dotnet run --project src/PoMode.Api` → http://localhost:5000 (`/diag`, `/health/live`) | nothing (file-system storage by default) |
+| Deploy | push to `master` → `.github/workflows/deploy.yml` (format, build, Unit, Integration, publish, deploy; `mobile` job builds Android, non-blocking) | — |
+| Deploy check | `curl -sI https://app-pomode2.azurewebsites.net/health/live` → `X-Commit: <pushed sha>` | — |
+| Live | https://app-pomode2.azurewebsites.net and https://app-pomode2.azurewebsites.net/diag | — |
+| Pinned | .NET SDK 10.0.400 (`global.json`, rollForward latestFeature); MAUI `net10.0-android` for `src/PoMode.Mobile` | — |
 
 ## This repo
 
