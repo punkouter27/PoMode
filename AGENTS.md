@@ -95,7 +95,13 @@ Several sessions (people and agents) commit to this repo, sometimes at the same 
 
 ## 3. Verification
 
-| Step | Command (tested 2026-11-20) | Needs / skips |
+One command sequence verifies the repo (format, Unit, Integration, E2EAPI, then E2EUI on the trimmed Release publish):
+
+```powershell
+dotnet format PoMode.slnx --verify-no-changes && dotnet test tests/PoMode.Unit && dotnet test tests/PoMode.Integration && dotnet test tests/PoMode.E2EAPI && pwsh scripts/run-e2eui.ps1
+```
+
+| Step | Command (tested 2026-11-21) | Needs / skips |
 |---|---|---|
 | Format | `dotnet format PoMode.slnx --verify-no-changes` | nothing |
 | Build | `dotnet build PoMode.slnx -c Release` (warnings are errors) | kill a running `PoMode.Api` first (DLL locks) |
@@ -141,7 +147,7 @@ dotnet run scripts/layout-audit.cs -- capture before        # app running: scree
 dotnet run scripts/layout-audit.cs -- compare before after notes.md name   # one annotated SCREENSHOTS/name.html
 ```
 
-### Test tiers (real counts, 2026-11-20)
+### Test tiers (real counts, 2026-11-21)
 
 | Tier | Tests | In CI | Needs |
 |---|---|---|---|
@@ -182,16 +188,21 @@ Suites are capped: 100 Unit, 50 Integration, 25 E2EAPI, 25 E2EUI, counted as the
   `/health/live` read it.
 - API reference UI: `/scalar` (Development only).
 
-### Deviations from the standard
+### Deliberate deviations
 
-| What | Why |
-|---|---|
-| Azure names `app-pomode2`, `stpomode2`, `asp-pomode-f1` (standard: `app-pomode`, `<type>-pomode`) | Existing production resources; renaming needs new resources and a cut-over nobody has asked for yet. `infra/main.bicep` uses the live names. |
-| `tests/PoMode.TestCommon` (linked `.cs` files, not a project) | Test helpers used by this repo's own test tiers only. |
-| `models/` at the root | Local cache of downloaded ONNX/browser models (`scripts/get-models.ps1`); contents are git-ignored. |
-| No `docs/` | Nothing to put there yet; prose lives in this file and README.md. |
-| The header shows the guest's initials (standard: nothing without OAuth) | The initials are the library's key, not a fake identity: they are how a person finds their songs on another device. |
-| Radzen exceptions (the only allowed kinds: native file inputs for resumable uploads, native audio/video, read-only data tables). In use: two native file inputs for resumable uploads, `<input type="file">` in `Features/Home/IntakeCard.razor` and `Features/ModeLab/DrumStrip.razor`, dressed as Radzen buttons. No native audio/video elements or raw tables in markup. | RadzenUpload posts the file in one request; these hand the file to tus so a dropped upload resumes. Every other control is Radzen. |
+| Deviation | Why | Commit sha / date | How to undo |
+|---|---|---|---|
+| Azure names `app-pomode2`, `stpomode2`, `asp-pomode-f1` (standard: `app-pomode`, `<type>-pomode`) | existing production resources; renaming means new resources and a cut-over | — | owner-approved recreate; `infra/main.bicep` uses the live names |
+| `tests/PoMode.TestCommon` (linked `.cs` files, not a project) | helpers for this repo's own test tiers | — | copy the files into each tier |
+| `models/` at the root (git-ignored contents) | local cache for `scripts/get-models.ps1` | — | — |
+| No `docs/` | prose lives in this file and README.md | — | add `docs/` when needed |
+| No sign-in; the header shows the guest's initials | owner dropped Microsoft sign-in; the initials are the library's key across devices | `7e4e49f` 2026-11-20 | re-add Entra sign-in |
+| Radzen exceptions: two native `<input type="file">` (`Features/Home/IntakeCard.razor`, `Features/ModeLab/DrumStrip.razor`), dressed as Radzen buttons | RadzenUpload posts in one request; these hand the file to tus so a dropped upload resumes | `f5a8a94` 2026-11-21 | swap for `RadzenUpload` (loses resume) |
+| /diag shows services switched off on purpose (AcoustID/Hooktheory without a key, push, no LLM, no model downloads, unused Key Vault / blob / App Insights) as **Off**, never counted | the site is Healthy when nothing set up is failing | `9999ee2` 2026-11-21 | `DiagnosticStatus.Off` in `DiagDtos.cs` |
+| `run-e2eui.ps1` publishes with `-p:WasmApplicationEnvironmentName=Development` | .NET 10 bakes the client environment at publish; matches the Development server the fixture starts | `d710c4f` 2026-11-21 | drop the flag |
+
+**Hosting:** App Service F1 (Free, `asp-pomode-f1`): 165 MB of data out and 60 CPU-minutes per day.
+Never run test suites against the live site; live checks = at most 6 page loads + /diag + X-Commit.
 
 ### Working rules
 
