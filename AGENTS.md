@@ -105,7 +105,7 @@ dotnet format PoMode.slnx --verify-no-changes && dotnet test tests/PoMode.Unit &
 |---|---|---|
 | Format | `dotnet format PoMode.slnx --verify-no-changes` | nothing |
 | Build | `dotnet build PoMode.slnx -c Release` (warnings are errors) | kill a running `PoMode.Api` first (DLL locks) |
-| Unit | `dotnet test tests/PoMode.Unit` (94) | nothing |
+| Unit | `dotnet test tests/PoMode.Unit` (95) | nothing |
 | Integration | `dotnet test tests/PoMode.Integration` (40) | nothing: in-process host + temp folders, no Docker |
 | E2EAPI | `dotnet test tests/PoMode.E2EAPI` (25) | nothing (in-process host) |
 | E2EUI | `pwsh scripts/run-e2eui.ps1` (25) | publishes `-c Release` (trimmed, as deployed) to a temp folder, installs Playwright Chromium, runs the suite with `POMODE_E2EUI_APP_DIR` so the fixture boots the published app on :5199/:5200/:5201, stops it and deletes the folder. `pwsh scripts/get-models.ps1` first warms `models/`. Quick loop on the Debug build: `dotnet test tests/PoMode.E2EUI` |
@@ -151,7 +151,7 @@ dotnet run scripts/layout-audit.cs -- compare before after notes.md name   # one
 
 | Tier | Tests | In CI | Needs |
 |---|---|---|---|
-| `tests/PoMode.Unit` | 94 | yes | nothing |
+| `tests/PoMode.Unit` | 95 | yes | nothing |
 | `tests/PoMode.Integration` | 40 | yes | nothing (in-process host, temp-folder storage; no Docker). `DiagnosticsReportTests` makes live HTTP calls to the /diag services (capped at 4 s each) |
 | `tests/PoMode.E2EAPI` | 25 | no | nothing (in-process host) |
 | `tests/PoMode.E2EUI` | 25 | no | `pwsh scripts/run-e2eui.ps1` (Release publish). Playwright Chromium; without it every test SKIPS with one clear message (`BrowserFact`) |
@@ -172,20 +172,25 @@ Suites are capped: 100 Unit, 50 Integration, 25 E2EAPI, 25 E2EUI, counted as the
   first visit, `Layout/InitialsPrompt.razor`) open the same collection on any device. The header: `PoMode`
   upper-left, the route links, then search (Ctrl K), the initials button and the settings gear (`/settings`). One header, in `Layout/MainLayout.razor`. Dev personas (`X-Fake-User`,
   Development/Test only) live on `/settings`.
-- `/health/live` (X-Commit = `PoPlatform.Commit`), `/health` and `/health/ready` (job storage). `GET /api/diag` is
+- `/health/live` (X-Commit = `PoPlatform.Commit`, no checks), `/health/ready` (job storage, local only) and
+  `/health` (the overall status of the /diag report: plain text, 503 when Unhealthy). `GET /api/diag` is
   the standard `DiagReportDto` (`PoMode.Shared/Diagnostics/DiagDtos.cs`, built by `DiagnosticsService`): API,
   Data (job storage on disk, blob storage), Services (Key Vault, Application Insights, AcoustID, LRCLIB, Hooktheory,
   model downloads from Hugging Face/jsDelivr, AI interpreters, analysis models, push notifications). The outside
-  services are probed live on every request (`Features/Diagnostics/ExternalServiceProbes.cs`, 4 s budget each, in
-  parallel). A service switched off on purpose on this server is **Off** (neutral grey pill, never counted
+  services are probed live (`Features/Diagnostics/ExternalServiceProbes.cs`, 4 s budget each, in parallel, keyless
+  reachability calls only), and one report is cached for 60 s and shared by `/health` and `/api/diag`
+  (`Features/Diagnostics/DiagReportCache.cs`, unit test `DiagReportCacheTests`), so page loads and pings never
+  repeat the probes within the minute. A service switched off on purpose on this server is **Off** (neutral grey pill, never counted
   against the overall status): AcoustID/Hooktheory without a key, push without a key pair, no language model
   set up, models not downloadable (Azure, or `Models:AutoDownload=false`), and Key Vault / blob mirror /
   Application Insights where the environment does not use them. Degraded means something set up is not
   answering. The API row's latency is the request itself, measured.
   `GET /api/diag/activity` carries the operator extras (queue depth, guards, interpreter record, the plan a new
   upload would run). `DiagnosticsReportTests` guards that /api/diag names no secret, path or host.
-- Version: `Directory.Build.props` stamps `BuildVersion`; the badge (`Layout/BuildVersion.razor`), `/api/diag` and
-  `/health/live` read it.
+- Version: `Directory.Build.props` stamps `BuildVersion`; the badge (`Layout/BuildVersion.razor`, a `<footer>` so it is
+  the page's contentinfo landmark for axe), `/api/diag` and `/health/live` read it.
+- Radzen's two base sheets are the first stylesheets in `index.html`, before `po-tokens.css`/`app.css`, loaded once
+  (no `<RadzenTheme>`, which would inject a second copy after app.css); `ShellSmokeTests` asserts the order.
 - API reference UI: `/scalar` (Development only).
 
 ### Deliberate deviations

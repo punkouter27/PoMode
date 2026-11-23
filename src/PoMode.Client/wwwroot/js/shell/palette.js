@@ -13,6 +13,8 @@ export function listen(dotNet) {
         }
     };
     window.addEventListener('keydown', handler);
+    // Ctrl+K works from here on; the browser tests wait for this rather than racing the first render.
+    document.documentElement.dataset.palette = 'ready';
 }
 
 export function stop() {

@@ -139,6 +139,8 @@
                     @if (canCompare)
                     {
                         <RadzenDataGridColumn TItem="LibraryEntryDto" Title="" Sortable="false" Width="44px" CssClass="col-compare" HeaderCssClass="col-compare">
+                            @* Named for assistive tech only (axe empty-table-header); the ticks speak for themselves. *@
+                            <HeaderTemplate><span class="pm-sr-only">Compare</span></HeaderTemplate>
                             <Template Context="entry">
                                 <RadzenCheckBox TValue="bool" Value="@_compare.Contains(entry.JobId)"
                                                 Change="@(_ => ToggleCompareAsync(entry))"
@@ -221,6 +223,7 @@
                         <RadzenDataGridColumn TItem="LibraryEntryDto" Property="Stage" Title="Status" Width="110px" />
                     }
                     <RadzenDataGridColumn TItem="LibraryEntryDto" Title="" Sortable="false" Width="52px" CssClass="col-delete" HeaderCssClass="col-delete">
+                        <HeaderTemplate><span class="pm-sr-only">Delete</span></HeaderTemplate>
                         <Template Context="entry">
                             <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Base" Variant="Variant.Text" Size="ButtonSize.Small"
                                           Click="@(() => DeleteAsync(entry))" Disabled="@(_deleting == entry.JobId)"

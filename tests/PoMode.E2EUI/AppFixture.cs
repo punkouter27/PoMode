@@ -99,7 +99,9 @@ public class AppFixture : IAsyncLifetime
         {
             try
             {
-                var response = await http.GetAsync($"{BaseUrl}/health");
+                // /health/ready runs local checks only; /health answers the /diag report, which probes
+                // outside services, and nothing here may call out to a third party.
+                var response = await http.GetAsync($"{BaseUrl}/health/ready");
                 if (response.IsSuccessStatusCode) return;
             }
             catch (HttpRequestException)

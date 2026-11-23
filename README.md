@@ -19,7 +19,7 @@ The rules, the decisions and the commands are in [`AGENTS.md`](AGENTS.md).
   the mobile app.
 - `src/PoMode.Mobile/` is the native .NET MAUI app (outside the solution; `scripts/ci-checks.ps1`
   builds it).
-- `tests/` contains Unit (94), Integration (40), E2E API (25) and Playwright E2E UI (25, run against the Release publish by `pwsh scripts/run-e2eui.ps1`) projects.
+- `tests/` contains Unit (95), Integration (40), E2E API (25) and Playwright E2E UI (25, run against the Release publish by `pwsh scripts/run-e2eui.ps1`) projects.
 
 The solution is `PoMode.slnx`. `AGENTS.md` is the detailed guide: the Po web standard this repo
 follows, the architecture, constraints, test tiers and development workflow.

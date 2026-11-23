@@ -60,6 +60,9 @@
     white-space: nowrap;
     border: 0;
 }
+/* A Radzen table hidden this way still has its own scrolling wrapper, and a scroll box with
+   nothing focusable in it fails axe (scrollable-region-focusable); the clip above hides it anyway. */
+.pm-sr-only .rz-data-grid-data { overflow: visible; }
 
 /* The small-caps caption over a section or a figure ("THE SINGER", "TEMPO", a strip's name). One
    rule for it: a dozen components each wrote their own, with three different letter spacings. */

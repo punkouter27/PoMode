@@ -77,6 +77,7 @@ builder.Services.AddPoRateLimiting(builder.Configuration);
 builder.Services.AddSingleton<ModelRegistry>();
 builder.Services.AddSingleton<HardwareProbe>();
 builder.Services.AddSingleton<DiagnosticsService>();
+builder.Services.AddSingleton<DiagReportCache>();
 builder.Services.AddSingleton<ExternalServiceProbes>();
 builder.Services.AddHealthChecks()
     .AddCheck<JobStorageHealthCheck>("job-storage");
@@ -290,7 +291,6 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Test"))
     app.MapOpenApi();
     app.MapScalarApiReference(); // serves /scalar
 }
-app.MapHealthChecks("/health");
 // Liveness runs no checks (is the process serving requests at all); readiness runs them all.
 // Replaced this app's bespoke liveness payload with the shared one: three apps each
 // answered /health/live in a different shape, so nothing could poll them uniformly.

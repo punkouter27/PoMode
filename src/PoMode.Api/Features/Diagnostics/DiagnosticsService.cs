@@ -29,6 +29,7 @@ public sealed class DiagnosticsService(
     PushSettings push,
     SongInterpreterSelector interpreterSelector,
     InterpreterStats interpreters,
+    DiagReportCache cache,
     TimeProvider time)
 {
     private static readonly TimeSpan ProbeBudget = TimeSpan.FromSeconds(1.5);
@@ -38,6 +39,11 @@ public sealed class DiagnosticsService(
         typeof(DiagnosticsService).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
             .FirstOrDefault(a => a.Key == "BuildVersion")?.Value ?? "dev";
 
+    /// <summary>The report /health and /api/diag answer with: built at most once a minute
+    /// (<see cref="DiagReportCache"/>), so the live probes run once however often the page is loaded.</summary>
+    public Task<DiagReportDto> GetReportAsync(CancellationToken ct) =>
+        cache.GetAsync(() => BuildReportAsync(CancellationToken.None)).WaitAsync(ct);
+
     public async Task<DiagReportDto> BuildReportAsync(CancellationToken ct)
     {
         var started = Stopwatch.GetTimestamp();
@@ -46,7 +52,7 @@ public sealed class DiagnosticsService(
             .. await StoresAsync(ct),
             .. await ServicesAsync(ct),
         ];
-        // The API row is this request, measured: the time the API took to answer it, checks included.
+        // The API row is measured: the time the API took to build this report, checks included.
         checks.Add(new("api", "api", "PoMode API", DiagnosticStatus.Healthy,
             "Answers every page, upload and analysis.", "Answering.",
             Math.Round(Stopwatch.GetElapsedTime(started).TotalMilliseconds, 1), null));

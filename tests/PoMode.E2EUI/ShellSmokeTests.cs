@@ -30,11 +30,25 @@ public class ShellSmokeTests(AppFixture app)
         await Assertions.Expect(page.Locator("header.po-header .po-header__title")).ToHaveTextAsync("PoMode", new() { Timeout = AppFixture.ExpectTimeoutMs });
         await Assertions.Expect(page.Locator("header #open-settings.po-header__settings")).ToBeVisibleAsync(expectOptions);
         await Assertions.Expect(page.Locator(".po-version")).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^v[0-9]{6}$"));
+        // The stamp is the page's footer landmark (axe "region": no text outside a landmark).
+        await Assertions.Expect(page.GetByRole(AriaRole.Contentinfo)).ToHaveTextAsync(new System.Text.RegularExpressions.Regex("^v[0-9]{6}$"));
+        // Radzen's CSS loads once, before every sheet of the app's own, so the app's rules win the cascade
+        // (a <RadzenTheme> would inject a second copy after app.css and flip that).
+        var sheets = await page.EvaluateAsync<string[]>(
+            "[...document.querySelectorAll('link[rel=stylesheet], style')].map(s => s.href ? new URL(s.href).pathname : 'style')");
+        var radzen = sheets.Select((href, i) => (href, i)).Where(s => s.href.Contains("/Radzen.Blazor/", StringComparison.Ordinal)).ToArray();
+        Assert.NotEmpty(radzen);
+        Assert.Equal(radzen.Length, radzen.Select(s => s.href).Distinct().Count());
+        Assert.Equal(Enumerable.Range(0, radzen.Length), radzen.Select(s => s.i));
+        Assert.Contains("/css/app.css", sheets);
         await Assertions.Expect(page.GetByRole(AriaRole.Button, new() { Name = "More" })).ToHaveCountAsync(0);
         Assert.Equal("Inter", (await page.EvaluateAsync<string>("getComputedStyle(document.body).fontFamily")).Split(',')[0].Trim('"', ' '));
 
         // Ctrl+K goes anywhere: typing a page's name and Enter lands on it. Settings is where the
         // optional choices live, each already at its best value.
+        // The shortcut listener attaches after the layout's first render (palette.js marks <html>);
+        // a key pressed before that is lost, which made this step flaky.
+        await page.WaitForSelectorAsync("html[data-palette=ready]", new() { State = WaitForSelectorState.Attached, Timeout = AppFixture.ExpectTimeoutMs });
         await page.Keyboard.PressAsync("Control+k");
         var palette = page.GetByRole(AriaRole.Combobox);
         await Assertions.Expect(palette).ToBeFocusedAsync(new() { Timeout = AppFixture.ExpectTimeoutMs });
