@@ -255,12 +255,14 @@ public sealed class ClientDelegatedFallbackTests : IDisposable
         Assert.All(Enumerable.Range(0, mix.Samples.Length).Where(i => i % 97 == 0),
             i => Assert.Equal(mix.Samples[i] / 2, instrumental.Samples[i], 0.002));
 
-        // A browser that declines is not waited for: no clock advance, and the placeholder takes over.
+        // A browser that declines is not waited for (no clock advance), and the placeholder does NOT
+        // take over: the job fails at once with the browser's own reason instead of mock stems.
         var (declined, declinedRun) = await StartAsync();
-        Assert.True(stems.TryDecline(declined.JobId, "no WebGPU"));
+        Assert.True(stems.TryDecline(declined.JobId, "no WebGPU to separate 214 s of audio in time"));
         await declinedRun;
-        var fellThrough = await _store.LoadAsync(declined.JobId, CancellationToken.None);
-        Assert.Equal(JobStage.Complete, fellThrough!.Stage);
-        Assert.Equal(nameof(FakeStemSeparator), fellThrough.Plan.Single(p => p.Stage == StageNames.Separating).Executor);
+        var failed = await _store.LoadAsync(declined.JobId, CancellationToken.None);
+        Assert.Equal(JobStage.Failed, failed!.Stage);
+        Assert.Contains("no WebGPU", failed.Error);
+        Assert.Equal(nameof(ClientDelegatedStemSeparator), failed.Plan.Single(p => p.Stage == StageNames.Separating).Executor);
     }
 }

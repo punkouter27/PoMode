@@ -143,17 +143,32 @@ public sealed class AnalysisPipelineTests : IDisposable
     }
 
     [Fact]
-    public async Task Executor_failure_falls_through_to_next_candidate_and_updates_plan()
+    public async Task Executor_failure_falls_through_to_next_real_candidate_but_never_to_a_placeholder()
     {
+        // Real → real: the throwing executor is planned first (registration order breaks the tie),
+        // the next real one answers, and the plan records who really ran.
         var job = await NewJobAsync();
-        // Throwing executor is planned first (registration order breaks the tier tie).
-        var pipeline = Pipeline([new ThrowingStemSeparator(), new FakeStemSeparator()]);
-
-        await pipeline.RunAsync(job.JobId, CancellationToken.None);
-
+        await Pipeline([new ThrowingStemSeparator(), new CopyingStemSeparator()]).RunAsync(job.JobId, CancellationToken.None);
         var final = await _store.LoadAsync(job.JobId, CancellationToken.None);
         Assert.Equal(JobStage.Complete, final!.Stage);
-        Assert.Equal(nameof(FakeStemSeparator), final.Plan.Single(p => p.Stage == StageNames.Separating).Executor);
+        Assert.Equal(nameof(CopyingStemSeparator), final.Plan.Single(p => p.Stage == StageNames.Separating).Executor);
+
+        // Real → placeholder: refused. The job fails with the real executor's own message instead
+        // of rendering mock stems.
+        var refused = await NewJobAsync();
+        await Pipeline([new ThrowingStemSeparator(), new FakeStemSeparator()]).RunAsync(refused.JobId, CancellationToken.None);
+        var failed = await _store.LoadAsync(refused.JobId, CancellationToken.None);
+        Assert.Equal(JobStage.Failed, failed!.Stage);
+        Assert.Contains("simulated OOM", failed.Error);
+    }
+
+    /// <summary>A real (non-placeholder) stand-in: same copy as the fake, without the placeholder flag.</summary>
+    private sealed class CopyingStemSeparator : IStemSeparator
+    {
+        public string Name => nameof(CopyingStemSeparator);
+        public ExecutionTier Tier => ExecutionTier.Local;
+        public Task<bool> IsAvailableAsync(CancellationToken ct) => Task.FromResult(true);
+        public Task SeparateAsync(StageContext context, CancellationToken ct) => new FakeStemSeparator().SeparateAsync(context, ct);
     }
 
     [Fact]

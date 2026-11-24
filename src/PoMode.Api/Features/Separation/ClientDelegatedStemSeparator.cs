@@ -47,7 +47,31 @@ public sealed class ClientDelegatedStemSeparator(
         var wait = registry.WaitAsync(context.JobId, timeout, ct);
         await ClientDelegatedPitchTracker.AnnounceAsync(store, notifier, context.JobId, ct);
         logger.LogInformation("Job {JobId} is awaiting browser stem separation.", context.JobId);
-        var stems = await wait;
+        ClientStems stems;
+        try
+        {
+            stems = await wait;
+        }
+        catch (Exception ex) when (ex is TimeoutException or InvalidOperationException)
+        {
+            // No placeholder takes over any more (AnalysisPipeline.RunWithFallbackAsync), so this
+            // message is what the user reads as "Analysis failed: ...". The two cases:
+            //   TimeoutException          — the tab was closed, slept, or never finished in `timeout`.
+            //   InvalidOperationException — the browser declined; ex.Message is
+            //                               "The browser declined: <reason from separation.js>",
+            //                               e.g. "no WebGPU to separate 214 s of audio in time".
+            const string DeclinedPrefix = "The browser declined: ";
+            throw ex is TimeoutException
+                ? new InvalidOperationException(
+                    $"Your browser didn't finish separating the vocals within {timeout.TotalMinutes:0} minutes. " +
+                    "Keep the PoMode tab open and in front until the analysis finishes, then try again.", ex)
+                : new InvalidOperationException(
+                    "Your browser couldn't separate the vocals: "
+                    + (ex.Message.StartsWith(DeclinedPrefix, StringComparison.Ordinal) ? ex.Message[DeclinedPrefix.Length..] : ex.Message)
+                    + (ex.Message.Contains("no WebGPU", StringComparison.Ordinal)
+                        ? ". Use Chrome or Edge on a computer with WebGPU, or upload a clip under 60 seconds."
+                        : "."), ex);
+        }
 
         var vocals = AudioDecoder.Decode(stems.VocalsPath);
         var mix = Stereo(AudioDecoder.Decode(context.InputPath), vocals.SampleRate);

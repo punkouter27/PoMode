@@ -349,6 +349,13 @@ public sealed class AnalysisPipeline(
         foreach (var candidate in ordered)
         {
             ct.ThrowIfCancellationRequested();
+            // A stage planned on real work never degrades to a placeholder: copying the mix in as
+            // "stems" after the browser gave up rendered fabricated results under a mock banner.
+            // The real executor's failure, with its own message, fails the job instead.
+            if (lastFailure is not null && candidate.IsPlaceholder && !planned.IsPlaceholder)
+            {
+                continue;
+            }
             if (lastFailure is not null && !await candidate.IsAvailableAsync(ct))
             {
                 continue;
